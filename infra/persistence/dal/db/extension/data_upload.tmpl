@@ -1,0 +1,93 @@
+{{/* 下一行的作用是，告诉 Intellij/GoLand 等IDE，基于 gen.Graph 类型来启用自动补全功能。 */}}
+{{/* gotype: entgo.io/ent/entc/gen.Graph */}}
+
+{{ define "data_upload" }}
+
+{{/* Add the base header for the generated file */}}
+{{ $pkg := base $.Config.Package }}
+{{ template "header" $ }}
+import (
+    "strconv"
+    "context"
+    "github.com/pkg/errors"
+    "github.com/spf13/cast"
+)
+{{/* Loop over all nodes and implement the "GoStringer" interface */}}
+{{ range $n := $.Nodes }}
+{{/* 下一行的作用是，指定需要生成upload代码的schema */}}
+{{if eq $n.Name "Article" "Tag" }}
+    {{ $receiver := $n.Receiver }}
+    func (c *{{ $n.Name }}Client) UploadData(ctx context.Context, data [][]string) error {
+        var v interface{}
+        var err error
+        bulk := make([]*{{ $n.Name }}Create, len(data))
+        for i, row := range data {
+            create := c.Create()
+            {{ range $index, $field := .Fields }}
+                v, err = convert(row[{{$index}}], "{{$field.Type.String}}")
+                if err != nil {
+                    return err
+                }
+                create.Set{{$field.StructField}}(v.({{$field.Type.String}}))
+            {{ end }}
+            bulk[i] = create
+        }
+        _, err = c.CreateBulk(bulk...).Save(ctx)
+        if err != nil {
+            return err
+        }
+        return nil
+    }
+{{ end }}
+{{ end }}
+
+func convert(val interface{}, typ string) (interface{}, error) {
+    switch typ {
+    case "string", "json.RawMessage":
+    return cast.ToStringE(val)
+    case "[]byte":
+    s, err := cast.ToStringE(val)
+    if err != nil {
+        return nil, err
+    }
+    return []byte(s), err
+    case "[16]byte":
+    var byteArr [16]byte
+    s, err := cast.ToStringE(val)
+    if err != nil {
+        return nil, err
+    }
+    copy(byteArr[:], s)
+    return byteArr, err
+    case "time.Time":
+    return cast.ToTimeE(val)
+    case "bool":
+    return cast.ToBoolE(val)
+    case "float64":
+    return cast.ToFloat64E(val)
+    case "float32":
+    return cast.ToFloat32E(val)
+    case "int64":
+    return cast.ToInt64E(val)
+    case "int32":
+    return cast.ToInt32E(val)
+    case "int16":
+    return cast.ToInt16E(val)
+    case "int8":
+    return cast.ToInt8E(val)
+    case "int":
+    return cast.ToIntE(val)
+    case "uint64":
+    return cast.ToUint64E(val)
+    case "uint32":
+    return cast.ToUint32E(val)
+    case "uint16":
+    return cast.ToUint16E(val)
+    case "uint8":
+    return cast.ToUint8E(val)
+    case "uint":
+    return cast.ToUintE(val)
+    }
+    return nil, errors.Errorf("type '%s' not support", typ)
+}
+{{ end }}

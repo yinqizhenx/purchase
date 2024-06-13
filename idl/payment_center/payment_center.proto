@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package idl;
+
+option go_package = "purchase/idl/payment_center";
+
+//@group: 付款中心
+service PaymentCenter {
+
+  // 付款申请单-创建
+  rpc AddPaymentApply(AddPAReq)returns(AddPARes);
+}
+
+message EmptyMessage {}
+
+message AddPAReq {
+  string code = 1; // 单据编码
+  string state = 2; // 是否有合同
+  string pay_amount = 3; // 付款方式
+  string applicant = 4; // 实际付款人
+}
+
+
+message AddPARes {
+  string code = 1; // 单号
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

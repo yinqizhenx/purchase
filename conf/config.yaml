@@ -1,0 +1,28 @@
+app:
+  name: purchase
+
+trace:
+  endpoint: http://127.0.0.1:14268/api/traces
+
+server:
+  http:
+    addr: 0.0.0.0:8000
+    timeout: 1 # second
+  grpc:
+    addr: 0.0.0.0:50051
+    timeout: 1 # second
+
+data:
+  database:
+    driver: mysql
+    source: root:zest0108@tcp(127.0.0.1:3306)/testdb?parseTime=True
+  redis:
+    addr: 127.0.0.1:6379
+    dial_timeout: 1 # second
+    read_timeout: 0.4 # second
+    write_timeout: 0.6 # second
+
+kafka:
+  address:
+    - 127.0.0.1:29092
+  topic: purchase
