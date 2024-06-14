@@ -2,12 +2,17 @@ package app_service
 
 import (
 	"github.com/google/wire"
+	// pb "purchase/idl/payment_center"
 
 	pb "purchase/idl/payment_center"
 )
 
-type Service struct {
+type UnImplementedServer struct {
 	pb.UnimplementedPaymentCenterServer
+}
+
+type Service struct {
+	UnImplementedServer
 	*PaymentCenterAppService
 	*SuAppService
 	// ... // 对其他服务的引用等
