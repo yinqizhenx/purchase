@@ -6,17 +6,17 @@ import (
 	"purchase/domain/service"
 )
 
-type SuAppSrv struct {
+type SuAppService struct {
 	suSrv       *service.TicketSupplyDomainSrv
 	suRepo      repo.SURepo
 	suAssembler *assembler.SuAssembler
 }
 
-func NewSuAppSrv(suSrv *service.TicketSupplyDomainSrv, suRepo repo.SURepo) *SuAppSrv {
-	return &SuAppSrv{suSrv: suSrv, suRepo: suRepo}
+func NewSuAppService(suSrv *service.TicketSupplyDomainSrv, suRepo repo.SURepo) *SuAppService {
+	return &SuAppService{suSrv: suSrv, suRepo: suRepo}
 }
 
-// func (s *SuAppSrv) DispatchTicketApply(ctx context.Context, req *pb.AddPAInfo) (*pb.AddPaymentApplyRes, error) {
+// func (s *SuAppService) DispatchTicketApply(ctx context.Context, req *pb.AddPAInfo) (*pb.AddPaymentApplyRes, error) {
 // 	// 获取参数
 // 	// ...
 // 	codes := make([]string, 0)

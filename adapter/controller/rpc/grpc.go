@@ -1,4 +1,4 @@
-package grpc
+package rpc
 
 import (
 	prom "github.com/go-kratos/kratos/contrib/metrics/prometheus/v2"

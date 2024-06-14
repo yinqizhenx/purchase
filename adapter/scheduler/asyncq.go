@@ -1,4 +1,4 @@
-package asyncq
+package scheduler
 
 import (
 	"context"

@@ -10,7 +10,7 @@ import (
 
 	"purchase/infra/mq/kafka"
 
-	"purchase/cmd/server"
+	"purchase/adapter/controller/rpc"
 
 	"purchase/app/app_service"
 	"purchase/app/assembler"
@@ -35,7 +35,7 @@ func initApp() (*App, func(), error) {
 		service.ProviderSet,
 		repo_impl.ProviderSet,
 		app_service.NewPurchaseService,
-		server.ProviderSet,
+		rpc.ProviderSet,
 		data.ProviderSet,
 		acl.ProviderSet,
 		// service.ProviderSet,

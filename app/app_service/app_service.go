@@ -6,22 +6,18 @@ import (
 	pb "purchase/idl/payment_center"
 )
 
-type UnImplementedServer struct {
-	pb.UnimplementedPaymentCenterServer
-}
-
 type Service struct {
-	UnImplementedServer
-	*PaymentCenterAppSrv
-	*SuAppSrv
+	pb.UnimplementedPaymentCenterServer
+	*PaymentCenterAppService
+	*SuAppService
 	// ... // 对其他服务的引用等
 }
 
-var ProviderSet = wire.NewSet(NewPaymentCenterAppSrv, NewSuAppSrv)
+var ProviderSet = wire.NewSet(NewPaymentCenterAppService, NewSuAppService)
 
-func NewPurchaseService(pcSrv *PaymentCenterAppSrv, srv *SuAppSrv) *Service {
+func NewPurchaseService(pcSrv *PaymentCenterAppService, srv *SuAppService) *Service {
 	return &Service{
-		PaymentCenterAppSrv: pcSrv,
-		SuAppSrv:            srv,
+		PaymentCenterAppService: pcSrv,
+		SuAppService:            srv,
 	}
 }

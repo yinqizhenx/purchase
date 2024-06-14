@@ -7,8 +7,8 @@
 package main
 
 import (
-	"purchase/adapter/server"
-
+	"purchase/adapter/controller/rpc"
+	"purchase/adapter/scheduler"
 	"purchase/app/app_service"
 	"purchase/app/assembler"
 	"purchase/domain/service"
@@ -50,7 +50,7 @@ func initApp() (*App, func(), error) {
 	paService := service.NewPAService(paymentCenterRepo, spamChecker, eventRepo)
 	paymentAssembler := assembler.NewPaymentAssembler()
 	transactionManager := tx.NewTransactionManager(client)
-	paymentCenterAppSrv := app_service.NewPaymentCenterAppSrv(paService, paymentCenterRepo, paymentAssembler, transactionManager)
+	paymentCenterAppService := app_service.NewPaymentCenterAppService(paService, paymentCenterRepo, paymentAssembler, transactionManager)
 	suDal := dal.NewSUDal(client)
 	idGenFunc := mq.NewIDGenFunc()
 	publisher, err := kafka.NewKafkaPublisher(configConfig, idGenFunc)
@@ -61,10 +61,10 @@ func initApp() (*App, func(), error) {
 	}
 	suRepo := repo_impl.NewSURepository(suDal, publisher)
 	ticketSupplyDomainSrv := service.NewTicketSupplyDomainSrv(suRepo)
-	suAppSrv := app_service.NewSuAppSrv(ticketSupplyDomainSrv, suRepo)
-	app_serviceService := app_service.NewPurchaseService(paymentCenterAppSrv, suAppSrv)
-	grpcServer := server.NewGRPCServer(configConfig, logger, app_serviceService)
-	httpServer := server.NewHttpServer(configConfig)
+	suAppService := app_service.NewSuAppService(ticketSupplyDomainSrv, suRepo)
+	app_serviceService := app_service.NewPurchaseService(paymentCenterAppService, suAppService)
+	server := rpc.NewGRPCServer(configConfig, logger, app_serviceService)
+	httpServer := rpc.NewHttpServer(configConfig)
 	redisClient, err := data.NewRedis(configConfig)
 	if err != nil {
 		cleanup2()
@@ -72,7 +72,7 @@ func initApp() (*App, func(), error) {
 		return nil, nil, err
 	}
 	lockBuilder := dlock.NewRedisLock(redisClient)
-	asyncTaskHandler := server.NewAsyncTaskServer(publisher, asyncTaskDal, transactionManager, unboundedChan, lockBuilder)
+	asyncTaskMux := scheduler.NewAsyncTaskServer(publisher, asyncTaskDal, transactionManager, unboundedChan, lockBuilder)
 	idempotentIdempotent := idempotent.NewIdempotentImpl(redisClient)
 	subscriber, err := kafka.NewKafkaSubscriber(configConfig, idempotentIdempotent, logger)
 	if err != nil {
@@ -80,8 +80,8 @@ func initApp() (*App, func(), error) {
 		cleanup()
 		return nil, nil, err
 	}
-	domainEventApp := server.NewDomainEventServer(subscriber)
-	app := newApp(logger, grpcServer, httpServer, asyncTaskHandler, domainEventApp)
+	domainEventApp := rpc.NewDomainEventServer(subscriber)
+	app := newApp(logger, server, httpServer, asyncTaskMux, domainEventApp)
 	return app, func() {
 		cleanup2()
 		cleanup()

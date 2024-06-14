@@ -10,15 +10,15 @@ import (
 	"purchase/infra/persistence/tx"
 )
 
-type PaymentCenterAppSrv struct {
+type PaymentCenterAppService struct {
 	paSrv       *service.PAService
 	paRepo      repo.PaymentCenterRepo
 	paAssembler *assembler.PaymentAssembler
 	txm         *tx.TransactionManager
 }
 
-func NewPaymentCenterAppSrv(paSrv *service.PAService, paRepo repo.PaymentCenterRepo, paAssembler *assembler.PaymentAssembler, txm *tx.TransactionManager) *PaymentCenterAppSrv {
-	return &PaymentCenterAppSrv{
+func NewPaymentCenterAppService(paSrv *service.PAService, paRepo repo.PaymentCenterRepo, paAssembler *assembler.PaymentAssembler, txm *tx.TransactionManager) *PaymentCenterAppService {
+	return &PaymentCenterAppService{
 		paSrv:       paSrv,
 		paRepo:      paRepo,
 		paAssembler: paAssembler,
@@ -26,7 +26,7 @@ func NewPaymentCenterAppSrv(paSrv *service.PAService, paRepo repo.PaymentCenterR
 	}
 }
 
-func (s *PaymentCenterAppSrv) AddPaymentApply(ctx context.Context, req *pb.AddPAReq) (*pb.AddPARes, error) {
+func (s *PaymentCenterAppService) AddPaymentApply(ctx context.Context, req *pb.AddPAReq) (*pb.AddPARes, error) {
 	pa := s.paAssembler.PAHeadDtoToDo(req)
 	err := s.txm.Transaction(ctx, func(ctx context.Context) error {
 		return s.paSrv.AddPA(ctx, pa)
