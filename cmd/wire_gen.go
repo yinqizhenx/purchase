@@ -7,9 +7,10 @@
 package main
 
 import (
+	"purchase/adapter/server"
+
 	"purchase/app/app_service"
 	"purchase/app/assembler"
-	"purchase/cmd/server"
 	"purchase/domain/service"
 	"purchase/infra/acl"
 	"purchase/infra/async_task"

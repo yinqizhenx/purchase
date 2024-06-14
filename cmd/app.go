@@ -6,7 +6,7 @@ import (
 	kgrpc "github.com/go-kratos/kratos/v2/transport/grpc"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 
-	"purchase/app/event"
+	"purchase/adapter/consumer/event"
 	"purchase/infra/async_task"
 )
 

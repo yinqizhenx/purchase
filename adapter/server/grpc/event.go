@@ -1,7 +1,7 @@
-package server
+package grpc
 
 import (
-	"purchase/app/event"
+	"purchase/adapter/consumer/event"
 	"purchase/infra/mq"
 )
 
