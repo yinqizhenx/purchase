@@ -1,4 +1,4 @@
-package rpc
+package server
 
 import (
 	"github.com/go-kratos/kratos/v2/transport/http/pprof"

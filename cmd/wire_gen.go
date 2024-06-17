@@ -7,10 +7,10 @@
 package main
 
 import (
-	"purchase/adapter/controller/rpc"
 	"purchase/adapter/scheduler"
 	"purchase/app/app_service"
 	"purchase/app/assembler"
+	"purchase/cmd/server"
 	"purchase/domain/service"
 	"purchase/infra/acl"
 	"purchase/infra/async_task"
@@ -63,8 +63,8 @@ func initApp() (*App, func(), error) {
 	ticketSupplyDomainSrv := service.NewTicketSupplyDomainSrv(suRepo)
 	suAppService := app_service.NewSuAppService(ticketSupplyDomainSrv, suRepo)
 	app_serviceService := app_service.NewPurchaseService(paymentCenterAppService, suAppService)
-	server := rpc.NewGRPCServer(configConfig, logger, app_serviceService)
-	httpServer := rpc.NewHttpServer(configConfig)
+	grpcServer := server.NewGRPCServer(configConfig, logger, app_serviceService)
+	httpServer := server.NewHttpServer(configConfig)
 	redisClient, err := data.NewRedis(configConfig)
 	if err != nil {
 		cleanup2()
@@ -80,8 +80,8 @@ func initApp() (*App, func(), error) {
 		cleanup()
 		return nil, nil, err
 	}
-	domainEventApp := rpc.NewDomainEventServer(subscriber)
-	app := newApp(logger, server, httpServer, asyncTaskMux, domainEventApp)
+	domainEventApp := server.NewDomainEventServer(subscriber)
+	app := newApp(logger, grpcServer, httpServer, asyncTaskMux, domainEventApp)
 	return app, func() {
 		cleanup2()
 		cleanup()

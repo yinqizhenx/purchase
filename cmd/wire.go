@@ -8,9 +8,8 @@ package main
 import (
 	"github.com/google/wire"
 
+	"purchase/cmd/server"
 	"purchase/infra/mq/kafka"
-
-	"purchase/adapter/controller/rpc"
 
 	"purchase/app/app_service"
 	"purchase/app/assembler"
@@ -35,7 +34,7 @@ func initApp() (*App, func(), error) {
 		service.ProviderSet,
 		repo_impl.ProviderSet,
 		app_service.NewPurchaseService,
-		rpc.ProviderSet,
+		server.ProviderSet,
 		data.ProviderSet,
 		acl.ProviderSet,
 		// service.ProviderSet,
