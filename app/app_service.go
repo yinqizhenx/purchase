@@ -1,4 +1,4 @@
-package app_service
+package app
 
 import (
 	"github.com/google/wire"
@@ -18,7 +18,7 @@ type Service struct {
 	// ... // 对其他服务的引用等
 }
 
-var ProviderSet = wire.NewSet(NewPaymentCenterAppService, NewSuAppService)
+var ProviderSet = wire.NewSet(NewDomainEventAppService, NewPaymentCenterAppService, NewSuAppService)
 
 func NewPurchaseService(pcSrv *PaymentCenterAppService, srv *SuAppService) *Service {
 	return &Service{

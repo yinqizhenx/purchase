@@ -8,7 +8,7 @@ package main
 
 import (
 	"purchase/adapter/scheduler"
-	"purchase/app/app_service"
+	"purchase/app"
 	"purchase/app/assembler"
 	"purchase/cmd/server"
 	"purchase/domain/service"
@@ -50,7 +50,7 @@ func initApp() (*App, func(), error) {
 	paService := service.NewPAService(paymentCenterRepo, spamChecker, eventRepo)
 	paymentAssembler := assembler.NewPaymentAssembler()
 	transactionManager := tx.NewTransactionManager(client)
-	paymentCenterAppService := app_service.NewPaymentCenterAppService(paService, paymentCenterRepo, paymentAssembler, transactionManager)
+	paymentCenterAppService := app.NewPaymentCenterAppService(paService, paymentCenterRepo, paymentAssembler, transactionManager)
 	suDal := dal.NewSUDal(client)
 	idGenFunc := mq.NewIDGenFunc()
 	publisher, err := kafka.NewKafkaPublisher(configConfig, idGenFunc)
@@ -61,9 +61,9 @@ func initApp() (*App, func(), error) {
 	}
 	suRepo := repo_impl.NewSURepository(suDal, publisher)
 	ticketSupplyDomainSrv := service.NewTicketSupplyDomainSrv(suRepo)
-	suAppService := app_service.NewSuAppService(ticketSupplyDomainSrv, suRepo)
-	app_serviceService := app_service.NewPurchaseService(paymentCenterAppService, suAppService)
-	grpcServer := server.NewGRPCServer(configConfig, logger, app_serviceService)
+	suAppService := app.NewSuAppService(ticketSupplyDomainSrv, suRepo)
+	appService := app.NewPurchaseService(paymentCenterAppService, suAppService)
+	grpcServer := server.NewGRPCServer(configConfig, logger, appService)
 	httpServer := server.NewHttpServer(configConfig)
 	redisClient, err := data.NewRedis(configConfig)
 	if err != nil {
@@ -80,9 +80,10 @@ func initApp() (*App, func(), error) {
 		cleanup()
 		return nil, nil, err
 	}
-	domainEventApp := server.NewDomainEventServer(subscriber)
-	app := newApp(logger, grpcServer, httpServer, asyncTaskMux, domainEventApp)
-	return app, func() {
+	domainEventAppService := app.NewDomainEventAppService()
+	eventConsumer := server.NewEventConsumerServer(subscriber, domainEventAppService)
+	mainApp := newApp(logger, grpcServer, httpServer, asyncTaskMux, eventConsumer)
+	return mainApp, func() {
 		cleanup2()
 		cleanup()
 	}, nil

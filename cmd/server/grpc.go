@@ -12,7 +12,7 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	ggrpc "google.golang.org/grpc"
 
-	"purchase/app/app_service"
+	"purchase/app"
 	pbpc "purchase/idl/payment_center"
 	"purchase/infra/metric"
 	"purchase/infra/middleware"
@@ -21,7 +21,7 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c config.Config, logger log.Logger, svc *app_service.Service) *grpc.Server {
+func NewGRPCServer(c config.Config, logger log.Logger, svc *app.Service) *grpc.Server {
 	type GrpcServerConfig struct {
 		Network string  `json:"network"`
 		Addr    string  `json:"addr"`
@@ -65,6 +65,6 @@ func NewGRPCServer(c config.Config, logger log.Logger, svc *app_service.Service)
 }
 
 // registerServer 注册grpc服务，新加的功能需要在此注册
-func registerServer(s ggrpc.ServiceRegistrar, srv *app_service.Service) {
+func registerServer(s ggrpc.ServiceRegistrar, srv *app.Service) {
 	pbpc.RegisterPaymentCenterServer(s, srv)
 }

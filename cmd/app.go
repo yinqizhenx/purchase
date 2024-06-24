@@ -6,7 +6,7 @@ import (
 	kgrpc "github.com/go-kratos/kratos/v2/transport/grpc"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 
-	"purchase/adapter/consumer/event"
+	"purchase/adapter/consumer"
 	"purchase/infra/async_task"
 )
 
@@ -26,7 +26,7 @@ type App struct {
 	// eventApp *event.DomainEventApp
 }
 
-func newApp(logger log.Logger, gs *kgrpc.Server, hs *khttp.Server, ams *async_task.AsyncTaskMux, es *event.DomainEventApp) *App {
+func newApp(logger log.Logger, gs *kgrpc.Server, hs *khttp.Server, ams *async_task.AsyncTaskMux, ec *consumer.EventConsumer) *App {
 	a := &App{
 		// asyncq:   aq,
 		// eventApp: eventApp,
@@ -40,7 +40,7 @@ func newApp(logger log.Logger, gs *kgrpc.Server, hs *khttp.Server, ams *async_ta
 			gs,
 			hs,
 			ams,
-			es,
+			ec,
 		),
 	}
 	// if a.asyncq != nil {

@@ -6,4 +6,4 @@ import (
 	"purchase/adapter/scheduler"
 )
 
-var ProviderSet = wire.NewSet(NewGRPCServer, NewHttpServer, scheduler.NewAsyncTaskServer, NewDomainEventServer)
+var ProviderSet = wire.NewSet(NewGRPCServer, NewHttpServer, scheduler.NewAsyncTaskServer, NewEventConsumerServer)

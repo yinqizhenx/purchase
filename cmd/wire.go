@@ -8,10 +8,10 @@ package main
 import (
 	"github.com/google/wire"
 
+	"purchase/app"
 	"purchase/cmd/server"
 	"purchase/infra/mq/kafka"
 
-	"purchase/app/app_service"
 	"purchase/app/assembler"
 	"purchase/domain/service"
 	"purchase/infra/acl"
@@ -33,12 +33,12 @@ func initApp() (*App, func(), error) {
 	panic(wire.Build(
 		service.ProviderSet,
 		repo_impl.ProviderSet,
-		app_service.NewPurchaseService,
+		app.NewPurchaseService,
 		server.ProviderSet,
 		data.ProviderSet,
 		acl.ProviderSet,
 		// service.ProviderSet,
-		app_service.ProviderSet,
+		app.ProviderSet,
 		// async_queue.ProviderSet,
 		mq.ProviderSet,
 		kafka.ProviderSet,
