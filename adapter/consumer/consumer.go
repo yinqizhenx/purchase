@@ -10,6 +10,7 @@ import (
 type EventConsumer struct {
 	sub        mq.Subscriber
 	appService *app.DomainEventAppService
+	mdw        []MiddleWare
 }
 
 func NewEventConsumer(s mq.Subscriber, srv *app.DomainEventAppService) *EventConsumer {
@@ -17,6 +18,7 @@ func NewEventConsumer(s mq.Subscriber, srv *app.DomainEventAppService) *EventCon
 		sub:        s,
 		appService: srv,
 	}
+	// ec.use()
 	return ec
 }
 
@@ -26,7 +28,15 @@ func (s *EventConsumer) Start(ctx context.Context) error {
 }
 
 func (s *EventConsumer) Consume(ctx context.Context, m *mq.Message) error {
-	return s.appService.Handle(ctx, m)
+	h := s.appService.Handle
+	for i := len(s.mdw); i >= 0; i-- {
+		h = s.mdw[i](h)
+	}
+	return h(ctx, m)
+}
+
+func (s *EventConsumer) use(m MiddleWare) {
+	s.mdw = append(s.mdw, m)
 }
 
 func (s *EventConsumer) Stop(ctx context.Context) error {
