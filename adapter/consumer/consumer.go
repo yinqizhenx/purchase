@@ -4,11 +4,8 @@ import (
 	"context"
 
 	"purchase/app"
-	domainEvent "purchase/domain/event"
 	"purchase/infra/mq"
 )
-
-type Handler func(context.Context, domainEvent.Event) error
 
 type EventConsumer struct {
 	sub        mq.Subscriber
