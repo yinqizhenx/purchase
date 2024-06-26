@@ -35,3 +35,19 @@ func WithValidator() middleware.Middleware {
 		}
 	}
 }
+
+// func (v *Validate) validateUnaryServerInterceptor() grpc.UnaryServerInterceptor {
+// 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+// 		switch req.(type) {
+// 		case proto.Message:
+// 			if err := v.v.Validate(req.(proto.Message)); err != nil {
+// 				var valErr *protovalidate.ValidationError
+// 				if ok := errors.As(err, &valErr); ok && len(valErr.ToProto().GetViolations()) > 0 {
+// 					return nil, status.Error(codes.InvalidArgument, valErr.ToProto().GetViolations()[0].Message)
+// 				}
+// 				return nil, status.Error(codes.InvalidArgument, err.Error())
+// 			}
+// 		}
+// 		return handler(ctx, req)
+// 	}
+// }

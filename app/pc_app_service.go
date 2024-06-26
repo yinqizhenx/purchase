@@ -26,7 +26,7 @@ func NewPaymentCenterAppService(paSrv *service.PADomainService, paRepo repo.Paym
 	}
 }
 
-func (s *PaymentCenterAppService) AddPaymentApply(ctx context.Context, req *pb.AddPAReq) (*pb.AddPARes, error) {
+func (s *PaymentCenterAppService) AddPaymentApply(ctx context.Context, req *pb.AddPAReq) (*pb.AddPAResp, error) {
 	pa := s.asb.PAHeadDtoToDo(req)
 	err := s.txm.Transaction(ctx, func(ctx context.Context) error {
 		return s.paSrv.AddPA(ctx, pa)
@@ -34,5 +34,5 @@ func (s *PaymentCenterAppService) AddPaymentApply(ctx context.Context, req *pb.A
 	if err != nil {
 		return nil, err
 	}
-	return &pb.AddPARes{Code: req.Code}, nil
+	return &pb.AddPAResp{Code: req.Code}, nil
 }

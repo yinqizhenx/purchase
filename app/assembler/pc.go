@@ -14,7 +14,6 @@ func (a *Assembler) PAHeadDtoToDo(dto *pb.AddPAReq) *payment_center.PAHead {
 	h := &payment_center.PAHead{
 		PayAmount: dto.PayAmount,
 		Code:      dto.Code,
-		State:     dto.State,
 		Applicant: user.User{
 			Account: dto.Applicant,
 		},

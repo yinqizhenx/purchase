@@ -27,7 +27,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PaymentCenterClient interface {
 	// 付款申请单-创建
-	AddPaymentApply(ctx context.Context, in *AddPAReq, opts ...grpc.CallOption) (*AddPARes, error)
+	AddPaymentApply(ctx context.Context, in *AddPAReq, opts ...grpc.CallOption) (*AddPAResp, error)
 }
 
 type paymentCenterClient struct {
@@ -38,8 +38,8 @@ func NewPaymentCenterClient(cc grpc.ClientConnInterface) PaymentCenterClient {
 	return &paymentCenterClient{cc}
 }
 
-func (c *paymentCenterClient) AddPaymentApply(ctx context.Context, in *AddPAReq, opts ...grpc.CallOption) (*AddPARes, error) {
-	out := new(AddPARes)
+func (c *paymentCenterClient) AddPaymentApply(ctx context.Context, in *AddPAReq, opts ...grpc.CallOption) (*AddPAResp, error) {
+	out := new(AddPAResp)
 	err := c.cc.Invoke(ctx, PaymentCenter_AddPaymentApply_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (c *paymentCenterClient) AddPaymentApply(ctx context.Context, in *AddPAReq,
 // for forward compatibility
 type PaymentCenterServer interface {
 	// 付款申请单-创建
-	AddPaymentApply(context.Context, *AddPAReq) (*AddPARes, error)
+	AddPaymentApply(context.Context, *AddPAReq) (*AddPAResp, error)
 	mustEmbedUnimplementedPaymentCenterServer()
 }
 
@@ -60,7 +60,7 @@ type PaymentCenterServer interface {
 type UnimplementedPaymentCenterServer struct {
 }
 
-func (UnimplementedPaymentCenterServer) AddPaymentApply(context.Context, *AddPAReq) (*AddPARes, error) {
+func (UnimplementedPaymentCenterServer) AddPaymentApply(context.Context, *AddPAReq) (*AddPAResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddPaymentApply not implemented")
 }
 func (UnimplementedPaymentCenterServer) mustEmbedUnimplementedPaymentCenterServer() {}

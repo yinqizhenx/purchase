@@ -8,7 +8,6 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/metrics"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
-	"github.com/go-kratos/kratos/v2/middleware/validate"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	ggrpc "google.golang.org/grpc"
 
@@ -42,7 +41,7 @@ func NewGRPCServer(c config.Config, logger log.Logger, svc *app.Service) *grpc.S
 			recovery.Recovery(),
 			tracing.Server(tracing.WithTracerProvider(tp)),
 			logging.Server(logger),
-			validate.Validator(),
+			// validate.Validator(),
 			middleware.WithValidator(),
 			metrics.Server(
 				metrics.WithSeconds(prom.NewHistogram(metric.MetricSeconds)),
