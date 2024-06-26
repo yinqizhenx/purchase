@@ -6,17 +6,11 @@ import (
 	pb "purchase/idl/payment_center"
 )
 
-type PaymentAssembler struct{}
-
-func NewPaymentAssembler() *PaymentAssembler {
-	return &PaymentAssembler{}
-}
-
-func (asb PaymentAssembler) PAHeadDoToDto() (*pb.AddPAReq, error) {
+func (a *Assembler) PAHeadDoToDto() (*pb.AddPAReq, error) {
 	return nil, nil
 }
 
-func (asb PaymentAssembler) PAHeadDtoToDo(dto *pb.AddPAReq) *payment_center.PAHead {
+func (a *Assembler) PAHeadDtoToDo(dto *pb.AddPAReq) *payment_center.PAHead {
 	h := &payment_center.PAHead{
 		PayAmount: dto.PayAmount,
 		Code:      dto.Code,

@@ -7,9 +7,9 @@ import (
 )
 
 type SuAppService struct {
-	suSrv       *service.TicketSupplyDomainSrv
-	suRepo      repo.SURepo
-	suAssembler *assembler.SuAssembler
+	suSrv  *service.TicketSupplyDomainSrv
+	suRepo repo.SURepo
+	asb    *assembler.Assembler
 }
 
 func NewSuAppService(suSrv *service.TicketSupplyDomainSrv, suRepo repo.SURepo) *SuAppService {

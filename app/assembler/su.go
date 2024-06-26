@@ -5,12 +5,6 @@ import (
 	pb "purchase/idl/payment_center"
 )
 
-type SuAssembler struct{}
-
-func NewSuAssembler() *SuAssembler {
-	return &SuAssembler{}
-}
-
-func (asb *SuAssembler) SuToDispatchPB(su *su.SU) *pb.AddPARes {
+func (a *Assembler) SuToDispatchPB(su *su.SU) *pb.AddPARes {
 	return nil
 }
