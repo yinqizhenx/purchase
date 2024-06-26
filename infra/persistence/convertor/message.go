@@ -6,7 +6,7 @@ import (
 	"purchase/infra/persistence/dal/db/ent"
 )
 
-func MessagePoToDo(m *ent.AsyncTask) *async_task.AsyncTask {
+func (c *Convertor) ConvertAsyncTaskPoToDo(m *ent.AsyncTask) *async_task.AsyncTask {
 	return &async_task.AsyncTask{
 		ID:        m.ID,
 		TaskID:    m.TaskID,

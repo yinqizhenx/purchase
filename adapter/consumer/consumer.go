@@ -29,7 +29,7 @@ func (s *EventConsumer) Start(ctx context.Context) error {
 
 func (s *EventConsumer) Consume(ctx context.Context, m *mq.Message) error {
 	h := s.appService.Handle
-	for i := len(s.mdw); i >= 0; i-- {
+	for i := len(s.mdw) - 1; i >= 0; i-- {
 		h = s.mdw[i](h)
 	}
 	return h(ctx, m)
