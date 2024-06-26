@@ -2,4 +2,4 @@ package acl
 
 import "github.com/google/wire"
 
-var ProviderSet = wire.NewSet(NewAiSpamChecker)
+var ProviderSet = wire.NewSet(NewMDMService)

@@ -5,10 +5,15 @@ import (
 
 	"purchase/domain/entity/department"
 	"purchase/domain/entity/user"
+	"purchase/domain/sal"
 	"purchase/infra/request"
 )
 
 const MDMServiceURL = "/employee/op/searchName"
+
+func NewMDMService(cli *request.HttpClient) sal.MDMService {
+	return &MDMServiceImpl{client: cli}
+}
 
 type MDMServiceImpl struct {
 	client *request.HttpClient

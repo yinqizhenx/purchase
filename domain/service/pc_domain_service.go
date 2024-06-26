@@ -15,7 +15,7 @@ import (
 // 	Check(ctx context.Context, content string) error
 // }
 
-type PAService struct {
+type PADomainService struct {
 	// repository.CommentRepository 和 ContentSal 在领域层都是以接口的形式存在
 	// 因为在领域层不关心具体的实现
 	repo      repo.PaymentCenterRepo
@@ -23,8 +23,8 @@ type PAService struct {
 	eventRepo repo.EventRepo
 }
 
-func NewPAService(repo repo.PaymentCenterRepo, mdm sal.MDMService, eventRepo repo.EventRepo) *PAService {
-	return &PAService{
+func NewPADomainService(repo repo.PaymentCenterRepo, mdm sal.MDMService, eventRepo repo.EventRepo) *PADomainService {
+	return &PADomainService{
 		repo:      repo,
 		mdm:       mdm,
 		eventRepo: eventRepo,
@@ -32,11 +32,11 @@ func NewPAService(repo repo.PaymentCenterRepo, mdm sal.MDMService, eventRepo rep
 }
 
 // PubEvent 插入时间表，后台任务异步发送
-func (s *PAService) PubEvent(ctx context.Context, events ...event.Event) error {
+func (s *PADomainService) PubEvent(ctx context.Context, events ...event.Event) error {
 	return s.eventRepo.Save(ctx, events...)
 }
 
-func (s *PAService) AddPA(ctx context.Context, pa *payment_center.PAHead) error {
+func (s *PADomainService) AddPA(ctx context.Context, pa *payment_center.PAHead) error {
 	err := s.repo.Save(ctx, pa)
 	if err != nil {
 		return err

@@ -7,12 +7,12 @@ import (
 )
 
 type SuAppService struct {
-	suSrv  *service.TicketSupplyDomainSrv
+	suSrv  *service.SUDomainService
 	suRepo repo.SURepo
 	asb    *assembler.Assembler
 }
 
-func NewSuAppService(suSrv *service.TicketSupplyDomainSrv, suRepo repo.SURepo) *SuAppService {
+func NewSuAppService(suSrv *service.SUDomainService, suRepo repo.SURepo) *SuAppService {
 	return &SuAppService{suSrv: suSrv, suRepo: suRepo}
 }
 

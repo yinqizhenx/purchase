@@ -11,13 +11,13 @@ import (
 )
 
 type PaymentCenterAppService struct {
-	paSrv  *service.PAService
+	paSrv  *service.PADomainService
 	paRepo repo.PaymentCenterRepo
 	asb    *assembler.Assembler
 	txm    *tx.TransactionManager
 }
 
-func NewPaymentCenterAppService(paSrv *service.PAService, paRepo repo.PaymentCenterRepo, asb *assembler.Assembler, txm *tx.TransactionManager) *PaymentCenterAppService {
+func NewPaymentCenterAppService(paSrv *service.PADomainService, paRepo repo.PaymentCenterRepo, asb *assembler.Assembler, txm *tx.TransactionManager) *PaymentCenterAppService {
 	return &PaymentCenterAppService{
 		paSrv:  paSrv,
 		paRepo: paRepo,
