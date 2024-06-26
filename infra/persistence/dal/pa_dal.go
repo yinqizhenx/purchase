@@ -27,7 +27,7 @@ func (dal *PADal) getClient(ctx context.Context) *ent.PAHeadClient {
 	return dal.db.PAHead
 }
 
-func (dal *PADal) AddPA(ctx context.Context, pa *payment_center.PAHead) error {
+func (dal *PADal) InsertPA(ctx context.Context, pa *payment_center.PAHead) error {
 	err := dal.getClient(ctx).Create().
 		SetCode(pa.Code).
 		SetState(pa.State).
@@ -41,11 +41,11 @@ func (dal *PADal) UpdatePA(ctx context.Context, pa *payment_center.PAHead) error
 	return nil
 }
 
-func (dal *PADal) AddPARows(ctx context.Context, rows []*payment_center.PARow) error {
+func (dal *PADal) UpdatePARows(ctx context.Context, rows []*payment_center.PARow) error {
 	return nil
 }
 
-func (dal *PADal) UpdatePARows(ctx context.Context, rows []*payment_center.PARow) error {
+func (dal *PADal) InsertRows(ctx context.Context, rows []*payment_center.PARow) error {
 	return nil
 }
 

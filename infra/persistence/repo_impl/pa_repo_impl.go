@@ -64,12 +64,12 @@ func (r *PARepository) Save(ctx context.Context, order *payment_center.PAHead) e
 	if diff == nil {
 		// diff 为空，说明当前不需要追踪变更，采用全量更新的方式
 		// orderPO := converter.OrderToPO(order)
-		if err := r.dal.AddPA(ctx, order); err != nil {
+		if err := r.dal.InsertPA(ctx, order); err != nil {
 			return err
 		}
 		// for _, item := range order.Items {
 		// 	itemPO := converter.OrderItemToPO(item)
-		if err := r.dal.UpsertPARows(ctx, order.Rows); err != nil {
+		if err := r.dal.InsertRows(ctx, order.Rows); err != nil {
 			return err
 		}
 		// }
@@ -86,7 +86,7 @@ func (r *PARepository) Save(ctx context.Context, order *payment_center.PAHead) e
 			return err
 		}
 
-		if err := r.dal.AddPARows(ctx, diff.AddedItems); err != nil {
+		if err := r.dal.InsertRows(ctx, diff.AddedItems); err != nil {
 			return err
 		}
 
