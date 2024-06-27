@@ -1,7 +1,7 @@
 package assembler
 
 import (
-	"purchase/domain/company"
+	"purchase/domain/entity/company"
 	"purchase/domain/entity/department"
 	"purchase/domain/entity/payment_center"
 	"purchase/domain/entity/supplier"
@@ -23,19 +23,19 @@ func (a *Assembler) PAHeadDtoToDo(dto *pb.AddOrUpdatePAReq) *payment_center.PAHe
 		PayAmount: dto.PayAmount,
 		Code:      dto.Code,
 		State:     state,
-		Applicant: user.User{
+		Applicant: &user.User{
 			Account: dto.Applicant,
 		},
-		Department: department.Department{
+		Department: &department.Department{
 			Code: dto.ApplyDepartment,
 		},
 		Currency:   dto.Currency,
 		IsAdv:      dto.IsAdv,
 		HasInvoice: dto.HasInvoice,
-		Company: company.Company{
+		Company: &company.Company{
 			Code: dto.Code,
 		},
-		Supplier: supplier.Supplier{},
+		Supplier: &supplier.Supplier{},
 		Remark:   dto.Remark,
 	}
 	for _, row := range dto.Rows {

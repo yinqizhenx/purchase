@@ -1,7 +1,7 @@
 package payment_center
 
 import (
-	"purchase/domain/company"
+	"purchase/domain/entity/company"
 	"purchase/domain/entity/department"
 	"purchase/domain/entity/supplier"
 	"purchase/domain/entity/user"
@@ -14,13 +14,13 @@ type PAHead struct {
 	Code       string      `db:"code" json:"code"`             //  单号
 	State      vo.DocState `db:"state" json:"state"`           //  状态
 	PayAmount  string      `db:"pay_amount" json:"pay_amount"` //  付款金额
-	Applicant  user.User   `db:"applicant" json:"applicant"`   //  实际需求人
-	Department department.Department
+	Applicant  *user.User  `db:"applicant" json:"applicant"`   //  实际需求人
+	Department *department.Department
 	Currency   string
 	IsAdv      bool
 	HasInvoice bool
-	Company    company.Company
-	Supplier   supplier.Supplier
+	Company    *company.Company
+	Supplier   *supplier.Supplier
 	Remark     string
 	Rows       []*PARow
 	// events    []event.PAEvent

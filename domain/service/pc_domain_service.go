@@ -6,6 +6,7 @@ import (
 
 	"purchase/domain/entity/payment_center"
 	"purchase/domain/event"
+	"purchase/domain/factory"
 	"purchase/domain/repo"
 	"purchase/domain/sal"
 )
@@ -21,13 +22,15 @@ type PADomainService struct {
 	repo      repo.PaymentCenterRepo
 	mdm       sal.MDMService
 	eventRepo repo.EventRepo
+	factory   *factory.PCFactory
 }
 
-func NewPADomainService(repo repo.PaymentCenterRepo, mdm sal.MDMService, eventRepo repo.EventRepo) *PADomainService {
+func NewPADomainService(repo repo.PaymentCenterRepo, mdm sal.MDMService, eventRepo repo.EventRepo, f *factory.PCFactory) *PADomainService {
 	return &PADomainService{
 		repo:      repo,
 		mdm:       mdm,
 		eventRepo: eventRepo,
+		factory:   f,
 	}
 }
 
@@ -44,7 +47,11 @@ func (s *PADomainService) AddOrUpdatePA(ctx context.Context, pa *payment_center.
 }
 
 func (s *PADomainService) AddPA(ctx context.Context, pa *payment_center.PAHead) error {
-	err := s.repo.Save(ctx, pa)
+	head, err := s.factory.NewPA(ctx, pa)
+	if err != nil {
+		return err
+	}
+	err = s.repo.Save(ctx, head)
 	if err != nil {
 		return err
 	}

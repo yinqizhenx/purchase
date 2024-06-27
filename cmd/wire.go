@@ -10,6 +10,7 @@ import (
 
 	"purchase/app"
 	"purchase/cmd/server"
+	"purchase/domain/factory"
 	"purchase/infra/mq/kafka"
 
 	"purchase/app/assembler"
@@ -51,6 +52,7 @@ func initApp() (*App, func(), error) {
 		dlock.ProviderSet,
 		request.ProviderSet,
 		idempotent.ProviderSet,
+		factory.ProviderSet,
 		newApp,
 	))
 }

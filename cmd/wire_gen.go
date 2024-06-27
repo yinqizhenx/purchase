@@ -11,6 +11,7 @@ import (
 	"purchase/app"
 	"purchase/app/assembler"
 	"purchase/cmd/server"
+	"purchase/domain/factory"
 	"purchase/domain/service"
 	"purchase/infra/acl"
 	"purchase/infra/async_task"
@@ -47,7 +48,8 @@ func initApp() (*App, func(), error) {
 	httpClient, cleanup2 := request.NewHttpClient(logger)
 	mdmService := acl.NewMDMService(httpClient)
 	eventRepo := repo_impl.NewEventRepository(unboundedChan, asyncTaskDal)
-	paDomainService := service.NewPADomainService(paymentCenterRepo, mdmService, eventRepo)
+	pcFactory := factory.NewPCFactory(mdmService)
+	paDomainService := service.NewPADomainService(paymentCenterRepo, mdmService, eventRepo, pcFactory)
 	assemblerAssembler := assembler.NewAssembler()
 	transactionManager := tx.NewTransactionManager(client)
 	paymentCenterAppService := app.NewPaymentCenterAppService(paDomainService, paymentCenterRepo, assemblerAssembler, transactionManager)
