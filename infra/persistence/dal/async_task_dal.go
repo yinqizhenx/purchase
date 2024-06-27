@@ -48,7 +48,7 @@ func (dal *AsyncTaskDal) BatchAddTask(ctx context.Context, taskList ...*async_ta
 		c := dal.getClient(ctx).Create().
 			SetTaskID(task.TaskID).
 			SetTaskName(task.TaskName).
-			SetState(string(vo.AsyncTaskState_Pending)).
+			SetState(string(vo.AsyncTaskStatePending)).
 			SetTaskType(string(task.TaskType)).
 			SetTaskData(task.TaskData)
 		taskAddList = append(taskAddList, c)
@@ -85,7 +85,7 @@ func (dal *AsyncTaskDal) FindAllPending(ctx context.Context, taskIDList []string
 	}
 	res, err := dal.getClient(ctx).Query().
 		Where(eTask.TaskIDIn(taskIDList...)).
-		Where(eTask.State(string(vo.AsyncTaskState_Pending))).
+		Where(eTask.State(string(vo.AsyncTaskStatePending))).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (dal *AsyncTaskDal) FindAllPending(ctx context.Context, taskIDList []string
 
 func (dal *AsyncTaskDal) FindAllPendingWithLimit(ctx context.Context, n int) ([]*async_task.AsyncTask, error) {
 	// default limit 5
-	res, err := dal.getClient(ctx).Query().Where(eTask.State(string(vo.AsyncTaskState_Pending))).Order(ent.Asc(eTask.FieldCreatedAt)).Limit(n).All(ctx)
+	res, err := dal.getClient(ctx).Query().Where(eTask.State(string(vo.AsyncTaskStatePending))).Order(ent.Asc(eTask.FieldCreatedAt)).Limit(n).All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -111,6 +111,6 @@ func (dal *AsyncTaskDal) FindAllPendingWithLimit(ctx context.Context, n int) ([]
 }
 
 func (dal *AsyncTaskDal) UpdateDone(ctx context.Context, taskID string) error {
-	_, err := dal.getClient(ctx).Update().SetState(vo.AsyncTaskState_Done).Where(eTask.TaskID(taskID)).Save(ctx)
+	_, err := dal.getClient(ctx).Update().SetState(vo.AsyncTaskStateDone).Where(eTask.TaskID(taskID)).Save(ctx)
 	return err
 }

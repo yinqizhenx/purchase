@@ -20,9 +20,9 @@ type AsyncTask struct {
 }
 
 func (m *AsyncTask) IsEvent(ctx context.Context) bool {
-	return m.TaskType == vo.AsyncTaskType_Event
+	return m.TaskType == vo.AsyncTaskTypeEvent
 }
 
 func (m *AsyncTask) IsTask(ctx context.Context) bool {
-	return m.TaskType == vo.AsyncTaskType_Task
+	return m.TaskType == vo.AsyncTaskTypeTask
 }
