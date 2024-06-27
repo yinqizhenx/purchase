@@ -58,17 +58,17 @@ func (s *PADomainService) AddPA(ctx context.Context, pa *payment_center.PAHead) 
 	return s.repo.Save(ctx, head)
 }
 
-func (s *PADomainService) UpdatePA(ctx context.Context, pa *payment_center.PAHead) error {
-	head, err := s.factory.BuildPA(ctx, pa)
+func (s *PADomainService) UpdatePA(ctx context.Context, update *payment_center.PAHead) error {
+	pa, err := s.repo.Find(ctx, update.Code)
 	if err != nil {
 		return err
 	}
-	// oldPA, err := s.repo.Find(ctx, pa.Code)
-	// if err != nil {
-	// 	return err
-	// }
-	head.AppendEvent(s.buildPAUpdateEvent(ctx, head))
-	return s.repo.Save(ctx, head)
+	err = s.factory.UpdatePA(ctx, pa, update)
+	if err != nil {
+		return err
+	}
+	pa.AppendEvent(s.buildPAUpdateEvent(ctx, pa))
+	return s.repo.Save(ctx, pa)
 }
 
 func (s *PADomainService) buildPACreateEvent(ctx context.Context, h *payment_center.PAHead) event.Event {

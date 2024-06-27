@@ -1,7 +1,18 @@
 package convertor
 
-type Convertor struct{}
+import (
+	"github.com/google/wire"
+	"purchase/domain/sal"
+)
 
-func NewConvertor() *Convertor {
-	return &Convertor{}
+var ProviderSet = wire.NewSet(NewConvertor)
+
+type Convertor struct {
+	mdm sal.MDMService
+}
+
+func NewConvertor(mdm sal.MDMService) *Convertor {
+	return &Convertor{
+		mdm: mdm,
+	}
 }

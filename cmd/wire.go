@@ -53,6 +53,7 @@ func initApp() (*App, func(), error) {
 		request.ProviderSet,
 		idempotent.ProviderSet,
 		factory.ProviderSet,
+		convertor.ProviderSet,
 		newApp,
 	))
 }

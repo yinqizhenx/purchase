@@ -51,6 +51,30 @@ func (f *PCFactory) BuildPA(ctx context.Context, h *payment_center.PAHead) (*pay
 	return head, nil
 }
 
+func (f *PCFactory) UpdatePA(ctx context.Context, pa, update *payment_center.PAHead) error {
+
+	if pa.Applicant.Account != update.Applicant.Account {
+		applicant, err := f.mdm.GetUser(ctx, update.Applicant.Account)
+		if err != nil {
+			return err
+		}
+		pa.Applicant = applicant
+	}
+
+	if pa.Department.Code != update.Department.Code {
+		dept, err := f.mdm.GetDepartment(ctx, update.Department.Code)
+		if err != nil {
+			return err
+		}
+		pa.Department = dept
+	}
+
+	pa.State = update.State
+	pa.PayAmount = update.PayAmount
+	pa.Rows = update.Rows
+	return nil
+}
+
 func (f *PCFactory) generateCode() string {
 	return uuid.New().String()
 }

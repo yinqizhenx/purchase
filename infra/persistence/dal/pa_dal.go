@@ -2,6 +2,9 @@ package dal
 
 import (
 	"context"
+	"purchase/infra/persistence/convertor"
+	"purchase/infra/persistence/dal/db/ent/pahead"
+	"purchase/infra/persistence/dal/db/ent/parow"
 
 	"purchase/domain/entity/payment_center"
 	"purchase/infra/persistence/dal/db/ent"
@@ -9,12 +12,14 @@ import (
 )
 
 type PADal struct {
-	db *ent.Client
+	db        *ent.Client
+	convertor *convertor.Convertor
 }
 
-func NewPADal(cli *ent.Client) *PADal {
+func NewPADal(cli *ent.Client, c *convertor.Convertor) *PADal {
 	return &PADal{
-		db: cli,
+		db:        cli,
+		convertor: c,
 	}
 }
 
@@ -84,8 +89,24 @@ func (dal *PADal) SoftDeleteRows(ctx context.Context, rows []*payment_center.PAR
 	return nil
 }
 
-func (dal *PADal) GetById(ctx context.Context, id int) (*payment_center.PARow, error) {
-	return nil, nil
+func (dal *PADal) GetPaHeadByCode(ctx context.Context, code string) (*payment_center.PAHead, error) {
+	pa, err := dal.getClient(ctx).Query().Where(pahead.Code(code)).Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return dal.convertor.ConvertPAHeadPoToDo(ctx, pa)
+}
+
+func (dal *PADal) GetPaRowsByHeadCode(ctx context.Context, headCode string) ([]*payment_center.PARow, error) {
+	poRows, err := dal.getRowClient(ctx).Query().Where(parow.HeadCode(headCode)).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows := make([]*payment_center.PARow, 0)
+	for _, row := range poRows {
+		rows = append(rows, dal.convertor.ConvertPARowPoToDo(row))
+	}
+	return rows, nil
 }
 
 func (dal *PADal) ListById(ctx context.Context, ids []int) ([]*payment_center.PARow, error) {

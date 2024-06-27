@@ -79,6 +79,10 @@ func (p *PAHead) Events() []event.Event {
 	return p.events
 }
 
+func (p *PAHead) Update(h *PAHead) {
+
+}
+
 //
 // func (p *PAHead) EventTasks() ([]*async_task.AsyncTask, error) {
 // 	msgList := make([]*async_task.AsyncTask, 0, len(p.events))

@@ -117,12 +117,17 @@ func (r *PARepository) Save(ctx context.Context, order *payment_center.PAHead) e
 }
 
 func (r *PARepository) Find(ctx context.Context, code string) (*payment_center.PAHead, error) {
-	// order := ... // 获取Exam聚合根的流程
-	// if order != nil {
-	// 	order.Attach()  // 之后调用Attach方法生成Snapshot，开始追踪
-	// }
-	// return order, nil
-	return nil, nil
+	pa, err := r.dal.GetPaHeadByCode(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.dal.GetPaRowsByHeadCode(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+	pa.Rows = rows
+	pa.Attach() // 之后调用Attach方法生成Snapshot，开始追踪
+	return pa, nil
 }
 
 func (r *PARepository) FindNonNil(ctx context.Context, code string) (*payment_center.PAHead, error) {

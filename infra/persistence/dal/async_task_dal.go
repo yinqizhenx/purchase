@@ -13,14 +13,14 @@ import (
 )
 
 type AsyncTaskDal struct {
-	db  *ent.Client
-	cvt *convertor.Convertor
+	db        *ent.Client
+	convertor *convertor.Convertor
 }
 
-func NewAsyncTaskDal(cli *ent.Client) *AsyncTaskDal {
+func NewAsyncTaskDal(cli *ent.Client, c *convertor.Convertor) *AsyncTaskDal {
 	return &AsyncTaskDal{
-		db:  cli,
-		cvt: convertor.NewConvertor(),
+		db:        cli,
+		convertor: c,
 	}
 }
 
@@ -61,7 +61,7 @@ func (dal *AsyncTaskDal) FindOneNoNil(ctx context.Context, taskID string) (*asyn
 	if err != nil {
 		return nil, err
 	}
-	return dal.cvt.ConvertAsyncTaskPoToDo(res), nil
+	return dal.convertor.ConvertAsyncTaskPoToDo(res), nil
 }
 
 func (dal *AsyncTaskDal) FindAll(ctx context.Context, taskIDList []string) ([]*async_task.AsyncTask, error) {
@@ -74,7 +74,7 @@ func (dal *AsyncTaskDal) FindAll(ctx context.Context, taskIDList []string) ([]*a
 	}
 	list := make([]*async_task.AsyncTask, 0, len(res))
 	for _, r := range res {
-		list = append(list, dal.cvt.ConvertAsyncTaskPoToDo(r))
+		list = append(list, dal.convertor.ConvertAsyncTaskPoToDo(r))
 	}
 	return list, nil
 }
@@ -92,7 +92,7 @@ func (dal *AsyncTaskDal) FindAllPending(ctx context.Context, taskIDList []string
 	}
 	list := make([]*async_task.AsyncTask, 0, len(res))
 	for _, r := range res {
-		list = append(list, dal.cvt.ConvertAsyncTaskPoToDo(r))
+		list = append(list, dal.convertor.ConvertAsyncTaskPoToDo(r))
 	}
 	return list, nil
 }
@@ -105,7 +105,7 @@ func (dal *AsyncTaskDal) FindAllPendingWithLimit(ctx context.Context, n int) ([]
 	}
 	list := make([]*async_task.AsyncTask, 0, len(res))
 	for _, r := range res {
-		list = append(list, dal.cvt.ConvertAsyncTaskPoToDo(r))
+		list = append(list, dal.convertor.ConvertAsyncTaskPoToDo(r))
 	}
 	return list, nil
 }
