@@ -5,6 +5,6 @@ import (
 	pb "purchase/idl/payment_center"
 )
 
-func (a *Assembler) SuToDispatchPB(su *su.SU) *pb.AddPAResp {
+func (a *Assembler) SuToDispatchPB(su *su.SU) *pb.AddOrUpdatePAResp {
 	return nil
 }

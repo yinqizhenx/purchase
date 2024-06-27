@@ -10,12 +10,12 @@ import "buf/validate/validate.proto";
 service PaymentCenter {
 
   // 付款申请单-创建
-  rpc AddPaymentApply(AddPAReq)returns(AddPAResp);
+  rpc AddOrUpdatePaymentApply(AddOrUpdatePAReq)returns(AddOrUpdatePAResp);
 }
 
 message EmptyMessage {}
 
-message AddPAReq {
+message AddOrUpdatePAReq {
   string code = 1; // 单据编码
   string pay_amount = 2; // 付款金额
   string applicant = 3; // 实际付款人
@@ -47,7 +47,7 @@ message PARow {
   };
 }
 
-message AddPAResp {
+message AddOrUpdatePAResp {
   string code = 1; // 单号
 }
 

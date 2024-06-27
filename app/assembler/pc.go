@@ -10,11 +10,11 @@ import (
 	pb "purchase/idl/payment_center"
 )
 
-func (a *Assembler) PAHeadDoToDto() (*pb.AddPAReq, error) {
+func (a *Assembler) PAHeadDoToDto() (*pb.AddOrUpdatePAReq, error) {
 	return nil, nil
 }
 
-func (a *Assembler) PAHeadDtoToDo(dto *pb.AddPAReq) *payment_center.PAHead {
+func (a *Assembler) PAHeadDtoToDo(dto *pb.AddOrUpdatePAReq) *payment_center.PAHead {
 	state := vo.DocStateDraft
 	if dto.IsSubmit {
 		state = vo.DocStateSubmitted

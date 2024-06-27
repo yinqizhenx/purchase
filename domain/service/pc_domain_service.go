@@ -36,7 +36,29 @@ func (s *PADomainService) PubEvent(ctx context.Context, events ...event.Event) e
 	return s.eventRepo.Save(ctx, events...)
 }
 
+func (s *PADomainService) AddOrUpdatePA(ctx context.Context, pa *payment_center.PAHead) error {
+	if pa.Code == "" {
+		return s.AddPA(ctx, pa)
+	}
+	return s.UpdatePA(ctx, pa)
+}
+
 func (s *PADomainService) AddPA(ctx context.Context, pa *payment_center.PAHead) error {
+	err := s.repo.Save(ctx, pa)
+	if err != nil {
+		return err
+	}
+	paCreated := &event.PACreated{
+		EventID:     "11111",
+		PACode:      pa.Code,
+		AggregateID: 123,
+		CreatedBy:   "q",
+		CreatedAt:   time.Now(),
+	}
+	return s.PubEvent(ctx, paCreated)
+}
+
+func (s *PADomainService) UpdatePA(ctx context.Context, pa *payment_center.PAHead) error {
 	err := s.repo.Save(ctx, pa)
 	if err != nil {
 		return err

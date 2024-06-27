@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	PaymentCenter_AddPaymentApply_FullMethodName = "/idl.PaymentCenter/AddPaymentApply"
+	PaymentCenter_AddOrUpdatePaymentApply_FullMethodName = "/idl.PaymentCenter/AddOrUpdatePaymentApply"
 )
 
 // PaymentCenterClient is the client API for PaymentCenter service.
@@ -27,7 +27,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PaymentCenterClient interface {
 	// 付款申请单-创建
-	AddPaymentApply(ctx context.Context, in *AddPAReq, opts ...grpc.CallOption) (*AddPAResp, error)
+	AddOrUpdatePaymentApply(ctx context.Context, in *AddOrUpdatePAReq, opts ...grpc.CallOption) (*AddOrUpdatePAResp, error)
 }
 
 type paymentCenterClient struct {
@@ -38,9 +38,9 @@ func NewPaymentCenterClient(cc grpc.ClientConnInterface) PaymentCenterClient {
 	return &paymentCenterClient{cc}
 }
 
-func (c *paymentCenterClient) AddPaymentApply(ctx context.Context, in *AddPAReq, opts ...grpc.CallOption) (*AddPAResp, error) {
-	out := new(AddPAResp)
-	err := c.cc.Invoke(ctx, PaymentCenter_AddPaymentApply_FullMethodName, in, out, opts...)
+func (c *paymentCenterClient) AddOrUpdatePaymentApply(ctx context.Context, in *AddOrUpdatePAReq, opts ...grpc.CallOption) (*AddOrUpdatePAResp, error) {
+	out := new(AddOrUpdatePAResp)
+	err := c.cc.Invoke(ctx, PaymentCenter_AddOrUpdatePaymentApply_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (c *paymentCenterClient) AddPaymentApply(ctx context.Context, in *AddPAReq,
 // for forward compatibility
 type PaymentCenterServer interface {
 	// 付款申请单-创建
-	AddPaymentApply(context.Context, *AddPAReq) (*AddPAResp, error)
+	AddOrUpdatePaymentApply(context.Context, *AddOrUpdatePAReq) (*AddOrUpdatePAResp, error)
 	mustEmbedUnimplementedPaymentCenterServer()
 }
 
@@ -60,8 +60,8 @@ type PaymentCenterServer interface {
 type UnimplementedPaymentCenterServer struct {
 }
 
-func (UnimplementedPaymentCenterServer) AddPaymentApply(context.Context, *AddPAReq) (*AddPAResp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddPaymentApply not implemented")
+func (UnimplementedPaymentCenterServer) AddOrUpdatePaymentApply(context.Context, *AddOrUpdatePAReq) (*AddOrUpdatePAResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddOrUpdatePaymentApply not implemented")
 }
 func (UnimplementedPaymentCenterServer) mustEmbedUnimplementedPaymentCenterServer() {}
 
@@ -76,20 +76,20 @@ func RegisterPaymentCenterServer(s grpc.ServiceRegistrar, srv PaymentCenterServe
 	s.RegisterService(&PaymentCenter_ServiceDesc, srv)
 }
 
-func _PaymentCenter_AddPaymentApply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddPAReq)
+func _PaymentCenter_AddOrUpdatePaymentApply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddOrUpdatePAReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PaymentCenterServer).AddPaymentApply(ctx, in)
+		return srv.(PaymentCenterServer).AddOrUpdatePaymentApply(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PaymentCenter_AddPaymentApply_FullMethodName,
+		FullMethod: PaymentCenter_AddOrUpdatePaymentApply_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PaymentCenterServer).AddPaymentApply(ctx, req.(*AddPAReq))
+		return srv.(PaymentCenterServer).AddOrUpdatePaymentApply(ctx, req.(*AddOrUpdatePAReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -102,8 +102,8 @@ var PaymentCenter_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*PaymentCenterServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "AddPaymentApply",
-			Handler:    _PaymentCenter_AddPaymentApply_Handler,
+			MethodName: "AddOrUpdatePaymentApply",
+			Handler:    _PaymentCenter_AddOrUpdatePaymentApply_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
