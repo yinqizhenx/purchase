@@ -13,16 +13,18 @@ const (
 	Label = "pa_row"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldDocCode holds the string denoting the doc_code field in the database.
-	FieldDocCode = "doc_code"
-	// FieldOrderCode holds the string denoting the order_code field in the database.
-	FieldOrderCode = "order_code"
-	// FieldRowCurrency holds the string denoting the row_currency field in the database.
-	FieldRowCurrency = "row_currency"
-	// FieldTaxRatio holds the string denoting the tax_ratio field in the database.
-	FieldTaxRatio = "tax_ratio"
-	// FieldInitialAmount holds the string denoting the initial_amount field in the database.
-	FieldInitialAmount = "initial_amount"
+	// FieldHeadCode holds the string denoting the head_code field in the database.
+	FieldHeadCode = "head_code"
+	// FieldRowCode holds the string denoting the row_code field in the database.
+	FieldRowCode = "row_code"
+	// FieldGrnCount holds the string denoting the grn_count field in the database.
+	FieldGrnCount = "grn_count"
+	// FieldGrnAmount holds the string denoting the grn_amount field in the database.
+	FieldGrnAmount = "grn_amount"
+	// FieldPayAmount holds the string denoting the pay_amount field in the database.
+	FieldPayAmount = "pay_amount"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -34,11 +36,12 @@ const (
 // Columns holds all SQL columns for parow fields.
 var Columns = []string{
 	FieldID,
-	FieldDocCode,
-	FieldOrderCode,
-	FieldRowCurrency,
-	FieldTaxRatio,
-	FieldInitialAmount,
+	FieldHeadCode,
+	FieldRowCode,
+	FieldGrnCount,
+	FieldGrnAmount,
+	FieldPayAmount,
+	FieldDescription,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
@@ -68,29 +71,34 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByDocCode orders the results by the doc_code field.
-func ByDocCode(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDocCode, opts...).ToFunc()
+// ByHeadCode orders the results by the head_code field.
+func ByHeadCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHeadCode, opts...).ToFunc()
 }
 
-// ByOrderCode orders the results by the order_code field.
-func ByOrderCode(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldOrderCode, opts...).ToFunc()
+// ByRowCode orders the results by the row_code field.
+func ByRowCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRowCode, opts...).ToFunc()
 }
 
-// ByRowCurrency orders the results by the row_currency field.
-func ByRowCurrency(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldRowCurrency, opts...).ToFunc()
+// ByGrnCount orders the results by the grn_count field.
+func ByGrnCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGrnCount, opts...).ToFunc()
 }
 
-// ByTaxRatio orders the results by the tax_ratio field.
-func ByTaxRatio(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldTaxRatio, opts...).ToFunc()
+// ByGrnAmount orders the results by the grn_amount field.
+func ByGrnAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGrnAmount, opts...).ToFunc()
 }
 
-// ByInitialAmount orders the results by the initial_amount field.
-func ByInitialAmount(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldInitialAmount, opts...).ToFunc()
+// ByPayAmount orders the results by the pay_amount field.
+func ByPayAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPayAmount, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

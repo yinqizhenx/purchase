@@ -21,7 +21,11 @@ func (PAHead) Fields() []ent.Field {
 		field.String("state"),
 		field.String("pay_amount"),
 		field.String("applicant"),
-		field.String("department").Optional(),
+		field.String("department_code").Optional(),
+		field.String("supplier_code"),
+		field.Bool("is_adv"),
+		field.Bool("has_invoice"),
+		field.Text("remark"),
 		field.Time("created_at").
 			Default(time.Now).SchemaType(map[string]string{
 			dialect.MySQL: "datetime",

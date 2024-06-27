@@ -54,29 +54,34 @@ func IDLTE(id int64) predicate.PARow {
 	return predicate.PARow(sql.FieldLTE(FieldID, id))
 }
 
-// DocCode applies equality check predicate on the "doc_code" field. It's identical to DocCodeEQ.
-func DocCode(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEQ(FieldDocCode, v))
+// HeadCode applies equality check predicate on the "head_code" field. It's identical to HeadCodeEQ.
+func HeadCode(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEQ(FieldHeadCode, v))
 }
 
-// OrderCode applies equality check predicate on the "order_code" field. It's identical to OrderCodeEQ.
-func OrderCode(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEQ(FieldOrderCode, v))
+// RowCode applies equality check predicate on the "row_code" field. It's identical to RowCodeEQ.
+func RowCode(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEQ(FieldRowCode, v))
 }
 
-// RowCurrency applies equality check predicate on the "row_currency" field. It's identical to RowCurrencyEQ.
-func RowCurrency(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEQ(FieldRowCurrency, v))
+// GrnCount applies equality check predicate on the "grn_count" field. It's identical to GrnCountEQ.
+func GrnCount(v int32) predicate.PARow {
+	return predicate.PARow(sql.FieldEQ(FieldGrnCount, v))
 }
 
-// TaxRatio applies equality check predicate on the "tax_ratio" field. It's identical to TaxRatioEQ.
-func TaxRatio(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEQ(FieldTaxRatio, v))
+// GrnAmount applies equality check predicate on the "grn_amount" field. It's identical to GrnAmountEQ.
+func GrnAmount(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEQ(FieldGrnAmount, v))
 }
 
-// InitialAmount applies equality check predicate on the "initial_amount" field. It's identical to InitialAmountEQ.
-func InitialAmount(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEQ(FieldInitialAmount, v))
+// PayAmount applies equality check predicate on the "pay_amount" field. It's identical to PayAmountEQ.
+func PayAmount(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEQ(FieldPayAmount, v))
+}
+
+// Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
+func Description(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEQ(FieldDescription, v))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
@@ -89,329 +94,369 @@ func UpdatedAt(v time.Time) predicate.PARow {
 	return predicate.PARow(sql.FieldEQ(FieldUpdatedAt, v))
 }
 
-// DocCodeEQ applies the EQ predicate on the "doc_code" field.
-func DocCodeEQ(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEQ(FieldDocCode, v))
+// HeadCodeEQ applies the EQ predicate on the "head_code" field.
+func HeadCodeEQ(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEQ(FieldHeadCode, v))
 }
 
-// DocCodeNEQ applies the NEQ predicate on the "doc_code" field.
-func DocCodeNEQ(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldNEQ(FieldDocCode, v))
+// HeadCodeNEQ applies the NEQ predicate on the "head_code" field.
+func HeadCodeNEQ(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldNEQ(FieldHeadCode, v))
 }
 
-// DocCodeIn applies the In predicate on the "doc_code" field.
-func DocCodeIn(vs ...string) predicate.PARow {
-	return predicate.PARow(sql.FieldIn(FieldDocCode, vs...))
+// HeadCodeIn applies the In predicate on the "head_code" field.
+func HeadCodeIn(vs ...string) predicate.PARow {
+	return predicate.PARow(sql.FieldIn(FieldHeadCode, vs...))
 }
 
-// DocCodeNotIn applies the NotIn predicate on the "doc_code" field.
-func DocCodeNotIn(vs ...string) predicate.PARow {
-	return predicate.PARow(sql.FieldNotIn(FieldDocCode, vs...))
+// HeadCodeNotIn applies the NotIn predicate on the "head_code" field.
+func HeadCodeNotIn(vs ...string) predicate.PARow {
+	return predicate.PARow(sql.FieldNotIn(FieldHeadCode, vs...))
 }
 
-// DocCodeGT applies the GT predicate on the "doc_code" field.
-func DocCodeGT(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldGT(FieldDocCode, v))
+// HeadCodeGT applies the GT predicate on the "head_code" field.
+func HeadCodeGT(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldGT(FieldHeadCode, v))
 }
 
-// DocCodeGTE applies the GTE predicate on the "doc_code" field.
-func DocCodeGTE(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldGTE(FieldDocCode, v))
+// HeadCodeGTE applies the GTE predicate on the "head_code" field.
+func HeadCodeGTE(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldGTE(FieldHeadCode, v))
 }
 
-// DocCodeLT applies the LT predicate on the "doc_code" field.
-func DocCodeLT(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldLT(FieldDocCode, v))
+// HeadCodeLT applies the LT predicate on the "head_code" field.
+func HeadCodeLT(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldLT(FieldHeadCode, v))
 }
 
-// DocCodeLTE applies the LTE predicate on the "doc_code" field.
-func DocCodeLTE(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldLTE(FieldDocCode, v))
+// HeadCodeLTE applies the LTE predicate on the "head_code" field.
+func HeadCodeLTE(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldLTE(FieldHeadCode, v))
 }
 
-// DocCodeContains applies the Contains predicate on the "doc_code" field.
-func DocCodeContains(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldContains(FieldDocCode, v))
+// HeadCodeContains applies the Contains predicate on the "head_code" field.
+func HeadCodeContains(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldContains(FieldHeadCode, v))
 }
 
-// DocCodeHasPrefix applies the HasPrefix predicate on the "doc_code" field.
-func DocCodeHasPrefix(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldHasPrefix(FieldDocCode, v))
+// HeadCodeHasPrefix applies the HasPrefix predicate on the "head_code" field.
+func HeadCodeHasPrefix(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldHasPrefix(FieldHeadCode, v))
 }
 
-// DocCodeHasSuffix applies the HasSuffix predicate on the "doc_code" field.
-func DocCodeHasSuffix(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldHasSuffix(FieldDocCode, v))
+// HeadCodeHasSuffix applies the HasSuffix predicate on the "head_code" field.
+func HeadCodeHasSuffix(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldHasSuffix(FieldHeadCode, v))
 }
 
-// DocCodeEqualFold applies the EqualFold predicate on the "doc_code" field.
-func DocCodeEqualFold(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEqualFold(FieldDocCode, v))
+// HeadCodeEqualFold applies the EqualFold predicate on the "head_code" field.
+func HeadCodeEqualFold(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEqualFold(FieldHeadCode, v))
 }
 
-// DocCodeContainsFold applies the ContainsFold predicate on the "doc_code" field.
-func DocCodeContainsFold(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldContainsFold(FieldDocCode, v))
+// HeadCodeContainsFold applies the ContainsFold predicate on the "head_code" field.
+func HeadCodeContainsFold(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldContainsFold(FieldHeadCode, v))
 }
 
-// OrderCodeEQ applies the EQ predicate on the "order_code" field.
-func OrderCodeEQ(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEQ(FieldOrderCode, v))
+// RowCodeEQ applies the EQ predicate on the "row_code" field.
+func RowCodeEQ(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEQ(FieldRowCode, v))
 }
 
-// OrderCodeNEQ applies the NEQ predicate on the "order_code" field.
-func OrderCodeNEQ(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldNEQ(FieldOrderCode, v))
+// RowCodeNEQ applies the NEQ predicate on the "row_code" field.
+func RowCodeNEQ(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldNEQ(FieldRowCode, v))
 }
 
-// OrderCodeIn applies the In predicate on the "order_code" field.
-func OrderCodeIn(vs ...string) predicate.PARow {
-	return predicate.PARow(sql.FieldIn(FieldOrderCode, vs...))
+// RowCodeIn applies the In predicate on the "row_code" field.
+func RowCodeIn(vs ...string) predicate.PARow {
+	return predicate.PARow(sql.FieldIn(FieldRowCode, vs...))
 }
 
-// OrderCodeNotIn applies the NotIn predicate on the "order_code" field.
-func OrderCodeNotIn(vs ...string) predicate.PARow {
-	return predicate.PARow(sql.FieldNotIn(FieldOrderCode, vs...))
+// RowCodeNotIn applies the NotIn predicate on the "row_code" field.
+func RowCodeNotIn(vs ...string) predicate.PARow {
+	return predicate.PARow(sql.FieldNotIn(FieldRowCode, vs...))
 }
 
-// OrderCodeGT applies the GT predicate on the "order_code" field.
-func OrderCodeGT(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldGT(FieldOrderCode, v))
+// RowCodeGT applies the GT predicate on the "row_code" field.
+func RowCodeGT(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldGT(FieldRowCode, v))
 }
 
-// OrderCodeGTE applies the GTE predicate on the "order_code" field.
-func OrderCodeGTE(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldGTE(FieldOrderCode, v))
+// RowCodeGTE applies the GTE predicate on the "row_code" field.
+func RowCodeGTE(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldGTE(FieldRowCode, v))
 }
 
-// OrderCodeLT applies the LT predicate on the "order_code" field.
-func OrderCodeLT(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldLT(FieldOrderCode, v))
+// RowCodeLT applies the LT predicate on the "row_code" field.
+func RowCodeLT(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldLT(FieldRowCode, v))
 }
 
-// OrderCodeLTE applies the LTE predicate on the "order_code" field.
-func OrderCodeLTE(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldLTE(FieldOrderCode, v))
+// RowCodeLTE applies the LTE predicate on the "row_code" field.
+func RowCodeLTE(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldLTE(FieldRowCode, v))
 }
 
-// OrderCodeContains applies the Contains predicate on the "order_code" field.
-func OrderCodeContains(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldContains(FieldOrderCode, v))
+// RowCodeContains applies the Contains predicate on the "row_code" field.
+func RowCodeContains(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldContains(FieldRowCode, v))
 }
 
-// OrderCodeHasPrefix applies the HasPrefix predicate on the "order_code" field.
-func OrderCodeHasPrefix(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldHasPrefix(FieldOrderCode, v))
+// RowCodeHasPrefix applies the HasPrefix predicate on the "row_code" field.
+func RowCodeHasPrefix(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldHasPrefix(FieldRowCode, v))
 }
 
-// OrderCodeHasSuffix applies the HasSuffix predicate on the "order_code" field.
-func OrderCodeHasSuffix(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldHasSuffix(FieldOrderCode, v))
+// RowCodeHasSuffix applies the HasSuffix predicate on the "row_code" field.
+func RowCodeHasSuffix(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldHasSuffix(FieldRowCode, v))
 }
 
-// OrderCodeEqualFold applies the EqualFold predicate on the "order_code" field.
-func OrderCodeEqualFold(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEqualFold(FieldOrderCode, v))
+// RowCodeEqualFold applies the EqualFold predicate on the "row_code" field.
+func RowCodeEqualFold(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEqualFold(FieldRowCode, v))
 }
 
-// OrderCodeContainsFold applies the ContainsFold predicate on the "order_code" field.
-func OrderCodeContainsFold(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldContainsFold(FieldOrderCode, v))
+// RowCodeContainsFold applies the ContainsFold predicate on the "row_code" field.
+func RowCodeContainsFold(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldContainsFold(FieldRowCode, v))
 }
 
-// RowCurrencyEQ applies the EQ predicate on the "row_currency" field.
-func RowCurrencyEQ(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEQ(FieldRowCurrency, v))
+// GrnCountEQ applies the EQ predicate on the "grn_count" field.
+func GrnCountEQ(v int32) predicate.PARow {
+	return predicate.PARow(sql.FieldEQ(FieldGrnCount, v))
 }
 
-// RowCurrencyNEQ applies the NEQ predicate on the "row_currency" field.
-func RowCurrencyNEQ(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldNEQ(FieldRowCurrency, v))
+// GrnCountNEQ applies the NEQ predicate on the "grn_count" field.
+func GrnCountNEQ(v int32) predicate.PARow {
+	return predicate.PARow(sql.FieldNEQ(FieldGrnCount, v))
 }
 
-// RowCurrencyIn applies the In predicate on the "row_currency" field.
-func RowCurrencyIn(vs ...string) predicate.PARow {
-	return predicate.PARow(sql.FieldIn(FieldRowCurrency, vs...))
+// GrnCountIn applies the In predicate on the "grn_count" field.
+func GrnCountIn(vs ...int32) predicate.PARow {
+	return predicate.PARow(sql.FieldIn(FieldGrnCount, vs...))
 }
 
-// RowCurrencyNotIn applies the NotIn predicate on the "row_currency" field.
-func RowCurrencyNotIn(vs ...string) predicate.PARow {
-	return predicate.PARow(sql.FieldNotIn(FieldRowCurrency, vs...))
+// GrnCountNotIn applies the NotIn predicate on the "grn_count" field.
+func GrnCountNotIn(vs ...int32) predicate.PARow {
+	return predicate.PARow(sql.FieldNotIn(FieldGrnCount, vs...))
 }
 
-// RowCurrencyGT applies the GT predicate on the "row_currency" field.
-func RowCurrencyGT(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldGT(FieldRowCurrency, v))
+// GrnCountGT applies the GT predicate on the "grn_count" field.
+func GrnCountGT(v int32) predicate.PARow {
+	return predicate.PARow(sql.FieldGT(FieldGrnCount, v))
 }
 
-// RowCurrencyGTE applies the GTE predicate on the "row_currency" field.
-func RowCurrencyGTE(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldGTE(FieldRowCurrency, v))
+// GrnCountGTE applies the GTE predicate on the "grn_count" field.
+func GrnCountGTE(v int32) predicate.PARow {
+	return predicate.PARow(sql.FieldGTE(FieldGrnCount, v))
 }
 
-// RowCurrencyLT applies the LT predicate on the "row_currency" field.
-func RowCurrencyLT(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldLT(FieldRowCurrency, v))
+// GrnCountLT applies the LT predicate on the "grn_count" field.
+func GrnCountLT(v int32) predicate.PARow {
+	return predicate.PARow(sql.FieldLT(FieldGrnCount, v))
 }
 
-// RowCurrencyLTE applies the LTE predicate on the "row_currency" field.
-func RowCurrencyLTE(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldLTE(FieldRowCurrency, v))
+// GrnCountLTE applies the LTE predicate on the "grn_count" field.
+func GrnCountLTE(v int32) predicate.PARow {
+	return predicate.PARow(sql.FieldLTE(FieldGrnCount, v))
 }
 
-// RowCurrencyContains applies the Contains predicate on the "row_currency" field.
-func RowCurrencyContains(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldContains(FieldRowCurrency, v))
+// GrnAmountEQ applies the EQ predicate on the "grn_amount" field.
+func GrnAmountEQ(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEQ(FieldGrnAmount, v))
 }
 
-// RowCurrencyHasPrefix applies the HasPrefix predicate on the "row_currency" field.
-func RowCurrencyHasPrefix(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldHasPrefix(FieldRowCurrency, v))
+// GrnAmountNEQ applies the NEQ predicate on the "grn_amount" field.
+func GrnAmountNEQ(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldNEQ(FieldGrnAmount, v))
 }
 
-// RowCurrencyHasSuffix applies the HasSuffix predicate on the "row_currency" field.
-func RowCurrencyHasSuffix(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldHasSuffix(FieldRowCurrency, v))
+// GrnAmountIn applies the In predicate on the "grn_amount" field.
+func GrnAmountIn(vs ...string) predicate.PARow {
+	return predicate.PARow(sql.FieldIn(FieldGrnAmount, vs...))
 }
 
-// RowCurrencyEqualFold applies the EqualFold predicate on the "row_currency" field.
-func RowCurrencyEqualFold(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEqualFold(FieldRowCurrency, v))
+// GrnAmountNotIn applies the NotIn predicate on the "grn_amount" field.
+func GrnAmountNotIn(vs ...string) predicate.PARow {
+	return predicate.PARow(sql.FieldNotIn(FieldGrnAmount, vs...))
 }
 
-// RowCurrencyContainsFold applies the ContainsFold predicate on the "row_currency" field.
-func RowCurrencyContainsFold(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldContainsFold(FieldRowCurrency, v))
+// GrnAmountGT applies the GT predicate on the "grn_amount" field.
+func GrnAmountGT(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldGT(FieldGrnAmount, v))
 }
 
-// TaxRatioEQ applies the EQ predicate on the "tax_ratio" field.
-func TaxRatioEQ(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEQ(FieldTaxRatio, v))
+// GrnAmountGTE applies the GTE predicate on the "grn_amount" field.
+func GrnAmountGTE(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldGTE(FieldGrnAmount, v))
 }
 
-// TaxRatioNEQ applies the NEQ predicate on the "tax_ratio" field.
-func TaxRatioNEQ(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldNEQ(FieldTaxRatio, v))
+// GrnAmountLT applies the LT predicate on the "grn_amount" field.
+func GrnAmountLT(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldLT(FieldGrnAmount, v))
 }
 
-// TaxRatioIn applies the In predicate on the "tax_ratio" field.
-func TaxRatioIn(vs ...string) predicate.PARow {
-	return predicate.PARow(sql.FieldIn(FieldTaxRatio, vs...))
+// GrnAmountLTE applies the LTE predicate on the "grn_amount" field.
+func GrnAmountLTE(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldLTE(FieldGrnAmount, v))
 }
 
-// TaxRatioNotIn applies the NotIn predicate on the "tax_ratio" field.
-func TaxRatioNotIn(vs ...string) predicate.PARow {
-	return predicate.PARow(sql.FieldNotIn(FieldTaxRatio, vs...))
+// GrnAmountContains applies the Contains predicate on the "grn_amount" field.
+func GrnAmountContains(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldContains(FieldGrnAmount, v))
 }
 
-// TaxRatioGT applies the GT predicate on the "tax_ratio" field.
-func TaxRatioGT(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldGT(FieldTaxRatio, v))
+// GrnAmountHasPrefix applies the HasPrefix predicate on the "grn_amount" field.
+func GrnAmountHasPrefix(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldHasPrefix(FieldGrnAmount, v))
 }
 
-// TaxRatioGTE applies the GTE predicate on the "tax_ratio" field.
-func TaxRatioGTE(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldGTE(FieldTaxRatio, v))
+// GrnAmountHasSuffix applies the HasSuffix predicate on the "grn_amount" field.
+func GrnAmountHasSuffix(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldHasSuffix(FieldGrnAmount, v))
 }
 
-// TaxRatioLT applies the LT predicate on the "tax_ratio" field.
-func TaxRatioLT(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldLT(FieldTaxRatio, v))
+// GrnAmountEqualFold applies the EqualFold predicate on the "grn_amount" field.
+func GrnAmountEqualFold(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEqualFold(FieldGrnAmount, v))
 }
 
-// TaxRatioLTE applies the LTE predicate on the "tax_ratio" field.
-func TaxRatioLTE(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldLTE(FieldTaxRatio, v))
+// GrnAmountContainsFold applies the ContainsFold predicate on the "grn_amount" field.
+func GrnAmountContainsFold(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldContainsFold(FieldGrnAmount, v))
 }
 
-// TaxRatioContains applies the Contains predicate on the "tax_ratio" field.
-func TaxRatioContains(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldContains(FieldTaxRatio, v))
+// PayAmountEQ applies the EQ predicate on the "pay_amount" field.
+func PayAmountEQ(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEQ(FieldPayAmount, v))
 }
 
-// TaxRatioHasPrefix applies the HasPrefix predicate on the "tax_ratio" field.
-func TaxRatioHasPrefix(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldHasPrefix(FieldTaxRatio, v))
+// PayAmountNEQ applies the NEQ predicate on the "pay_amount" field.
+func PayAmountNEQ(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldNEQ(FieldPayAmount, v))
 }
 
-// TaxRatioHasSuffix applies the HasSuffix predicate on the "tax_ratio" field.
-func TaxRatioHasSuffix(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldHasSuffix(FieldTaxRatio, v))
+// PayAmountIn applies the In predicate on the "pay_amount" field.
+func PayAmountIn(vs ...string) predicate.PARow {
+	return predicate.PARow(sql.FieldIn(FieldPayAmount, vs...))
 }
 
-// TaxRatioEqualFold applies the EqualFold predicate on the "tax_ratio" field.
-func TaxRatioEqualFold(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEqualFold(FieldTaxRatio, v))
+// PayAmountNotIn applies the NotIn predicate on the "pay_amount" field.
+func PayAmountNotIn(vs ...string) predicate.PARow {
+	return predicate.PARow(sql.FieldNotIn(FieldPayAmount, vs...))
 }
 
-// TaxRatioContainsFold applies the ContainsFold predicate on the "tax_ratio" field.
-func TaxRatioContainsFold(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldContainsFold(FieldTaxRatio, v))
+// PayAmountGT applies the GT predicate on the "pay_amount" field.
+func PayAmountGT(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldGT(FieldPayAmount, v))
 }
 
-// InitialAmountEQ applies the EQ predicate on the "initial_amount" field.
-func InitialAmountEQ(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEQ(FieldInitialAmount, v))
+// PayAmountGTE applies the GTE predicate on the "pay_amount" field.
+func PayAmountGTE(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldGTE(FieldPayAmount, v))
 }
 
-// InitialAmountNEQ applies the NEQ predicate on the "initial_amount" field.
-func InitialAmountNEQ(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldNEQ(FieldInitialAmount, v))
+// PayAmountLT applies the LT predicate on the "pay_amount" field.
+func PayAmountLT(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldLT(FieldPayAmount, v))
 }
 
-// InitialAmountIn applies the In predicate on the "initial_amount" field.
-func InitialAmountIn(vs ...string) predicate.PARow {
-	return predicate.PARow(sql.FieldIn(FieldInitialAmount, vs...))
+// PayAmountLTE applies the LTE predicate on the "pay_amount" field.
+func PayAmountLTE(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldLTE(FieldPayAmount, v))
 }
 
-// InitialAmountNotIn applies the NotIn predicate on the "initial_amount" field.
-func InitialAmountNotIn(vs ...string) predicate.PARow {
-	return predicate.PARow(sql.FieldNotIn(FieldInitialAmount, vs...))
+// PayAmountContains applies the Contains predicate on the "pay_amount" field.
+func PayAmountContains(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldContains(FieldPayAmount, v))
 }
 
-// InitialAmountGT applies the GT predicate on the "initial_amount" field.
-func InitialAmountGT(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldGT(FieldInitialAmount, v))
+// PayAmountHasPrefix applies the HasPrefix predicate on the "pay_amount" field.
+func PayAmountHasPrefix(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldHasPrefix(FieldPayAmount, v))
 }
 
-// InitialAmountGTE applies the GTE predicate on the "initial_amount" field.
-func InitialAmountGTE(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldGTE(FieldInitialAmount, v))
+// PayAmountHasSuffix applies the HasSuffix predicate on the "pay_amount" field.
+func PayAmountHasSuffix(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldHasSuffix(FieldPayAmount, v))
 }
 
-// InitialAmountLT applies the LT predicate on the "initial_amount" field.
-func InitialAmountLT(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldLT(FieldInitialAmount, v))
+// PayAmountEqualFold applies the EqualFold predicate on the "pay_amount" field.
+func PayAmountEqualFold(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEqualFold(FieldPayAmount, v))
 }
 
-// InitialAmountLTE applies the LTE predicate on the "initial_amount" field.
-func InitialAmountLTE(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldLTE(FieldInitialAmount, v))
+// PayAmountContainsFold applies the ContainsFold predicate on the "pay_amount" field.
+func PayAmountContainsFold(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldContainsFold(FieldPayAmount, v))
 }
 
-// InitialAmountContains applies the Contains predicate on the "initial_amount" field.
-func InitialAmountContains(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldContains(FieldInitialAmount, v))
+// DescriptionEQ applies the EQ predicate on the "description" field.
+func DescriptionEQ(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEQ(FieldDescription, v))
 }
 
-// InitialAmountHasPrefix applies the HasPrefix predicate on the "initial_amount" field.
-func InitialAmountHasPrefix(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldHasPrefix(FieldInitialAmount, v))
+// DescriptionNEQ applies the NEQ predicate on the "description" field.
+func DescriptionNEQ(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldNEQ(FieldDescription, v))
 }
 
-// InitialAmountHasSuffix applies the HasSuffix predicate on the "initial_amount" field.
-func InitialAmountHasSuffix(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldHasSuffix(FieldInitialAmount, v))
+// DescriptionIn applies the In predicate on the "description" field.
+func DescriptionIn(vs ...string) predicate.PARow {
+	return predicate.PARow(sql.FieldIn(FieldDescription, vs...))
 }
 
-// InitialAmountEqualFold applies the EqualFold predicate on the "initial_amount" field.
-func InitialAmountEqualFold(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldEqualFold(FieldInitialAmount, v))
+// DescriptionNotIn applies the NotIn predicate on the "description" field.
+func DescriptionNotIn(vs ...string) predicate.PARow {
+	return predicate.PARow(sql.FieldNotIn(FieldDescription, vs...))
 }
 
-// InitialAmountContainsFold applies the ContainsFold predicate on the "initial_amount" field.
-func InitialAmountContainsFold(v string) predicate.PARow {
-	return predicate.PARow(sql.FieldContainsFold(FieldInitialAmount, v))
+// DescriptionGT applies the GT predicate on the "description" field.
+func DescriptionGT(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldGT(FieldDescription, v))
+}
+
+// DescriptionGTE applies the GTE predicate on the "description" field.
+func DescriptionGTE(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldGTE(FieldDescription, v))
+}
+
+// DescriptionLT applies the LT predicate on the "description" field.
+func DescriptionLT(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldLT(FieldDescription, v))
+}
+
+// DescriptionLTE applies the LTE predicate on the "description" field.
+func DescriptionLTE(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldLTE(FieldDescription, v))
+}
+
+// DescriptionContains applies the Contains predicate on the "description" field.
+func DescriptionContains(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldContains(FieldDescription, v))
+}
+
+// DescriptionHasPrefix applies the HasPrefix predicate on the "description" field.
+func DescriptionHasPrefix(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldHasPrefix(FieldDescription, v))
+}
+
+// DescriptionHasSuffix applies the HasSuffix predicate on the "description" field.
+func DescriptionHasSuffix(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldHasSuffix(FieldDescription, v))
+}
+
+// DescriptionEqualFold applies the EqualFold predicate on the "description" field.
+func DescriptionEqualFold(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldEqualFold(FieldDescription, v))
+}
+
+// DescriptionContainsFold applies the ContainsFold predicate on the "description" field.
+func DescriptionContainsFold(v string) predicate.PARow {
+	return predicate.PARow(sql.FieldContainsFold(FieldDescription, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

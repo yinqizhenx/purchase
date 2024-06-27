@@ -33,3 +33,15 @@ func (s SomeStatus) IsZero() bool {
 func (s SomeStatus) Int() int {
 	return s.s
 }
+
+type DocState string
+
+func (s DocState) String() string {
+	return string(s)
+}
+
+var (
+	DocStateDraft     DocState = "draft"
+	DocStateSubmitted DocState = "submitted"
+	DocStateApproving DocState = "approving"
+)

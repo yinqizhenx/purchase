@@ -20,33 +20,39 @@ type PARowCreate struct {
 	hooks    []Hook
 }
 
-// SetDocCode sets the "doc_code" field.
-func (prc *PARowCreate) SetDocCode(s string) *PARowCreate {
-	prc.mutation.SetDocCode(s)
+// SetHeadCode sets the "head_code" field.
+func (prc *PARowCreate) SetHeadCode(s string) *PARowCreate {
+	prc.mutation.SetHeadCode(s)
 	return prc
 }
 
-// SetOrderCode sets the "order_code" field.
-func (prc *PARowCreate) SetOrderCode(s string) *PARowCreate {
-	prc.mutation.SetOrderCode(s)
+// SetRowCode sets the "row_code" field.
+func (prc *PARowCreate) SetRowCode(s string) *PARowCreate {
+	prc.mutation.SetRowCode(s)
 	return prc
 }
 
-// SetRowCurrency sets the "row_currency" field.
-func (prc *PARowCreate) SetRowCurrency(s string) *PARowCreate {
-	prc.mutation.SetRowCurrency(s)
+// SetGrnCount sets the "grn_count" field.
+func (prc *PARowCreate) SetGrnCount(i int32) *PARowCreate {
+	prc.mutation.SetGrnCount(i)
 	return prc
 }
 
-// SetTaxRatio sets the "tax_ratio" field.
-func (prc *PARowCreate) SetTaxRatio(s string) *PARowCreate {
-	prc.mutation.SetTaxRatio(s)
+// SetGrnAmount sets the "grn_amount" field.
+func (prc *PARowCreate) SetGrnAmount(s string) *PARowCreate {
+	prc.mutation.SetGrnAmount(s)
 	return prc
 }
 
-// SetInitialAmount sets the "initial_amount" field.
-func (prc *PARowCreate) SetInitialAmount(s string) *PARowCreate {
-	prc.mutation.SetInitialAmount(s)
+// SetPayAmount sets the "pay_amount" field.
+func (prc *PARowCreate) SetPayAmount(s string) *PARowCreate {
+	prc.mutation.SetPayAmount(s)
+	return prc
+}
+
+// SetDescription sets the "description" field.
+func (prc *PARowCreate) SetDescription(s string) *PARowCreate {
+	prc.mutation.SetDescription(s)
 	return prc
 }
 
@@ -131,20 +137,23 @@ func (prc *PARowCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (prc *PARowCreate) check() error {
-	if _, ok := prc.mutation.DocCode(); !ok {
-		return &ValidationError{Name: "doc_code", err: errors.New(`ent: missing required field "PARow.doc_code"`)}
+	if _, ok := prc.mutation.HeadCode(); !ok {
+		return &ValidationError{Name: "head_code", err: errors.New(`ent: missing required field "PARow.head_code"`)}
 	}
-	if _, ok := prc.mutation.OrderCode(); !ok {
-		return &ValidationError{Name: "order_code", err: errors.New(`ent: missing required field "PARow.order_code"`)}
+	if _, ok := prc.mutation.RowCode(); !ok {
+		return &ValidationError{Name: "row_code", err: errors.New(`ent: missing required field "PARow.row_code"`)}
 	}
-	if _, ok := prc.mutation.RowCurrency(); !ok {
-		return &ValidationError{Name: "row_currency", err: errors.New(`ent: missing required field "PARow.row_currency"`)}
+	if _, ok := prc.mutation.GrnCount(); !ok {
+		return &ValidationError{Name: "grn_count", err: errors.New(`ent: missing required field "PARow.grn_count"`)}
 	}
-	if _, ok := prc.mutation.TaxRatio(); !ok {
-		return &ValidationError{Name: "tax_ratio", err: errors.New(`ent: missing required field "PARow.tax_ratio"`)}
+	if _, ok := prc.mutation.GrnAmount(); !ok {
+		return &ValidationError{Name: "grn_amount", err: errors.New(`ent: missing required field "PARow.grn_amount"`)}
 	}
-	if _, ok := prc.mutation.InitialAmount(); !ok {
-		return &ValidationError{Name: "initial_amount", err: errors.New(`ent: missing required field "PARow.initial_amount"`)}
+	if _, ok := prc.mutation.PayAmount(); !ok {
+		return &ValidationError{Name: "pay_amount", err: errors.New(`ent: missing required field "PARow.pay_amount"`)}
+	}
+	if _, ok := prc.mutation.Description(); !ok {
+		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "PARow.description"`)}
 	}
 	if _, ok := prc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PARow.created_at"`)}
@@ -184,25 +193,29 @@ func (prc *PARowCreate) createSpec() (*PARow, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := prc.mutation.DocCode(); ok {
-		_spec.SetField(parow.FieldDocCode, field.TypeString, value)
-		_node.DocCode = value
+	if value, ok := prc.mutation.HeadCode(); ok {
+		_spec.SetField(parow.FieldHeadCode, field.TypeString, value)
+		_node.HeadCode = value
 	}
-	if value, ok := prc.mutation.OrderCode(); ok {
-		_spec.SetField(parow.FieldOrderCode, field.TypeString, value)
-		_node.OrderCode = value
+	if value, ok := prc.mutation.RowCode(); ok {
+		_spec.SetField(parow.FieldRowCode, field.TypeString, value)
+		_node.RowCode = value
 	}
-	if value, ok := prc.mutation.RowCurrency(); ok {
-		_spec.SetField(parow.FieldRowCurrency, field.TypeString, value)
-		_node.RowCurrency = value
+	if value, ok := prc.mutation.GrnCount(); ok {
+		_spec.SetField(parow.FieldGrnCount, field.TypeInt32, value)
+		_node.GrnCount = value
 	}
-	if value, ok := prc.mutation.TaxRatio(); ok {
-		_spec.SetField(parow.FieldTaxRatio, field.TypeString, value)
-		_node.TaxRatio = value
+	if value, ok := prc.mutation.GrnAmount(); ok {
+		_spec.SetField(parow.FieldGrnAmount, field.TypeString, value)
+		_node.GrnAmount = value
 	}
-	if value, ok := prc.mutation.InitialAmount(); ok {
-		_spec.SetField(parow.FieldInitialAmount, field.TypeString, value)
-		_node.InitialAmount = value
+	if value, ok := prc.mutation.PayAmount(); ok {
+		_spec.SetField(parow.FieldPayAmount, field.TypeString, value)
+		_node.PayAmount = value
+	}
+	if value, ok := prc.mutation.Description(); ok {
+		_spec.SetField(parow.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if value, ok := prc.mutation.CreatedAt(); ok {
 		_spec.SetField(parow.FieldCreatedAt, field.TypeTime, value)

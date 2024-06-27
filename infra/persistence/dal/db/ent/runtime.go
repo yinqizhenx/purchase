@@ -27,21 +27,21 @@ func init() {
 	paheadFields := schema.PAHead{}.Fields()
 	_ = paheadFields
 	// paheadDescCreatedAt is the schema descriptor for created_at field.
-	paheadDescCreatedAt := paheadFields[6].Descriptor()
+	paheadDescCreatedAt := paheadFields[10].Descriptor()
 	// pahead.DefaultCreatedAt holds the default value on creation for the created_at field.
 	pahead.DefaultCreatedAt = paheadDescCreatedAt.Default.(func() time.Time)
 	// paheadDescUpdatedAt is the schema descriptor for updated_at field.
-	paheadDescUpdatedAt := paheadFields[7].Descriptor()
+	paheadDescUpdatedAt := paheadFields[11].Descriptor()
 	// pahead.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	pahead.DefaultUpdatedAt = paheadDescUpdatedAt.Default.(func() time.Time)
 	parowFields := schema.PARow{}.Fields()
 	_ = parowFields
 	// parowDescCreatedAt is the schema descriptor for created_at field.
-	parowDescCreatedAt := parowFields[6].Descriptor()
+	parowDescCreatedAt := parowFields[7].Descriptor()
 	// parow.DefaultCreatedAt holds the default value on creation for the created_at field.
 	parow.DefaultCreatedAt = parowDescCreatedAt.Default.(func() time.Time)
 	// parowDescUpdatedAt is the schema descriptor for updated_at field.
-	parowDescUpdatedAt := parowFields[7].Descriptor()
+	parowDescUpdatedAt := parowFields[8].Descriptor()
 	// parow.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	parow.DefaultUpdatedAt = parowDescUpdatedAt.Default.(func() time.Time)
 }

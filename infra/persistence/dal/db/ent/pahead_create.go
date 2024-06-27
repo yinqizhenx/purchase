@@ -44,17 +44,41 @@ func (phc *PAHeadCreate) SetApplicant(s string) *PAHeadCreate {
 	return phc
 }
 
-// SetDepartment sets the "department" field.
-func (phc *PAHeadCreate) SetDepartment(s string) *PAHeadCreate {
-	phc.mutation.SetDepartment(s)
+// SetDepartmentCode sets the "department_code" field.
+func (phc *PAHeadCreate) SetDepartmentCode(s string) *PAHeadCreate {
+	phc.mutation.SetDepartmentCode(s)
 	return phc
 }
 
-// SetNillableDepartment sets the "department" field if the given value is not nil.
-func (phc *PAHeadCreate) SetNillableDepartment(s *string) *PAHeadCreate {
+// SetNillableDepartmentCode sets the "department_code" field if the given value is not nil.
+func (phc *PAHeadCreate) SetNillableDepartmentCode(s *string) *PAHeadCreate {
 	if s != nil {
-		phc.SetDepartment(*s)
+		phc.SetDepartmentCode(*s)
 	}
+	return phc
+}
+
+// SetSupplierCode sets the "supplier_code" field.
+func (phc *PAHeadCreate) SetSupplierCode(s string) *PAHeadCreate {
+	phc.mutation.SetSupplierCode(s)
+	return phc
+}
+
+// SetIsAdv sets the "is_adv" field.
+func (phc *PAHeadCreate) SetIsAdv(b bool) *PAHeadCreate {
+	phc.mutation.SetIsAdv(b)
+	return phc
+}
+
+// SetHasInvoice sets the "has_invoice" field.
+func (phc *PAHeadCreate) SetHasInvoice(b bool) *PAHeadCreate {
+	phc.mutation.SetHasInvoice(b)
+	return phc
+}
+
+// SetRemark sets the "remark" field.
+func (phc *PAHeadCreate) SetRemark(s string) *PAHeadCreate {
+	phc.mutation.SetRemark(s)
 	return phc
 }
 
@@ -151,6 +175,18 @@ func (phc *PAHeadCreate) check() error {
 	if _, ok := phc.mutation.Applicant(); !ok {
 		return &ValidationError{Name: "applicant", err: errors.New(`ent: missing required field "PAHead.applicant"`)}
 	}
+	if _, ok := phc.mutation.SupplierCode(); !ok {
+		return &ValidationError{Name: "supplier_code", err: errors.New(`ent: missing required field "PAHead.supplier_code"`)}
+	}
+	if _, ok := phc.mutation.IsAdv(); !ok {
+		return &ValidationError{Name: "is_adv", err: errors.New(`ent: missing required field "PAHead.is_adv"`)}
+	}
+	if _, ok := phc.mutation.HasInvoice(); !ok {
+		return &ValidationError{Name: "has_invoice", err: errors.New(`ent: missing required field "PAHead.has_invoice"`)}
+	}
+	if _, ok := phc.mutation.Remark(); !ok {
+		return &ValidationError{Name: "remark", err: errors.New(`ent: missing required field "PAHead.remark"`)}
+	}
 	if _, ok := phc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PAHead.created_at"`)}
 	}
@@ -205,9 +241,25 @@ func (phc *PAHeadCreate) createSpec() (*PAHead, *sqlgraph.CreateSpec) {
 		_spec.SetField(pahead.FieldApplicant, field.TypeString, value)
 		_node.Applicant = value
 	}
-	if value, ok := phc.mutation.Department(); ok {
-		_spec.SetField(pahead.FieldDepartment, field.TypeString, value)
-		_node.Department = value
+	if value, ok := phc.mutation.DepartmentCode(); ok {
+		_spec.SetField(pahead.FieldDepartmentCode, field.TypeString, value)
+		_node.DepartmentCode = value
+	}
+	if value, ok := phc.mutation.SupplierCode(); ok {
+		_spec.SetField(pahead.FieldSupplierCode, field.TypeString, value)
+		_node.SupplierCode = value
+	}
+	if value, ok := phc.mutation.IsAdv(); ok {
+		_spec.SetField(pahead.FieldIsAdv, field.TypeBool, value)
+		_node.IsAdv = value
+	}
+	if value, ok := phc.mutation.HasInvoice(); ok {
+		_spec.SetField(pahead.FieldHasInvoice, field.TypeBool, value)
+		_node.HasInvoice = value
+	}
+	if value, ok := phc.mutation.Remark(); ok {
+		_spec.SetField(pahead.FieldRemark, field.TypeString, value)
+		_node.Remark = value
 	}
 	if value, ok := phc.mutation.CreatedAt(); ok {
 		_spec.SetField(pahead.FieldCreatedAt, field.TypeTime, value)

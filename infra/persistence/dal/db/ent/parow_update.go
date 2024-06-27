@@ -28,72 +28,93 @@ func (pru *PARowUpdate) Where(ps ...predicate.PARow) *PARowUpdate {
 	return pru
 }
 
-// SetDocCode sets the "doc_code" field.
-func (pru *PARowUpdate) SetDocCode(s string) *PARowUpdate {
-	pru.mutation.SetDocCode(s)
+// SetHeadCode sets the "head_code" field.
+func (pru *PARowUpdate) SetHeadCode(s string) *PARowUpdate {
+	pru.mutation.SetHeadCode(s)
 	return pru
 }
 
-// SetNillableDocCode sets the "doc_code" field if the given value is not nil.
-func (pru *PARowUpdate) SetNillableDocCode(s *string) *PARowUpdate {
+// SetNillableHeadCode sets the "head_code" field if the given value is not nil.
+func (pru *PARowUpdate) SetNillableHeadCode(s *string) *PARowUpdate {
 	if s != nil {
-		pru.SetDocCode(*s)
+		pru.SetHeadCode(*s)
 	}
 	return pru
 }
 
-// SetOrderCode sets the "order_code" field.
-func (pru *PARowUpdate) SetOrderCode(s string) *PARowUpdate {
-	pru.mutation.SetOrderCode(s)
+// SetRowCode sets the "row_code" field.
+func (pru *PARowUpdate) SetRowCode(s string) *PARowUpdate {
+	pru.mutation.SetRowCode(s)
 	return pru
 }
 
-// SetNillableOrderCode sets the "order_code" field if the given value is not nil.
-func (pru *PARowUpdate) SetNillableOrderCode(s *string) *PARowUpdate {
+// SetNillableRowCode sets the "row_code" field if the given value is not nil.
+func (pru *PARowUpdate) SetNillableRowCode(s *string) *PARowUpdate {
 	if s != nil {
-		pru.SetOrderCode(*s)
+		pru.SetRowCode(*s)
 	}
 	return pru
 }
 
-// SetRowCurrency sets the "row_currency" field.
-func (pru *PARowUpdate) SetRowCurrency(s string) *PARowUpdate {
-	pru.mutation.SetRowCurrency(s)
+// SetGrnCount sets the "grn_count" field.
+func (pru *PARowUpdate) SetGrnCount(i int32) *PARowUpdate {
+	pru.mutation.ResetGrnCount()
+	pru.mutation.SetGrnCount(i)
 	return pru
 }
 
-// SetNillableRowCurrency sets the "row_currency" field if the given value is not nil.
-func (pru *PARowUpdate) SetNillableRowCurrency(s *string) *PARowUpdate {
-	if s != nil {
-		pru.SetRowCurrency(*s)
+// SetNillableGrnCount sets the "grn_count" field if the given value is not nil.
+func (pru *PARowUpdate) SetNillableGrnCount(i *int32) *PARowUpdate {
+	if i != nil {
+		pru.SetGrnCount(*i)
 	}
 	return pru
 }
 
-// SetTaxRatio sets the "tax_ratio" field.
-func (pru *PARowUpdate) SetTaxRatio(s string) *PARowUpdate {
-	pru.mutation.SetTaxRatio(s)
+// AddGrnCount adds i to the "grn_count" field.
+func (pru *PARowUpdate) AddGrnCount(i int32) *PARowUpdate {
+	pru.mutation.AddGrnCount(i)
 	return pru
 }
 
-// SetNillableTaxRatio sets the "tax_ratio" field if the given value is not nil.
-func (pru *PARowUpdate) SetNillableTaxRatio(s *string) *PARowUpdate {
+// SetGrnAmount sets the "grn_amount" field.
+func (pru *PARowUpdate) SetGrnAmount(s string) *PARowUpdate {
+	pru.mutation.SetGrnAmount(s)
+	return pru
+}
+
+// SetNillableGrnAmount sets the "grn_amount" field if the given value is not nil.
+func (pru *PARowUpdate) SetNillableGrnAmount(s *string) *PARowUpdate {
 	if s != nil {
-		pru.SetTaxRatio(*s)
+		pru.SetGrnAmount(*s)
 	}
 	return pru
 }
 
-// SetInitialAmount sets the "initial_amount" field.
-func (pru *PARowUpdate) SetInitialAmount(s string) *PARowUpdate {
-	pru.mutation.SetInitialAmount(s)
+// SetPayAmount sets the "pay_amount" field.
+func (pru *PARowUpdate) SetPayAmount(s string) *PARowUpdate {
+	pru.mutation.SetPayAmount(s)
 	return pru
 }
 
-// SetNillableInitialAmount sets the "initial_amount" field if the given value is not nil.
-func (pru *PARowUpdate) SetNillableInitialAmount(s *string) *PARowUpdate {
+// SetNillablePayAmount sets the "pay_amount" field if the given value is not nil.
+func (pru *PARowUpdate) SetNillablePayAmount(s *string) *PARowUpdate {
 	if s != nil {
-		pru.SetInitialAmount(*s)
+		pru.SetPayAmount(*s)
+	}
+	return pru
+}
+
+// SetDescription sets the "description" field.
+func (pru *PARowUpdate) SetDescription(s string) *PARowUpdate {
+	pru.mutation.SetDescription(s)
+	return pru
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (pru *PARowUpdate) SetNillableDescription(s *string) *PARowUpdate {
+	if s != nil {
+		pru.SetDescription(*s)
 	}
 	return pru
 }
@@ -167,20 +188,26 @@ func (pru *PARowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := pru.mutation.DocCode(); ok {
-		_spec.SetField(parow.FieldDocCode, field.TypeString, value)
+	if value, ok := pru.mutation.HeadCode(); ok {
+		_spec.SetField(parow.FieldHeadCode, field.TypeString, value)
 	}
-	if value, ok := pru.mutation.OrderCode(); ok {
-		_spec.SetField(parow.FieldOrderCode, field.TypeString, value)
+	if value, ok := pru.mutation.RowCode(); ok {
+		_spec.SetField(parow.FieldRowCode, field.TypeString, value)
 	}
-	if value, ok := pru.mutation.RowCurrency(); ok {
-		_spec.SetField(parow.FieldRowCurrency, field.TypeString, value)
+	if value, ok := pru.mutation.GrnCount(); ok {
+		_spec.SetField(parow.FieldGrnCount, field.TypeInt32, value)
 	}
-	if value, ok := pru.mutation.TaxRatio(); ok {
-		_spec.SetField(parow.FieldTaxRatio, field.TypeString, value)
+	if value, ok := pru.mutation.AddedGrnCount(); ok {
+		_spec.AddField(parow.FieldGrnCount, field.TypeInt32, value)
 	}
-	if value, ok := pru.mutation.InitialAmount(); ok {
-		_spec.SetField(parow.FieldInitialAmount, field.TypeString, value)
+	if value, ok := pru.mutation.GrnAmount(); ok {
+		_spec.SetField(parow.FieldGrnAmount, field.TypeString, value)
+	}
+	if value, ok := pru.mutation.PayAmount(); ok {
+		_spec.SetField(parow.FieldPayAmount, field.TypeString, value)
+	}
+	if value, ok := pru.mutation.Description(); ok {
+		_spec.SetField(parow.FieldDescription, field.TypeString, value)
 	}
 	if value, ok := pru.mutation.CreatedAt(); ok {
 		_spec.SetField(parow.FieldCreatedAt, field.TypeTime, value)
@@ -208,72 +235,93 @@ type PARowUpdateOne struct {
 	mutation *PARowMutation
 }
 
-// SetDocCode sets the "doc_code" field.
-func (pruo *PARowUpdateOne) SetDocCode(s string) *PARowUpdateOne {
-	pruo.mutation.SetDocCode(s)
+// SetHeadCode sets the "head_code" field.
+func (pruo *PARowUpdateOne) SetHeadCode(s string) *PARowUpdateOne {
+	pruo.mutation.SetHeadCode(s)
 	return pruo
 }
 
-// SetNillableDocCode sets the "doc_code" field if the given value is not nil.
-func (pruo *PARowUpdateOne) SetNillableDocCode(s *string) *PARowUpdateOne {
+// SetNillableHeadCode sets the "head_code" field if the given value is not nil.
+func (pruo *PARowUpdateOne) SetNillableHeadCode(s *string) *PARowUpdateOne {
 	if s != nil {
-		pruo.SetDocCode(*s)
+		pruo.SetHeadCode(*s)
 	}
 	return pruo
 }
 
-// SetOrderCode sets the "order_code" field.
-func (pruo *PARowUpdateOne) SetOrderCode(s string) *PARowUpdateOne {
-	pruo.mutation.SetOrderCode(s)
+// SetRowCode sets the "row_code" field.
+func (pruo *PARowUpdateOne) SetRowCode(s string) *PARowUpdateOne {
+	pruo.mutation.SetRowCode(s)
 	return pruo
 }
 
-// SetNillableOrderCode sets the "order_code" field if the given value is not nil.
-func (pruo *PARowUpdateOne) SetNillableOrderCode(s *string) *PARowUpdateOne {
+// SetNillableRowCode sets the "row_code" field if the given value is not nil.
+func (pruo *PARowUpdateOne) SetNillableRowCode(s *string) *PARowUpdateOne {
 	if s != nil {
-		pruo.SetOrderCode(*s)
+		pruo.SetRowCode(*s)
 	}
 	return pruo
 }
 
-// SetRowCurrency sets the "row_currency" field.
-func (pruo *PARowUpdateOne) SetRowCurrency(s string) *PARowUpdateOne {
-	pruo.mutation.SetRowCurrency(s)
+// SetGrnCount sets the "grn_count" field.
+func (pruo *PARowUpdateOne) SetGrnCount(i int32) *PARowUpdateOne {
+	pruo.mutation.ResetGrnCount()
+	pruo.mutation.SetGrnCount(i)
 	return pruo
 }
 
-// SetNillableRowCurrency sets the "row_currency" field if the given value is not nil.
-func (pruo *PARowUpdateOne) SetNillableRowCurrency(s *string) *PARowUpdateOne {
-	if s != nil {
-		pruo.SetRowCurrency(*s)
+// SetNillableGrnCount sets the "grn_count" field if the given value is not nil.
+func (pruo *PARowUpdateOne) SetNillableGrnCount(i *int32) *PARowUpdateOne {
+	if i != nil {
+		pruo.SetGrnCount(*i)
 	}
 	return pruo
 }
 
-// SetTaxRatio sets the "tax_ratio" field.
-func (pruo *PARowUpdateOne) SetTaxRatio(s string) *PARowUpdateOne {
-	pruo.mutation.SetTaxRatio(s)
+// AddGrnCount adds i to the "grn_count" field.
+func (pruo *PARowUpdateOne) AddGrnCount(i int32) *PARowUpdateOne {
+	pruo.mutation.AddGrnCount(i)
 	return pruo
 }
 
-// SetNillableTaxRatio sets the "tax_ratio" field if the given value is not nil.
-func (pruo *PARowUpdateOne) SetNillableTaxRatio(s *string) *PARowUpdateOne {
+// SetGrnAmount sets the "grn_amount" field.
+func (pruo *PARowUpdateOne) SetGrnAmount(s string) *PARowUpdateOne {
+	pruo.mutation.SetGrnAmount(s)
+	return pruo
+}
+
+// SetNillableGrnAmount sets the "grn_amount" field if the given value is not nil.
+func (pruo *PARowUpdateOne) SetNillableGrnAmount(s *string) *PARowUpdateOne {
 	if s != nil {
-		pruo.SetTaxRatio(*s)
+		pruo.SetGrnAmount(*s)
 	}
 	return pruo
 }
 
-// SetInitialAmount sets the "initial_amount" field.
-func (pruo *PARowUpdateOne) SetInitialAmount(s string) *PARowUpdateOne {
-	pruo.mutation.SetInitialAmount(s)
+// SetPayAmount sets the "pay_amount" field.
+func (pruo *PARowUpdateOne) SetPayAmount(s string) *PARowUpdateOne {
+	pruo.mutation.SetPayAmount(s)
 	return pruo
 }
 
-// SetNillableInitialAmount sets the "initial_amount" field if the given value is not nil.
-func (pruo *PARowUpdateOne) SetNillableInitialAmount(s *string) *PARowUpdateOne {
+// SetNillablePayAmount sets the "pay_amount" field if the given value is not nil.
+func (pruo *PARowUpdateOne) SetNillablePayAmount(s *string) *PARowUpdateOne {
 	if s != nil {
-		pruo.SetInitialAmount(*s)
+		pruo.SetPayAmount(*s)
+	}
+	return pruo
+}
+
+// SetDescription sets the "description" field.
+func (pruo *PARowUpdateOne) SetDescription(s string) *PARowUpdateOne {
+	pruo.mutation.SetDescription(s)
+	return pruo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (pruo *PARowUpdateOne) SetNillableDescription(s *string) *PARowUpdateOne {
+	if s != nil {
+		pruo.SetDescription(*s)
 	}
 	return pruo
 }
@@ -377,20 +425,26 @@ func (pruo *PARowUpdateOne) sqlSave(ctx context.Context) (_node *PARow, err erro
 			}
 		}
 	}
-	if value, ok := pruo.mutation.DocCode(); ok {
-		_spec.SetField(parow.FieldDocCode, field.TypeString, value)
+	if value, ok := pruo.mutation.HeadCode(); ok {
+		_spec.SetField(parow.FieldHeadCode, field.TypeString, value)
 	}
-	if value, ok := pruo.mutation.OrderCode(); ok {
-		_spec.SetField(parow.FieldOrderCode, field.TypeString, value)
+	if value, ok := pruo.mutation.RowCode(); ok {
+		_spec.SetField(parow.FieldRowCode, field.TypeString, value)
 	}
-	if value, ok := pruo.mutation.RowCurrency(); ok {
-		_spec.SetField(parow.FieldRowCurrency, field.TypeString, value)
+	if value, ok := pruo.mutation.GrnCount(); ok {
+		_spec.SetField(parow.FieldGrnCount, field.TypeInt32, value)
 	}
-	if value, ok := pruo.mutation.TaxRatio(); ok {
-		_spec.SetField(parow.FieldTaxRatio, field.TypeString, value)
+	if value, ok := pruo.mutation.AddedGrnCount(); ok {
+		_spec.AddField(parow.FieldGrnCount, field.TypeInt32, value)
 	}
-	if value, ok := pruo.mutation.InitialAmount(); ok {
-		_spec.SetField(parow.FieldInitialAmount, field.TypeString, value)
+	if value, ok := pruo.mutation.GrnAmount(); ok {
+		_spec.SetField(parow.FieldGrnAmount, field.TypeString, value)
+	}
+	if value, ok := pruo.mutation.PayAmount(); ok {
+		_spec.SetField(parow.FieldPayAmount, field.TypeString, value)
+	}
+	if value, ok := pruo.mutation.Description(); ok {
+		_spec.SetField(parow.FieldDescription, field.TypeString, value)
 	}
 	if value, ok := pruo.mutation.CreatedAt(); ok {
 		_spec.SetField(parow.FieldCreatedAt, field.TypeTime, value)

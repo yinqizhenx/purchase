@@ -690,20 +690,24 @@ func (m *AsyncTaskMutation) ResetEdge(name string) error {
 // PAHeadMutation represents an operation that mutates the PAHead nodes in the graph.
 type PAHeadMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int64
-	code          *string
-	state         *string
-	pay_amount    *string
-	applicant     *string
-	department    *string
-	created_at    *time.Time
-	updated_at    *time.Time
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*PAHead, error)
-	predicates    []predicate.PAHead
+	op              Op
+	typ             string
+	id              *int64
+	code            *string
+	state           *string
+	pay_amount      *string
+	applicant       *string
+	department_code *string
+	supplier_code   *string
+	is_adv          *bool
+	has_invoice     *bool
+	remark          *string
+	created_at      *time.Time
+	updated_at      *time.Time
+	clearedFields   map[string]struct{}
+	done            bool
+	oldValue        func(context.Context) (*PAHead, error)
+	predicates      []predicate.PAHead
 }
 
 var _ ent.Mutation = (*PAHeadMutation)(nil)
@@ -954,53 +958,197 @@ func (m *PAHeadMutation) ResetApplicant() {
 	m.applicant = nil
 }
 
-// SetDepartment sets the "department" field.
-func (m *PAHeadMutation) SetDepartment(s string) {
-	m.department = &s
+// SetDepartmentCode sets the "department_code" field.
+func (m *PAHeadMutation) SetDepartmentCode(s string) {
+	m.department_code = &s
 }
 
-// Department returns the value of the "department" field in the mutation.
-func (m *PAHeadMutation) Department() (r string, exists bool) {
-	v := m.department
+// DepartmentCode returns the value of the "department_code" field in the mutation.
+func (m *PAHeadMutation) DepartmentCode() (r string, exists bool) {
+	v := m.department_code
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldDepartment returns the old "department" field's value of the PAHead entity.
+// OldDepartmentCode returns the old "department_code" field's value of the PAHead entity.
 // If the PAHead object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PAHeadMutation) OldDepartment(ctx context.Context) (v string, err error) {
+func (m *PAHeadMutation) OldDepartmentCode(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDepartment is only allowed on UpdateOne operations")
+		return v, errors.New("OldDepartmentCode is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDepartment requires an ID field in the mutation")
+		return v, errors.New("OldDepartmentCode requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDepartment: %w", err)
+		return v, fmt.Errorf("querying old value for OldDepartmentCode: %w", err)
 	}
-	return oldValue.Department, nil
+	return oldValue.DepartmentCode, nil
 }
 
-// ClearDepartment clears the value of the "department" field.
-func (m *PAHeadMutation) ClearDepartment() {
-	m.department = nil
-	m.clearedFields[pahead.FieldDepartment] = struct{}{}
+// ClearDepartmentCode clears the value of the "department_code" field.
+func (m *PAHeadMutation) ClearDepartmentCode() {
+	m.department_code = nil
+	m.clearedFields[pahead.FieldDepartmentCode] = struct{}{}
 }
 
-// DepartmentCleared returns if the "department" field was cleared in this mutation.
-func (m *PAHeadMutation) DepartmentCleared() bool {
-	_, ok := m.clearedFields[pahead.FieldDepartment]
+// DepartmentCodeCleared returns if the "department_code" field was cleared in this mutation.
+func (m *PAHeadMutation) DepartmentCodeCleared() bool {
+	_, ok := m.clearedFields[pahead.FieldDepartmentCode]
 	return ok
 }
 
-// ResetDepartment resets all changes to the "department" field.
-func (m *PAHeadMutation) ResetDepartment() {
-	m.department = nil
-	delete(m.clearedFields, pahead.FieldDepartment)
+// ResetDepartmentCode resets all changes to the "department_code" field.
+func (m *PAHeadMutation) ResetDepartmentCode() {
+	m.department_code = nil
+	delete(m.clearedFields, pahead.FieldDepartmentCode)
+}
+
+// SetSupplierCode sets the "supplier_code" field.
+func (m *PAHeadMutation) SetSupplierCode(s string) {
+	m.supplier_code = &s
+}
+
+// SupplierCode returns the value of the "supplier_code" field in the mutation.
+func (m *PAHeadMutation) SupplierCode() (r string, exists bool) {
+	v := m.supplier_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSupplierCode returns the old "supplier_code" field's value of the PAHead entity.
+// If the PAHead object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PAHeadMutation) OldSupplierCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSupplierCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSupplierCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSupplierCode: %w", err)
+	}
+	return oldValue.SupplierCode, nil
+}
+
+// ResetSupplierCode resets all changes to the "supplier_code" field.
+func (m *PAHeadMutation) ResetSupplierCode() {
+	m.supplier_code = nil
+}
+
+// SetIsAdv sets the "is_adv" field.
+func (m *PAHeadMutation) SetIsAdv(b bool) {
+	m.is_adv = &b
+}
+
+// IsAdv returns the value of the "is_adv" field in the mutation.
+func (m *PAHeadMutation) IsAdv() (r bool, exists bool) {
+	v := m.is_adv
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsAdv returns the old "is_adv" field's value of the PAHead entity.
+// If the PAHead object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PAHeadMutation) OldIsAdv(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsAdv is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsAdv requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsAdv: %w", err)
+	}
+	return oldValue.IsAdv, nil
+}
+
+// ResetIsAdv resets all changes to the "is_adv" field.
+func (m *PAHeadMutation) ResetIsAdv() {
+	m.is_adv = nil
+}
+
+// SetHasInvoice sets the "has_invoice" field.
+func (m *PAHeadMutation) SetHasInvoice(b bool) {
+	m.has_invoice = &b
+}
+
+// HasInvoice returns the value of the "has_invoice" field in the mutation.
+func (m *PAHeadMutation) HasInvoice() (r bool, exists bool) {
+	v := m.has_invoice
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHasInvoice returns the old "has_invoice" field's value of the PAHead entity.
+// If the PAHead object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PAHeadMutation) OldHasInvoice(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHasInvoice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHasInvoice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHasInvoice: %w", err)
+	}
+	return oldValue.HasInvoice, nil
+}
+
+// ResetHasInvoice resets all changes to the "has_invoice" field.
+func (m *PAHeadMutation) ResetHasInvoice() {
+	m.has_invoice = nil
+}
+
+// SetRemark sets the "remark" field.
+func (m *PAHeadMutation) SetRemark(s string) {
+	m.remark = &s
+}
+
+// Remark returns the value of the "remark" field in the mutation.
+func (m *PAHeadMutation) Remark() (r string, exists bool) {
+	v := m.remark
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRemark returns the old "remark" field's value of the PAHead entity.
+// If the PAHead object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PAHeadMutation) OldRemark(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRemark is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRemark requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRemark: %w", err)
+	}
+	return oldValue.Remark, nil
+}
+
+// ResetRemark resets all changes to the "remark" field.
+func (m *PAHeadMutation) ResetRemark() {
+	m.remark = nil
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -1109,7 +1257,7 @@ func (m *PAHeadMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PAHeadMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 11)
 	if m.code != nil {
 		fields = append(fields, pahead.FieldCode)
 	}
@@ -1122,8 +1270,20 @@ func (m *PAHeadMutation) Fields() []string {
 	if m.applicant != nil {
 		fields = append(fields, pahead.FieldApplicant)
 	}
-	if m.department != nil {
-		fields = append(fields, pahead.FieldDepartment)
+	if m.department_code != nil {
+		fields = append(fields, pahead.FieldDepartmentCode)
+	}
+	if m.supplier_code != nil {
+		fields = append(fields, pahead.FieldSupplierCode)
+	}
+	if m.is_adv != nil {
+		fields = append(fields, pahead.FieldIsAdv)
+	}
+	if m.has_invoice != nil {
+		fields = append(fields, pahead.FieldHasInvoice)
+	}
+	if m.remark != nil {
+		fields = append(fields, pahead.FieldRemark)
 	}
 	if m.created_at != nil {
 		fields = append(fields, pahead.FieldCreatedAt)
@@ -1147,8 +1307,16 @@ func (m *PAHeadMutation) Field(name string) (ent.Value, bool) {
 		return m.PayAmount()
 	case pahead.FieldApplicant:
 		return m.Applicant()
-	case pahead.FieldDepartment:
-		return m.Department()
+	case pahead.FieldDepartmentCode:
+		return m.DepartmentCode()
+	case pahead.FieldSupplierCode:
+		return m.SupplierCode()
+	case pahead.FieldIsAdv:
+		return m.IsAdv()
+	case pahead.FieldHasInvoice:
+		return m.HasInvoice()
+	case pahead.FieldRemark:
+		return m.Remark()
 	case pahead.FieldCreatedAt:
 		return m.CreatedAt()
 	case pahead.FieldUpdatedAt:
@@ -1170,8 +1338,16 @@ func (m *PAHeadMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldPayAmount(ctx)
 	case pahead.FieldApplicant:
 		return m.OldApplicant(ctx)
-	case pahead.FieldDepartment:
-		return m.OldDepartment(ctx)
+	case pahead.FieldDepartmentCode:
+		return m.OldDepartmentCode(ctx)
+	case pahead.FieldSupplierCode:
+		return m.OldSupplierCode(ctx)
+	case pahead.FieldIsAdv:
+		return m.OldIsAdv(ctx)
+	case pahead.FieldHasInvoice:
+		return m.OldHasInvoice(ctx)
+	case pahead.FieldRemark:
+		return m.OldRemark(ctx)
 	case pahead.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case pahead.FieldUpdatedAt:
@@ -1213,12 +1389,40 @@ func (m *PAHeadMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetApplicant(v)
 		return nil
-	case pahead.FieldDepartment:
+	case pahead.FieldDepartmentCode:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDepartment(v)
+		m.SetDepartmentCode(v)
+		return nil
+	case pahead.FieldSupplierCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSupplierCode(v)
+		return nil
+	case pahead.FieldIsAdv:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsAdv(v)
+		return nil
+	case pahead.FieldHasInvoice:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHasInvoice(v)
+		return nil
+	case pahead.FieldRemark:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRemark(v)
 		return nil
 	case pahead.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -1264,8 +1468,8 @@ func (m *PAHeadMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *PAHeadMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(pahead.FieldDepartment) {
-		fields = append(fields, pahead.FieldDepartment)
+	if m.FieldCleared(pahead.FieldDepartmentCode) {
+		fields = append(fields, pahead.FieldDepartmentCode)
 	}
 	return fields
 }
@@ -1281,8 +1485,8 @@ func (m *PAHeadMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *PAHeadMutation) ClearField(name string) error {
 	switch name {
-	case pahead.FieldDepartment:
-		m.ClearDepartment()
+	case pahead.FieldDepartmentCode:
+		m.ClearDepartmentCode()
 		return nil
 	}
 	return fmt.Errorf("unknown PAHead nullable field %s", name)
@@ -1304,8 +1508,20 @@ func (m *PAHeadMutation) ResetField(name string) error {
 	case pahead.FieldApplicant:
 		m.ResetApplicant()
 		return nil
-	case pahead.FieldDepartment:
-		m.ResetDepartment()
+	case pahead.FieldDepartmentCode:
+		m.ResetDepartmentCode()
+		return nil
+	case pahead.FieldSupplierCode:
+		m.ResetSupplierCode()
+		return nil
+	case pahead.FieldIsAdv:
+		m.ResetIsAdv()
+		return nil
+	case pahead.FieldHasInvoice:
+		m.ResetHasInvoice()
+		return nil
+	case pahead.FieldRemark:
+		m.ResetRemark()
 		return nil
 	case pahead.FieldCreatedAt:
 		m.ResetCreatedAt()
@@ -1368,20 +1584,22 @@ func (m *PAHeadMutation) ResetEdge(name string) error {
 // PARowMutation represents an operation that mutates the PARow nodes in the graph.
 type PARowMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int64
-	doc_code       *string
-	order_code     *string
-	row_currency   *string
-	tax_ratio      *string
-	initial_amount *string
-	created_at     *time.Time
-	updated_at     *time.Time
-	clearedFields  map[string]struct{}
-	done           bool
-	oldValue       func(context.Context) (*PARow, error)
-	predicates     []predicate.PARow
+	op            Op
+	typ           string
+	id            *int64
+	head_code     *string
+	row_code      *string
+	grn_count     *int32
+	addgrn_count  *int32
+	grn_amount    *string
+	pay_amount    *string
+	description   *string
+	created_at    *time.Time
+	updated_at    *time.Time
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*PARow, error)
+	predicates    []predicate.PARow
 }
 
 var _ ent.Mutation = (*PARowMutation)(nil)
@@ -1488,184 +1706,240 @@ func (m *PARowMutation) IDs(ctx context.Context) ([]int64, error) {
 	}
 }
 
-// SetDocCode sets the "doc_code" field.
-func (m *PARowMutation) SetDocCode(s string) {
-	m.doc_code = &s
+// SetHeadCode sets the "head_code" field.
+func (m *PARowMutation) SetHeadCode(s string) {
+	m.head_code = &s
 }
 
-// DocCode returns the value of the "doc_code" field in the mutation.
-func (m *PARowMutation) DocCode() (r string, exists bool) {
-	v := m.doc_code
+// HeadCode returns the value of the "head_code" field in the mutation.
+func (m *PARowMutation) HeadCode() (r string, exists bool) {
+	v := m.head_code
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldDocCode returns the old "doc_code" field's value of the PARow entity.
+// OldHeadCode returns the old "head_code" field's value of the PARow entity.
 // If the PARow object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PARowMutation) OldDocCode(ctx context.Context) (v string, err error) {
+func (m *PARowMutation) OldHeadCode(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDocCode is only allowed on UpdateOne operations")
+		return v, errors.New("OldHeadCode is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDocCode requires an ID field in the mutation")
+		return v, errors.New("OldHeadCode requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDocCode: %w", err)
+		return v, fmt.Errorf("querying old value for OldHeadCode: %w", err)
 	}
-	return oldValue.DocCode, nil
+	return oldValue.HeadCode, nil
 }
 
-// ResetDocCode resets all changes to the "doc_code" field.
-func (m *PARowMutation) ResetDocCode() {
-	m.doc_code = nil
+// ResetHeadCode resets all changes to the "head_code" field.
+func (m *PARowMutation) ResetHeadCode() {
+	m.head_code = nil
 }
 
-// SetOrderCode sets the "order_code" field.
-func (m *PARowMutation) SetOrderCode(s string) {
-	m.order_code = &s
+// SetRowCode sets the "row_code" field.
+func (m *PARowMutation) SetRowCode(s string) {
+	m.row_code = &s
 }
 
-// OrderCode returns the value of the "order_code" field in the mutation.
-func (m *PARowMutation) OrderCode() (r string, exists bool) {
-	v := m.order_code
+// RowCode returns the value of the "row_code" field in the mutation.
+func (m *PARowMutation) RowCode() (r string, exists bool) {
+	v := m.row_code
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldOrderCode returns the old "order_code" field's value of the PARow entity.
+// OldRowCode returns the old "row_code" field's value of the PARow entity.
 // If the PARow object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PARowMutation) OldOrderCode(ctx context.Context) (v string, err error) {
+func (m *PARowMutation) OldRowCode(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldOrderCode is only allowed on UpdateOne operations")
+		return v, errors.New("OldRowCode is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldOrderCode requires an ID field in the mutation")
+		return v, errors.New("OldRowCode requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldOrderCode: %w", err)
+		return v, fmt.Errorf("querying old value for OldRowCode: %w", err)
 	}
-	return oldValue.OrderCode, nil
+	return oldValue.RowCode, nil
 }
 
-// ResetOrderCode resets all changes to the "order_code" field.
-func (m *PARowMutation) ResetOrderCode() {
-	m.order_code = nil
+// ResetRowCode resets all changes to the "row_code" field.
+func (m *PARowMutation) ResetRowCode() {
+	m.row_code = nil
 }
 
-// SetRowCurrency sets the "row_currency" field.
-func (m *PARowMutation) SetRowCurrency(s string) {
-	m.row_currency = &s
+// SetGrnCount sets the "grn_count" field.
+func (m *PARowMutation) SetGrnCount(i int32) {
+	m.grn_count = &i
+	m.addgrn_count = nil
 }
 
-// RowCurrency returns the value of the "row_currency" field in the mutation.
-func (m *PARowMutation) RowCurrency() (r string, exists bool) {
-	v := m.row_currency
+// GrnCount returns the value of the "grn_count" field in the mutation.
+func (m *PARowMutation) GrnCount() (r int32, exists bool) {
+	v := m.grn_count
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldRowCurrency returns the old "row_currency" field's value of the PARow entity.
+// OldGrnCount returns the old "grn_count" field's value of the PARow entity.
 // If the PARow object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PARowMutation) OldRowCurrency(ctx context.Context) (v string, err error) {
+func (m *PARowMutation) OldGrnCount(ctx context.Context) (v int32, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRowCurrency is only allowed on UpdateOne operations")
+		return v, errors.New("OldGrnCount is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRowCurrency requires an ID field in the mutation")
+		return v, errors.New("OldGrnCount requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRowCurrency: %w", err)
+		return v, fmt.Errorf("querying old value for OldGrnCount: %w", err)
 	}
-	return oldValue.RowCurrency, nil
+	return oldValue.GrnCount, nil
 }
 
-// ResetRowCurrency resets all changes to the "row_currency" field.
-func (m *PARowMutation) ResetRowCurrency() {
-	m.row_currency = nil
+// AddGrnCount adds i to the "grn_count" field.
+func (m *PARowMutation) AddGrnCount(i int32) {
+	if m.addgrn_count != nil {
+		*m.addgrn_count += i
+	} else {
+		m.addgrn_count = &i
+	}
 }
 
-// SetTaxRatio sets the "tax_ratio" field.
-func (m *PARowMutation) SetTaxRatio(s string) {
-	m.tax_ratio = &s
-}
-
-// TaxRatio returns the value of the "tax_ratio" field in the mutation.
-func (m *PARowMutation) TaxRatio() (r string, exists bool) {
-	v := m.tax_ratio
+// AddedGrnCount returns the value that was added to the "grn_count" field in this mutation.
+func (m *PARowMutation) AddedGrnCount() (r int32, exists bool) {
+	v := m.addgrn_count
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldTaxRatio returns the old "tax_ratio" field's value of the PARow entity.
-// If the PARow object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PARowMutation) OldTaxRatio(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTaxRatio is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTaxRatio requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTaxRatio: %w", err)
-	}
-	return oldValue.TaxRatio, nil
+// ResetGrnCount resets all changes to the "grn_count" field.
+func (m *PARowMutation) ResetGrnCount() {
+	m.grn_count = nil
+	m.addgrn_count = nil
 }
 
-// ResetTaxRatio resets all changes to the "tax_ratio" field.
-func (m *PARowMutation) ResetTaxRatio() {
-	m.tax_ratio = nil
+// SetGrnAmount sets the "grn_amount" field.
+func (m *PARowMutation) SetGrnAmount(s string) {
+	m.grn_amount = &s
 }
 
-// SetInitialAmount sets the "initial_amount" field.
-func (m *PARowMutation) SetInitialAmount(s string) {
-	m.initial_amount = &s
-}
-
-// InitialAmount returns the value of the "initial_amount" field in the mutation.
-func (m *PARowMutation) InitialAmount() (r string, exists bool) {
-	v := m.initial_amount
+// GrnAmount returns the value of the "grn_amount" field in the mutation.
+func (m *PARowMutation) GrnAmount() (r string, exists bool) {
+	v := m.grn_amount
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldInitialAmount returns the old "initial_amount" field's value of the PARow entity.
+// OldGrnAmount returns the old "grn_amount" field's value of the PARow entity.
 // If the PARow object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PARowMutation) OldInitialAmount(ctx context.Context) (v string, err error) {
+func (m *PARowMutation) OldGrnAmount(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldInitialAmount is only allowed on UpdateOne operations")
+		return v, errors.New("OldGrnAmount is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldInitialAmount requires an ID field in the mutation")
+		return v, errors.New("OldGrnAmount requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldInitialAmount: %w", err)
+		return v, fmt.Errorf("querying old value for OldGrnAmount: %w", err)
 	}
-	return oldValue.InitialAmount, nil
+	return oldValue.GrnAmount, nil
 }
 
-// ResetInitialAmount resets all changes to the "initial_amount" field.
-func (m *PARowMutation) ResetInitialAmount() {
-	m.initial_amount = nil
+// ResetGrnAmount resets all changes to the "grn_amount" field.
+func (m *PARowMutation) ResetGrnAmount() {
+	m.grn_amount = nil
+}
+
+// SetPayAmount sets the "pay_amount" field.
+func (m *PARowMutation) SetPayAmount(s string) {
+	m.pay_amount = &s
+}
+
+// PayAmount returns the value of the "pay_amount" field in the mutation.
+func (m *PARowMutation) PayAmount() (r string, exists bool) {
+	v := m.pay_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPayAmount returns the old "pay_amount" field's value of the PARow entity.
+// If the PARow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PARowMutation) OldPayAmount(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPayAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPayAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayAmount: %w", err)
+	}
+	return oldValue.PayAmount, nil
+}
+
+// ResetPayAmount resets all changes to the "pay_amount" field.
+func (m *PARowMutation) ResetPayAmount() {
+	m.pay_amount = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *PARowMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *PARowMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the PARow entity.
+// If the PARow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PARowMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *PARowMutation) ResetDescription() {
+	m.description = nil
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -1774,21 +2048,24 @@ func (m *PARowMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PARowMutation) Fields() []string {
-	fields := make([]string, 0, 7)
-	if m.doc_code != nil {
-		fields = append(fields, parow.FieldDocCode)
+	fields := make([]string, 0, 8)
+	if m.head_code != nil {
+		fields = append(fields, parow.FieldHeadCode)
 	}
-	if m.order_code != nil {
-		fields = append(fields, parow.FieldOrderCode)
+	if m.row_code != nil {
+		fields = append(fields, parow.FieldRowCode)
 	}
-	if m.row_currency != nil {
-		fields = append(fields, parow.FieldRowCurrency)
+	if m.grn_count != nil {
+		fields = append(fields, parow.FieldGrnCount)
 	}
-	if m.tax_ratio != nil {
-		fields = append(fields, parow.FieldTaxRatio)
+	if m.grn_amount != nil {
+		fields = append(fields, parow.FieldGrnAmount)
 	}
-	if m.initial_amount != nil {
-		fields = append(fields, parow.FieldInitialAmount)
+	if m.pay_amount != nil {
+		fields = append(fields, parow.FieldPayAmount)
+	}
+	if m.description != nil {
+		fields = append(fields, parow.FieldDescription)
 	}
 	if m.created_at != nil {
 		fields = append(fields, parow.FieldCreatedAt)
@@ -1804,16 +2081,18 @@ func (m *PARowMutation) Fields() []string {
 // schema.
 func (m *PARowMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case parow.FieldDocCode:
-		return m.DocCode()
-	case parow.FieldOrderCode:
-		return m.OrderCode()
-	case parow.FieldRowCurrency:
-		return m.RowCurrency()
-	case parow.FieldTaxRatio:
-		return m.TaxRatio()
-	case parow.FieldInitialAmount:
-		return m.InitialAmount()
+	case parow.FieldHeadCode:
+		return m.HeadCode()
+	case parow.FieldRowCode:
+		return m.RowCode()
+	case parow.FieldGrnCount:
+		return m.GrnCount()
+	case parow.FieldGrnAmount:
+		return m.GrnAmount()
+	case parow.FieldPayAmount:
+		return m.PayAmount()
+	case parow.FieldDescription:
+		return m.Description()
 	case parow.FieldCreatedAt:
 		return m.CreatedAt()
 	case parow.FieldUpdatedAt:
@@ -1827,16 +2106,18 @@ func (m *PARowMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *PARowMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case parow.FieldDocCode:
-		return m.OldDocCode(ctx)
-	case parow.FieldOrderCode:
-		return m.OldOrderCode(ctx)
-	case parow.FieldRowCurrency:
-		return m.OldRowCurrency(ctx)
-	case parow.FieldTaxRatio:
-		return m.OldTaxRatio(ctx)
-	case parow.FieldInitialAmount:
-		return m.OldInitialAmount(ctx)
+	case parow.FieldHeadCode:
+		return m.OldHeadCode(ctx)
+	case parow.FieldRowCode:
+		return m.OldRowCode(ctx)
+	case parow.FieldGrnCount:
+		return m.OldGrnCount(ctx)
+	case parow.FieldGrnAmount:
+		return m.OldGrnAmount(ctx)
+	case parow.FieldPayAmount:
+		return m.OldPayAmount(ctx)
+	case parow.FieldDescription:
+		return m.OldDescription(ctx)
 	case parow.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case parow.FieldUpdatedAt:
@@ -1850,40 +2131,47 @@ func (m *PARowMutation) OldField(ctx context.Context, name string) (ent.Value, e
 // type.
 func (m *PARowMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case parow.FieldDocCode:
+	case parow.FieldHeadCode:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDocCode(v)
+		m.SetHeadCode(v)
 		return nil
-	case parow.FieldOrderCode:
+	case parow.FieldRowCode:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetOrderCode(v)
+		m.SetRowCode(v)
 		return nil
-	case parow.FieldRowCurrency:
-		v, ok := value.(string)
+	case parow.FieldGrnCount:
+		v, ok := value.(int32)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetRowCurrency(v)
+		m.SetGrnCount(v)
 		return nil
-	case parow.FieldTaxRatio:
+	case parow.FieldGrnAmount:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetTaxRatio(v)
+		m.SetGrnAmount(v)
 		return nil
-	case parow.FieldInitialAmount:
+	case parow.FieldPayAmount:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetInitialAmount(v)
+		m.SetPayAmount(v)
+		return nil
+	case parow.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	case parow.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -1906,13 +2194,21 @@ func (m *PARowMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *PARowMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addgrn_count != nil {
+		fields = append(fields, parow.FieldGrnCount)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *PARowMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case parow.FieldGrnCount:
+		return m.AddedGrnCount()
+	}
 	return nil, false
 }
 
@@ -1921,6 +2217,13 @@ func (m *PARowMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *PARowMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case parow.FieldGrnCount:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddGrnCount(v)
+		return nil
 	}
 	return fmt.Errorf("unknown PARow numeric field %s", name)
 }
@@ -1948,20 +2251,23 @@ func (m *PARowMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *PARowMutation) ResetField(name string) error {
 	switch name {
-	case parow.FieldDocCode:
-		m.ResetDocCode()
+	case parow.FieldHeadCode:
+		m.ResetHeadCode()
 		return nil
-	case parow.FieldOrderCode:
-		m.ResetOrderCode()
+	case parow.FieldRowCode:
+		m.ResetRowCode()
 		return nil
-	case parow.FieldRowCurrency:
-		m.ResetRowCurrency()
+	case parow.FieldGrnCount:
+		m.ResetGrnCount()
 		return nil
-	case parow.FieldTaxRatio:
-		m.ResetTaxRatio()
+	case parow.FieldGrnAmount:
+		m.ResetGrnAmount()
 		return nil
-	case parow.FieldInitialAmount:
-		m.ResetInitialAmount()
+	case parow.FieldPayAmount:
+		m.ResetPayAmount()
+		return nil
+	case parow.FieldDescription:
+		m.ResetDescription()
 		return nil
 	case parow.FieldCreatedAt:
 		m.ResetCreatedAt()

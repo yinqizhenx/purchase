@@ -74,9 +74,29 @@ func Applicant(v string) predicate.PAHead {
 	return predicate.PAHead(sql.FieldEQ(FieldApplicant, v))
 }
 
-// Department applies equality check predicate on the "department" field. It's identical to DepartmentEQ.
-func Department(v string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldEQ(FieldDepartment, v))
+// DepartmentCode applies equality check predicate on the "department_code" field. It's identical to DepartmentCodeEQ.
+func DepartmentCode(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEQ(FieldDepartmentCode, v))
+}
+
+// SupplierCode applies equality check predicate on the "supplier_code" field. It's identical to SupplierCodeEQ.
+func SupplierCode(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEQ(FieldSupplierCode, v))
+}
+
+// IsAdv applies equality check predicate on the "is_adv" field. It's identical to IsAdvEQ.
+func IsAdv(v bool) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEQ(FieldIsAdv, v))
+}
+
+// HasInvoice applies equality check predicate on the "has_invoice" field. It's identical to HasInvoiceEQ.
+func HasInvoice(v bool) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEQ(FieldHasInvoice, v))
+}
+
+// Remark applies equality check predicate on the "remark" field. It's identical to RemarkEQ.
+func Remark(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEQ(FieldRemark, v))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
@@ -349,79 +369,229 @@ func ApplicantContainsFold(v string) predicate.PAHead {
 	return predicate.PAHead(sql.FieldContainsFold(FieldApplicant, v))
 }
 
-// DepartmentEQ applies the EQ predicate on the "department" field.
-func DepartmentEQ(v string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldEQ(FieldDepartment, v))
+// DepartmentCodeEQ applies the EQ predicate on the "department_code" field.
+func DepartmentCodeEQ(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEQ(FieldDepartmentCode, v))
 }
 
-// DepartmentNEQ applies the NEQ predicate on the "department" field.
-func DepartmentNEQ(v string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldNEQ(FieldDepartment, v))
+// DepartmentCodeNEQ applies the NEQ predicate on the "department_code" field.
+func DepartmentCodeNEQ(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldNEQ(FieldDepartmentCode, v))
 }
 
-// DepartmentIn applies the In predicate on the "department" field.
-func DepartmentIn(vs ...string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldIn(FieldDepartment, vs...))
+// DepartmentCodeIn applies the In predicate on the "department_code" field.
+func DepartmentCodeIn(vs ...string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldIn(FieldDepartmentCode, vs...))
 }
 
-// DepartmentNotIn applies the NotIn predicate on the "department" field.
-func DepartmentNotIn(vs ...string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldNotIn(FieldDepartment, vs...))
+// DepartmentCodeNotIn applies the NotIn predicate on the "department_code" field.
+func DepartmentCodeNotIn(vs ...string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldNotIn(FieldDepartmentCode, vs...))
 }
 
-// DepartmentGT applies the GT predicate on the "department" field.
-func DepartmentGT(v string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldGT(FieldDepartment, v))
+// DepartmentCodeGT applies the GT predicate on the "department_code" field.
+func DepartmentCodeGT(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldGT(FieldDepartmentCode, v))
 }
 
-// DepartmentGTE applies the GTE predicate on the "department" field.
-func DepartmentGTE(v string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldGTE(FieldDepartment, v))
+// DepartmentCodeGTE applies the GTE predicate on the "department_code" field.
+func DepartmentCodeGTE(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldGTE(FieldDepartmentCode, v))
 }
 
-// DepartmentLT applies the LT predicate on the "department" field.
-func DepartmentLT(v string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldLT(FieldDepartment, v))
+// DepartmentCodeLT applies the LT predicate on the "department_code" field.
+func DepartmentCodeLT(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldLT(FieldDepartmentCode, v))
 }
 
-// DepartmentLTE applies the LTE predicate on the "department" field.
-func DepartmentLTE(v string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldLTE(FieldDepartment, v))
+// DepartmentCodeLTE applies the LTE predicate on the "department_code" field.
+func DepartmentCodeLTE(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldLTE(FieldDepartmentCode, v))
 }
 
-// DepartmentContains applies the Contains predicate on the "department" field.
-func DepartmentContains(v string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldContains(FieldDepartment, v))
+// DepartmentCodeContains applies the Contains predicate on the "department_code" field.
+func DepartmentCodeContains(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldContains(FieldDepartmentCode, v))
 }
 
-// DepartmentHasPrefix applies the HasPrefix predicate on the "department" field.
-func DepartmentHasPrefix(v string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldHasPrefix(FieldDepartment, v))
+// DepartmentCodeHasPrefix applies the HasPrefix predicate on the "department_code" field.
+func DepartmentCodeHasPrefix(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldHasPrefix(FieldDepartmentCode, v))
 }
 
-// DepartmentHasSuffix applies the HasSuffix predicate on the "department" field.
-func DepartmentHasSuffix(v string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldHasSuffix(FieldDepartment, v))
+// DepartmentCodeHasSuffix applies the HasSuffix predicate on the "department_code" field.
+func DepartmentCodeHasSuffix(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldHasSuffix(FieldDepartmentCode, v))
 }
 
-// DepartmentIsNil applies the IsNil predicate on the "department" field.
-func DepartmentIsNil() predicate.PAHead {
-	return predicate.PAHead(sql.FieldIsNull(FieldDepartment))
+// DepartmentCodeIsNil applies the IsNil predicate on the "department_code" field.
+func DepartmentCodeIsNil() predicate.PAHead {
+	return predicate.PAHead(sql.FieldIsNull(FieldDepartmentCode))
 }
 
-// DepartmentNotNil applies the NotNil predicate on the "department" field.
-func DepartmentNotNil() predicate.PAHead {
-	return predicate.PAHead(sql.FieldNotNull(FieldDepartment))
+// DepartmentCodeNotNil applies the NotNil predicate on the "department_code" field.
+func DepartmentCodeNotNil() predicate.PAHead {
+	return predicate.PAHead(sql.FieldNotNull(FieldDepartmentCode))
 }
 
-// DepartmentEqualFold applies the EqualFold predicate on the "department" field.
-func DepartmentEqualFold(v string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldEqualFold(FieldDepartment, v))
+// DepartmentCodeEqualFold applies the EqualFold predicate on the "department_code" field.
+func DepartmentCodeEqualFold(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEqualFold(FieldDepartmentCode, v))
 }
 
-// DepartmentContainsFold applies the ContainsFold predicate on the "department" field.
-func DepartmentContainsFold(v string) predicate.PAHead {
-	return predicate.PAHead(sql.FieldContainsFold(FieldDepartment, v))
+// DepartmentCodeContainsFold applies the ContainsFold predicate on the "department_code" field.
+func DepartmentCodeContainsFold(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldContainsFold(FieldDepartmentCode, v))
+}
+
+// SupplierCodeEQ applies the EQ predicate on the "supplier_code" field.
+func SupplierCodeEQ(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEQ(FieldSupplierCode, v))
+}
+
+// SupplierCodeNEQ applies the NEQ predicate on the "supplier_code" field.
+func SupplierCodeNEQ(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldNEQ(FieldSupplierCode, v))
+}
+
+// SupplierCodeIn applies the In predicate on the "supplier_code" field.
+func SupplierCodeIn(vs ...string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldIn(FieldSupplierCode, vs...))
+}
+
+// SupplierCodeNotIn applies the NotIn predicate on the "supplier_code" field.
+func SupplierCodeNotIn(vs ...string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldNotIn(FieldSupplierCode, vs...))
+}
+
+// SupplierCodeGT applies the GT predicate on the "supplier_code" field.
+func SupplierCodeGT(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldGT(FieldSupplierCode, v))
+}
+
+// SupplierCodeGTE applies the GTE predicate on the "supplier_code" field.
+func SupplierCodeGTE(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldGTE(FieldSupplierCode, v))
+}
+
+// SupplierCodeLT applies the LT predicate on the "supplier_code" field.
+func SupplierCodeLT(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldLT(FieldSupplierCode, v))
+}
+
+// SupplierCodeLTE applies the LTE predicate on the "supplier_code" field.
+func SupplierCodeLTE(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldLTE(FieldSupplierCode, v))
+}
+
+// SupplierCodeContains applies the Contains predicate on the "supplier_code" field.
+func SupplierCodeContains(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldContains(FieldSupplierCode, v))
+}
+
+// SupplierCodeHasPrefix applies the HasPrefix predicate on the "supplier_code" field.
+func SupplierCodeHasPrefix(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldHasPrefix(FieldSupplierCode, v))
+}
+
+// SupplierCodeHasSuffix applies the HasSuffix predicate on the "supplier_code" field.
+func SupplierCodeHasSuffix(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldHasSuffix(FieldSupplierCode, v))
+}
+
+// SupplierCodeEqualFold applies the EqualFold predicate on the "supplier_code" field.
+func SupplierCodeEqualFold(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEqualFold(FieldSupplierCode, v))
+}
+
+// SupplierCodeContainsFold applies the ContainsFold predicate on the "supplier_code" field.
+func SupplierCodeContainsFold(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldContainsFold(FieldSupplierCode, v))
+}
+
+// IsAdvEQ applies the EQ predicate on the "is_adv" field.
+func IsAdvEQ(v bool) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEQ(FieldIsAdv, v))
+}
+
+// IsAdvNEQ applies the NEQ predicate on the "is_adv" field.
+func IsAdvNEQ(v bool) predicate.PAHead {
+	return predicate.PAHead(sql.FieldNEQ(FieldIsAdv, v))
+}
+
+// HasInvoiceEQ applies the EQ predicate on the "has_invoice" field.
+func HasInvoiceEQ(v bool) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEQ(FieldHasInvoice, v))
+}
+
+// HasInvoiceNEQ applies the NEQ predicate on the "has_invoice" field.
+func HasInvoiceNEQ(v bool) predicate.PAHead {
+	return predicate.PAHead(sql.FieldNEQ(FieldHasInvoice, v))
+}
+
+// RemarkEQ applies the EQ predicate on the "remark" field.
+func RemarkEQ(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEQ(FieldRemark, v))
+}
+
+// RemarkNEQ applies the NEQ predicate on the "remark" field.
+func RemarkNEQ(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldNEQ(FieldRemark, v))
+}
+
+// RemarkIn applies the In predicate on the "remark" field.
+func RemarkIn(vs ...string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldIn(FieldRemark, vs...))
+}
+
+// RemarkNotIn applies the NotIn predicate on the "remark" field.
+func RemarkNotIn(vs ...string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldNotIn(FieldRemark, vs...))
+}
+
+// RemarkGT applies the GT predicate on the "remark" field.
+func RemarkGT(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldGT(FieldRemark, v))
+}
+
+// RemarkGTE applies the GTE predicate on the "remark" field.
+func RemarkGTE(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldGTE(FieldRemark, v))
+}
+
+// RemarkLT applies the LT predicate on the "remark" field.
+func RemarkLT(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldLT(FieldRemark, v))
+}
+
+// RemarkLTE applies the LTE predicate on the "remark" field.
+func RemarkLTE(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldLTE(FieldRemark, v))
+}
+
+// RemarkContains applies the Contains predicate on the "remark" field.
+func RemarkContains(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldContains(FieldRemark, v))
+}
+
+// RemarkHasPrefix applies the HasPrefix predicate on the "remark" field.
+func RemarkHasPrefix(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldHasPrefix(FieldRemark, v))
+}
+
+// RemarkHasSuffix applies the HasSuffix predicate on the "remark" field.
+func RemarkHasSuffix(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldHasSuffix(FieldRemark, v))
+}
+
+// RemarkEqualFold applies the EqualFold predicate on the "remark" field.
+func RemarkEqualFold(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldEqualFold(FieldRemark, v))
+}
+
+// RemarkContainsFold applies the ContainsFold predicate on the "remark" field.
+func RemarkContainsFold(v string) predicate.PAHead {
+	return predicate.PAHead(sql.FieldContainsFold(FieldRemark, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

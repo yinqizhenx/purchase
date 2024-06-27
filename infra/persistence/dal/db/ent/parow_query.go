@@ -261,12 +261,12 @@ func (prq *PARowQuery) Clone() *PARowQuery {
 // Example:
 //
 //	var v []struct {
-//		DocCode string `json:"doc_code,omitempty"`
+//		HeadCode string `json:"head_code,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.PARow.Query().
-//		GroupBy(parow.FieldDocCode).
+//		GroupBy(parow.FieldHeadCode).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (prq *PARowQuery) GroupBy(field string, fields ...string) *PARowGroupBy {
@@ -284,11 +284,11 @@ func (prq *PARowQuery) GroupBy(field string, fields ...string) *PARowGroupBy {
 // Example:
 //
 //	var v []struct {
-//		DocCode string `json:"doc_code,omitempty"`
+//		HeadCode string `json:"head_code,omitempty"`
 //	}
 //
 //	client.PARow.Query().
-//		Select(parow.FieldDocCode).
+//		Select(parow.FieldHeadCode).
 //		Scan(ctx, &v)
 func (prq *PARowQuery) Select(fields ...string) *PARowSelect {
 	prq.ctx.Fields = append(prq.ctx.Fields, fields...)

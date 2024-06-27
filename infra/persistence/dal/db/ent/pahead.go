@@ -25,8 +25,16 @@ type PAHead struct {
 	PayAmount string `json:"pay_amount,omitempty"`
 	// Applicant holds the value of the "applicant" field.
 	Applicant string `json:"applicant,omitempty"`
-	// Department holds the value of the "department" field.
-	Department string `json:"department,omitempty"`
+	// DepartmentCode holds the value of the "department_code" field.
+	DepartmentCode string `json:"department_code,omitempty"`
+	// SupplierCode holds the value of the "supplier_code" field.
+	SupplierCode string `json:"supplier_code,omitempty"`
+	// IsAdv holds the value of the "is_adv" field.
+	IsAdv bool `json:"is_adv,omitempty"`
+	// HasInvoice holds the value of the "has_invoice" field.
+	HasInvoice bool `json:"has_invoice,omitempty"`
+	// Remark holds the value of the "remark" field.
+	Remark string `json:"remark,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -39,9 +47,11 @@ func (*PAHead) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case pahead.FieldIsAdv, pahead.FieldHasInvoice:
+			values[i] = new(sql.NullBool)
 		case pahead.FieldID:
 			values[i] = new(sql.NullInt64)
-		case pahead.FieldCode, pahead.FieldState, pahead.FieldPayAmount, pahead.FieldApplicant, pahead.FieldDepartment:
+		case pahead.FieldCode, pahead.FieldState, pahead.FieldPayAmount, pahead.FieldApplicant, pahead.FieldDepartmentCode, pahead.FieldSupplierCode, pahead.FieldRemark:
 			values[i] = new(sql.NullString)
 		case pahead.FieldCreatedAt, pahead.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -90,11 +100,35 @@ func (ph *PAHead) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				ph.Applicant = value.String
 			}
-		case pahead.FieldDepartment:
+		case pahead.FieldDepartmentCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field department", values[i])
+				return fmt.Errorf("unexpected type %T for field department_code", values[i])
 			} else if value.Valid {
-				ph.Department = value.String
+				ph.DepartmentCode = value.String
+			}
+		case pahead.FieldSupplierCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field supplier_code", values[i])
+			} else if value.Valid {
+				ph.SupplierCode = value.String
+			}
+		case pahead.FieldIsAdv:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_adv", values[i])
+			} else if value.Valid {
+				ph.IsAdv = value.Bool
+			}
+		case pahead.FieldHasInvoice:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field has_invoice", values[i])
+			} else if value.Valid {
+				ph.HasInvoice = value.Bool
+			}
+		case pahead.FieldRemark:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field remark", values[i])
+			} else if value.Valid {
+				ph.Remark = value.String
 			}
 		case pahead.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -156,8 +190,20 @@ func (ph *PAHead) String() string {
 	builder.WriteString("applicant=")
 	builder.WriteString(ph.Applicant)
 	builder.WriteString(", ")
-	builder.WriteString("department=")
-	builder.WriteString(ph.Department)
+	builder.WriteString("department_code=")
+	builder.WriteString(ph.DepartmentCode)
+	builder.WriteString(", ")
+	builder.WriteString("supplier_code=")
+	builder.WriteString(ph.SupplierCode)
+	builder.WriteString(", ")
+	builder.WriteString("is_adv=")
+	builder.WriteString(fmt.Sprintf("%v", ph.IsAdv))
+	builder.WriteString(", ")
+	builder.WriteString("has_invoice=")
+	builder.WriteString(fmt.Sprintf("%v", ph.HasInvoice))
+	builder.WriteString(", ")
+	builder.WriteString("remark=")
+	builder.WriteString(ph.Remark)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(ph.CreatedAt.Format(time.ANSIC))

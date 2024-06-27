@@ -84,23 +84,79 @@ func (phu *PAHeadUpdate) SetNillableApplicant(s *string) *PAHeadUpdate {
 	return phu
 }
 
-// SetDepartment sets the "department" field.
-func (phu *PAHeadUpdate) SetDepartment(s string) *PAHeadUpdate {
-	phu.mutation.SetDepartment(s)
+// SetDepartmentCode sets the "department_code" field.
+func (phu *PAHeadUpdate) SetDepartmentCode(s string) *PAHeadUpdate {
+	phu.mutation.SetDepartmentCode(s)
 	return phu
 }
 
-// SetNillableDepartment sets the "department" field if the given value is not nil.
-func (phu *PAHeadUpdate) SetNillableDepartment(s *string) *PAHeadUpdate {
+// SetNillableDepartmentCode sets the "department_code" field if the given value is not nil.
+func (phu *PAHeadUpdate) SetNillableDepartmentCode(s *string) *PAHeadUpdate {
 	if s != nil {
-		phu.SetDepartment(*s)
+		phu.SetDepartmentCode(*s)
 	}
 	return phu
 }
 
-// ClearDepartment clears the value of the "department" field.
-func (phu *PAHeadUpdate) ClearDepartment() *PAHeadUpdate {
-	phu.mutation.ClearDepartment()
+// ClearDepartmentCode clears the value of the "department_code" field.
+func (phu *PAHeadUpdate) ClearDepartmentCode() *PAHeadUpdate {
+	phu.mutation.ClearDepartmentCode()
+	return phu
+}
+
+// SetSupplierCode sets the "supplier_code" field.
+func (phu *PAHeadUpdate) SetSupplierCode(s string) *PAHeadUpdate {
+	phu.mutation.SetSupplierCode(s)
+	return phu
+}
+
+// SetNillableSupplierCode sets the "supplier_code" field if the given value is not nil.
+func (phu *PAHeadUpdate) SetNillableSupplierCode(s *string) *PAHeadUpdate {
+	if s != nil {
+		phu.SetSupplierCode(*s)
+	}
+	return phu
+}
+
+// SetIsAdv sets the "is_adv" field.
+func (phu *PAHeadUpdate) SetIsAdv(b bool) *PAHeadUpdate {
+	phu.mutation.SetIsAdv(b)
+	return phu
+}
+
+// SetNillableIsAdv sets the "is_adv" field if the given value is not nil.
+func (phu *PAHeadUpdate) SetNillableIsAdv(b *bool) *PAHeadUpdate {
+	if b != nil {
+		phu.SetIsAdv(*b)
+	}
+	return phu
+}
+
+// SetHasInvoice sets the "has_invoice" field.
+func (phu *PAHeadUpdate) SetHasInvoice(b bool) *PAHeadUpdate {
+	phu.mutation.SetHasInvoice(b)
+	return phu
+}
+
+// SetNillableHasInvoice sets the "has_invoice" field if the given value is not nil.
+func (phu *PAHeadUpdate) SetNillableHasInvoice(b *bool) *PAHeadUpdate {
+	if b != nil {
+		phu.SetHasInvoice(*b)
+	}
+	return phu
+}
+
+// SetRemark sets the "remark" field.
+func (phu *PAHeadUpdate) SetRemark(s string) *PAHeadUpdate {
+	phu.mutation.SetRemark(s)
+	return phu
+}
+
+// SetNillableRemark sets the "remark" field if the given value is not nil.
+func (phu *PAHeadUpdate) SetNillableRemark(s *string) *PAHeadUpdate {
+	if s != nil {
+		phu.SetRemark(*s)
+	}
 	return phu
 }
 
@@ -185,11 +241,23 @@ func (phu *PAHeadUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := phu.mutation.Applicant(); ok {
 		_spec.SetField(pahead.FieldApplicant, field.TypeString, value)
 	}
-	if value, ok := phu.mutation.Department(); ok {
-		_spec.SetField(pahead.FieldDepartment, field.TypeString, value)
+	if value, ok := phu.mutation.DepartmentCode(); ok {
+		_spec.SetField(pahead.FieldDepartmentCode, field.TypeString, value)
 	}
-	if phu.mutation.DepartmentCleared() {
-		_spec.ClearField(pahead.FieldDepartment, field.TypeString)
+	if phu.mutation.DepartmentCodeCleared() {
+		_spec.ClearField(pahead.FieldDepartmentCode, field.TypeString)
+	}
+	if value, ok := phu.mutation.SupplierCode(); ok {
+		_spec.SetField(pahead.FieldSupplierCode, field.TypeString, value)
+	}
+	if value, ok := phu.mutation.IsAdv(); ok {
+		_spec.SetField(pahead.FieldIsAdv, field.TypeBool, value)
+	}
+	if value, ok := phu.mutation.HasInvoice(); ok {
+		_spec.SetField(pahead.FieldHasInvoice, field.TypeBool, value)
+	}
+	if value, ok := phu.mutation.Remark(); ok {
+		_spec.SetField(pahead.FieldRemark, field.TypeString, value)
 	}
 	if value, ok := phu.mutation.CreatedAt(); ok {
 		_spec.SetField(pahead.FieldCreatedAt, field.TypeTime, value)
@@ -273,23 +341,79 @@ func (phuo *PAHeadUpdateOne) SetNillableApplicant(s *string) *PAHeadUpdateOne {
 	return phuo
 }
 
-// SetDepartment sets the "department" field.
-func (phuo *PAHeadUpdateOne) SetDepartment(s string) *PAHeadUpdateOne {
-	phuo.mutation.SetDepartment(s)
+// SetDepartmentCode sets the "department_code" field.
+func (phuo *PAHeadUpdateOne) SetDepartmentCode(s string) *PAHeadUpdateOne {
+	phuo.mutation.SetDepartmentCode(s)
 	return phuo
 }
 
-// SetNillableDepartment sets the "department" field if the given value is not nil.
-func (phuo *PAHeadUpdateOne) SetNillableDepartment(s *string) *PAHeadUpdateOne {
+// SetNillableDepartmentCode sets the "department_code" field if the given value is not nil.
+func (phuo *PAHeadUpdateOne) SetNillableDepartmentCode(s *string) *PAHeadUpdateOne {
 	if s != nil {
-		phuo.SetDepartment(*s)
+		phuo.SetDepartmentCode(*s)
 	}
 	return phuo
 }
 
-// ClearDepartment clears the value of the "department" field.
-func (phuo *PAHeadUpdateOne) ClearDepartment() *PAHeadUpdateOne {
-	phuo.mutation.ClearDepartment()
+// ClearDepartmentCode clears the value of the "department_code" field.
+func (phuo *PAHeadUpdateOne) ClearDepartmentCode() *PAHeadUpdateOne {
+	phuo.mutation.ClearDepartmentCode()
+	return phuo
+}
+
+// SetSupplierCode sets the "supplier_code" field.
+func (phuo *PAHeadUpdateOne) SetSupplierCode(s string) *PAHeadUpdateOne {
+	phuo.mutation.SetSupplierCode(s)
+	return phuo
+}
+
+// SetNillableSupplierCode sets the "supplier_code" field if the given value is not nil.
+func (phuo *PAHeadUpdateOne) SetNillableSupplierCode(s *string) *PAHeadUpdateOne {
+	if s != nil {
+		phuo.SetSupplierCode(*s)
+	}
+	return phuo
+}
+
+// SetIsAdv sets the "is_adv" field.
+func (phuo *PAHeadUpdateOne) SetIsAdv(b bool) *PAHeadUpdateOne {
+	phuo.mutation.SetIsAdv(b)
+	return phuo
+}
+
+// SetNillableIsAdv sets the "is_adv" field if the given value is not nil.
+func (phuo *PAHeadUpdateOne) SetNillableIsAdv(b *bool) *PAHeadUpdateOne {
+	if b != nil {
+		phuo.SetIsAdv(*b)
+	}
+	return phuo
+}
+
+// SetHasInvoice sets the "has_invoice" field.
+func (phuo *PAHeadUpdateOne) SetHasInvoice(b bool) *PAHeadUpdateOne {
+	phuo.mutation.SetHasInvoice(b)
+	return phuo
+}
+
+// SetNillableHasInvoice sets the "has_invoice" field if the given value is not nil.
+func (phuo *PAHeadUpdateOne) SetNillableHasInvoice(b *bool) *PAHeadUpdateOne {
+	if b != nil {
+		phuo.SetHasInvoice(*b)
+	}
+	return phuo
+}
+
+// SetRemark sets the "remark" field.
+func (phuo *PAHeadUpdateOne) SetRemark(s string) *PAHeadUpdateOne {
+	phuo.mutation.SetRemark(s)
+	return phuo
+}
+
+// SetNillableRemark sets the "remark" field if the given value is not nil.
+func (phuo *PAHeadUpdateOne) SetNillableRemark(s *string) *PAHeadUpdateOne {
+	if s != nil {
+		phuo.SetRemark(*s)
+	}
 	return phuo
 }
 
@@ -404,11 +528,23 @@ func (phuo *PAHeadUpdateOne) sqlSave(ctx context.Context) (_node *PAHead, err er
 	if value, ok := phuo.mutation.Applicant(); ok {
 		_spec.SetField(pahead.FieldApplicant, field.TypeString, value)
 	}
-	if value, ok := phuo.mutation.Department(); ok {
-		_spec.SetField(pahead.FieldDepartment, field.TypeString, value)
+	if value, ok := phuo.mutation.DepartmentCode(); ok {
+		_spec.SetField(pahead.FieldDepartmentCode, field.TypeString, value)
 	}
-	if phuo.mutation.DepartmentCleared() {
-		_spec.ClearField(pahead.FieldDepartment, field.TypeString)
+	if phuo.mutation.DepartmentCodeCleared() {
+		_spec.ClearField(pahead.FieldDepartmentCode, field.TypeString)
+	}
+	if value, ok := phuo.mutation.SupplierCode(); ok {
+		_spec.SetField(pahead.FieldSupplierCode, field.TypeString, value)
+	}
+	if value, ok := phuo.mutation.IsAdv(); ok {
+		_spec.SetField(pahead.FieldIsAdv, field.TypeBool, value)
+	}
+	if value, ok := phuo.mutation.HasInvoice(); ok {
+		_spec.SetField(pahead.FieldHasInvoice, field.TypeBool, value)
+	}
+	if value, ok := phuo.mutation.Remark(); ok {
+		_spec.SetField(pahead.FieldRemark, field.TypeString, value)
 	}
 	if value, ok := phuo.mutation.CreatedAt(); ok {
 		_spec.SetField(pahead.FieldCreatedAt, field.TypeTime, value)

@@ -21,8 +21,16 @@ const (
 	FieldPayAmount = "pay_amount"
 	// FieldApplicant holds the string denoting the applicant field in the database.
 	FieldApplicant = "applicant"
-	// FieldDepartment holds the string denoting the department field in the database.
-	FieldDepartment = "department"
+	// FieldDepartmentCode holds the string denoting the department_code field in the database.
+	FieldDepartmentCode = "department_code"
+	// FieldSupplierCode holds the string denoting the supplier_code field in the database.
+	FieldSupplierCode = "supplier_code"
+	// FieldIsAdv holds the string denoting the is_adv field in the database.
+	FieldIsAdv = "is_adv"
+	// FieldHasInvoice holds the string denoting the has_invoice field in the database.
+	FieldHasInvoice = "has_invoice"
+	// FieldRemark holds the string denoting the remark field in the database.
+	FieldRemark = "remark"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -38,7 +46,11 @@ var Columns = []string{
 	FieldState,
 	FieldPayAmount,
 	FieldApplicant,
-	FieldDepartment,
+	FieldDepartmentCode,
+	FieldSupplierCode,
+	FieldIsAdv,
+	FieldHasInvoice,
+	FieldRemark,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
@@ -88,9 +100,29 @@ func ByApplicant(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldApplicant, opts...).ToFunc()
 }
 
-// ByDepartment orders the results by the department field.
-func ByDepartment(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDepartment, opts...).ToFunc()
+// ByDepartmentCode orders the results by the department_code field.
+func ByDepartmentCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDepartmentCode, opts...).ToFunc()
+}
+
+// BySupplierCode orders the results by the supplier_code field.
+func BySupplierCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSupplierCode, opts...).ToFunc()
+}
+
+// ByIsAdv orders the results by the is_adv field.
+func ByIsAdv(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsAdv, opts...).ToFunc()
+}
+
+// ByHasInvoice orders the results by the has_invoice field.
+func ByHasInvoice(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHasInvoice, opts...).ToFunc()
+}
+
+// ByRemark orders the results by the remark field.
+func ByRemark(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRemark, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

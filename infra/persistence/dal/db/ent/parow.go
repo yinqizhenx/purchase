@@ -17,16 +17,18 @@ type PARow struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int64 `json:"id,omitempty"`
-	// DocCode holds the value of the "doc_code" field.
-	DocCode string `json:"doc_code,omitempty"`
-	// OrderCode holds the value of the "order_code" field.
-	OrderCode string `json:"order_code,omitempty"`
-	// RowCurrency holds the value of the "row_currency" field.
-	RowCurrency string `json:"row_currency,omitempty"`
-	// TaxRatio holds the value of the "tax_ratio" field.
-	TaxRatio string `json:"tax_ratio,omitempty"`
-	// InitialAmount holds the value of the "initial_amount" field.
-	InitialAmount string `json:"initial_amount,omitempty"`
+	// HeadCode holds the value of the "head_code" field.
+	HeadCode string `json:"head_code,omitempty"`
+	// RowCode holds the value of the "row_code" field.
+	RowCode string `json:"row_code,omitempty"`
+	// GrnCount holds the value of the "grn_count" field.
+	GrnCount int32 `json:"grn_count,omitempty"`
+	// GrnAmount holds the value of the "grn_amount" field.
+	GrnAmount string `json:"grn_amount,omitempty"`
+	// PayAmount holds the value of the "pay_amount" field.
+	PayAmount string `json:"pay_amount,omitempty"`
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -39,9 +41,9 @@ func (*PARow) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case parow.FieldID:
+		case parow.FieldID, parow.FieldGrnCount:
 			values[i] = new(sql.NullInt64)
-		case parow.FieldDocCode, parow.FieldOrderCode, parow.FieldRowCurrency, parow.FieldTaxRatio, parow.FieldInitialAmount:
+		case parow.FieldHeadCode, parow.FieldRowCode, parow.FieldGrnAmount, parow.FieldPayAmount, parow.FieldDescription:
 			values[i] = new(sql.NullString)
 		case parow.FieldCreatedAt, parow.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -66,35 +68,41 @@ func (pr *PARow) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			pr.ID = int64(value.Int64)
-		case parow.FieldDocCode:
+		case parow.FieldHeadCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field doc_code", values[i])
+				return fmt.Errorf("unexpected type %T for field head_code", values[i])
 			} else if value.Valid {
-				pr.DocCode = value.String
+				pr.HeadCode = value.String
 			}
-		case parow.FieldOrderCode:
+		case parow.FieldRowCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field order_code", values[i])
+				return fmt.Errorf("unexpected type %T for field row_code", values[i])
 			} else if value.Valid {
-				pr.OrderCode = value.String
+				pr.RowCode = value.String
 			}
-		case parow.FieldRowCurrency:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field row_currency", values[i])
+		case parow.FieldGrnCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field grn_count", values[i])
 			} else if value.Valid {
-				pr.RowCurrency = value.String
+				pr.GrnCount = int32(value.Int64)
 			}
-		case parow.FieldTaxRatio:
+		case parow.FieldGrnAmount:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field tax_ratio", values[i])
+				return fmt.Errorf("unexpected type %T for field grn_amount", values[i])
 			} else if value.Valid {
-				pr.TaxRatio = value.String
+				pr.GrnAmount = value.String
 			}
-		case parow.FieldInitialAmount:
+		case parow.FieldPayAmount:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field initial_amount", values[i])
+				return fmt.Errorf("unexpected type %T for field pay_amount", values[i])
 			} else if value.Valid {
-				pr.InitialAmount = value.String
+				pr.PayAmount = value.String
+			}
+		case parow.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				pr.Description = value.String
 			}
 		case parow.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -144,20 +152,23 @@ func (pr *PARow) String() string {
 	var builder strings.Builder
 	builder.WriteString("PARow(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pr.ID))
-	builder.WriteString("doc_code=")
-	builder.WriteString(pr.DocCode)
+	builder.WriteString("head_code=")
+	builder.WriteString(pr.HeadCode)
 	builder.WriteString(", ")
-	builder.WriteString("order_code=")
-	builder.WriteString(pr.OrderCode)
+	builder.WriteString("row_code=")
+	builder.WriteString(pr.RowCode)
 	builder.WriteString(", ")
-	builder.WriteString("row_currency=")
-	builder.WriteString(pr.RowCurrency)
+	builder.WriteString("grn_count=")
+	builder.WriteString(fmt.Sprintf("%v", pr.GrnCount))
 	builder.WriteString(", ")
-	builder.WriteString("tax_ratio=")
-	builder.WriteString(pr.TaxRatio)
+	builder.WriteString("grn_amount=")
+	builder.WriteString(pr.GrnAmount)
 	builder.WriteString(", ")
-	builder.WriteString("initial_amount=")
-	builder.WriteString(pr.InitialAmount)
+	builder.WriteString("pay_amount=")
+	builder.WriteString(pr.PayAmount)
+	builder.WriteString(", ")
+	builder.WriteString("description=")
+	builder.WriteString(pr.Description)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(pr.CreatedAt.Format(time.ANSIC))

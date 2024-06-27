@@ -23,11 +23,11 @@ message AddPAReq {
   string currency = 5;
   bool is_adv = 6;
   bool has_invoice = 7;
-  string contract_code = 8;
-  string company_code = 9;
-  string supplier_code = 10;
-  string remark = 11;
-  repeated PARow rows = 12;
+  string company_code = 8;
+  string supplier_code = 9;
+  string remark = 10;
+  repeated PARow rows = 11;
+  bool is_submit = 12;
 }
 
 message PARow {

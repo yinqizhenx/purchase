@@ -1,17 +1,28 @@
 package payment_center
 
 import (
+	"purchase/domain/company"
+	"purchase/domain/entity/department"
+	"purchase/domain/entity/supplier"
 	"purchase/domain/entity/user"
+	"purchase/domain/vo"
 )
 
 // PAHead  付款中心-PA单
 type PAHead struct {
-	ID        int64     `db:"id" json:"id"`
-	Code      string    `db:"code" json:"code"`             //  单号
-	State     string    `db:"state" json:"state"`           //  状态
-	PayAmount string    `db:"pay_amount" json:"pay_amount"` //  付款金额
-	Applicant user.User `db:"applicant" json:"applicant"`   //  实际需求人
-	Rows      []*PARow
+	ID         int64       `db:"id" json:"id"`
+	Code       string      `db:"code" json:"code"`             //  单号
+	State      vo.DocState `db:"state" json:"state"`           //  状态
+	PayAmount  string      `db:"pay_amount" json:"pay_amount"` //  付款金额
+	Applicant  user.User   `db:"applicant" json:"applicant"`   //  实际需求人
+	Department department.Department
+	Currency   string
+	IsAdv      bool
+	HasInvoice bool
+	Company    company.Company
+	Supplier   supplier.Supplier
+	Remark     string
+	Rows       []*PARow
 	// events    []event.PAEvent
 	snapshot *PAHead
 }

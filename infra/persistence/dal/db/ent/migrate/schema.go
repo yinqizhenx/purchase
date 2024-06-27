@@ -33,7 +33,11 @@ var (
 		{Name: "state", Type: field.TypeString},
 		{Name: "pay_amount", Type: field.TypeString},
 		{Name: "applicant", Type: field.TypeString},
-		{Name: "department", Type: field.TypeString, Nullable: true},
+		{Name: "department_code", Type: field.TypeString, Nullable: true},
+		{Name: "supplier_code", Type: field.TypeString},
+		{Name: "is_adv", Type: field.TypeBool},
+		{Name: "has_invoice", Type: field.TypeBool},
+		{Name: "remark", Type: field.TypeString, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 	}
@@ -46,11 +50,12 @@ var (
 	// PaRowsColumns holds the columns for the "pa_rows" table.
 	PaRowsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
-		{Name: "doc_code", Type: field.TypeString},
-		{Name: "order_code", Type: field.TypeString},
-		{Name: "row_currency", Type: field.TypeString},
-		{Name: "tax_ratio", Type: field.TypeString},
-		{Name: "initial_amount", Type: field.TypeString},
+		{Name: "head_code", Type: field.TypeString},
+		{Name: "row_code", Type: field.TypeString},
+		{Name: "grn_count", Type: field.TypeInt32},
+		{Name: "grn_amount", Type: field.TypeString},
+		{Name: "pay_amount", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 	}
