@@ -4,11 +4,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
+
 	"purchase/domain/entity/payment_center"
 	"purchase/domain/event"
 	"purchase/domain/factory"
 	"purchase/domain/repo"
 	"purchase/domain/sal"
+	"purchase/infra/utils"
 )
 
 // // 在 domain.service 中定义领域服务的接口
@@ -47,35 +50,41 @@ func (s *PADomainService) AddOrUpdatePA(ctx context.Context, pa *payment_center.
 }
 
 func (s *PADomainService) AddPA(ctx context.Context, pa *payment_center.PAHead) error {
-	head, err := s.factory.NewPA(ctx, pa)
+	head, err := s.factory.BuildPA(ctx, pa)
 	if err != nil {
 		return err
 	}
-	err = s.repo.Save(ctx, head)
-	if err != nil {
-		return err
-	}
-	paCreated := &event.PACreated{
-		EventID:     "11111",
-		PACode:      pa.Code,
-		AggregateID: 123,
-		CreatedBy:   "q",
-		CreatedAt:   time.Now(),
-	}
-	return s.PubEvent(ctx, paCreated)
+	head.AppendEvent(s.buildPACreateEvent(ctx, head))
+	return s.repo.Save(ctx, head)
 }
 
 func (s *PADomainService) UpdatePA(ctx context.Context, pa *payment_center.PAHead) error {
-	err := s.repo.Save(ctx, pa)
+	head, err := s.factory.BuildPA(ctx, pa)
 	if err != nil {
 		return err
 	}
-	paCreated := &event.PACreated{
-		EventID:     "11111",
-		PACode:      pa.Code,
-		AggregateID: 123,
-		CreatedBy:   "q",
-		CreatedAt:   time.Now(),
+	// oldPA, err := s.repo.Find(ctx, pa.Code)
+	// if err != nil {
+	// 	return err
+	// }
+	head.AppendEvent(s.buildPAUpdateEvent(ctx, head))
+	return s.repo.Save(ctx, head)
+}
+
+func (s *PADomainService) buildPACreateEvent(ctx context.Context, h *payment_center.PAHead) event.Event {
+	return &event.PACreated{
+		EventID:   uuid.New().String(),
+		PACode:    h.Code,
+		CreatedBy: utils.GetCurrentUser(ctx),
+		CreatedAt: time.Now(),
 	}
-	return s.PubEvent(ctx, paCreated)
+}
+
+func (s *PADomainService) buildPAUpdateEvent(ctx context.Context, h *payment_center.PAHead) event.Event {
+	return &event.PACreated{
+		EventID:   uuid.New().String(),
+		PACode:    h.Code,
+		CreatedBy: utils.GetCurrentUser(ctx),
+		CreatedAt: time.Now(),
+	}
 }

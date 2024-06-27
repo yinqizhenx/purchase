@@ -11,25 +11,29 @@ import (
 )
 
 type PaymentCenterAppService struct {
-	paSrv  *service.PADomainService
-	paRepo repo.PaymentCenterRepo
-	asb    *assembler.Assembler
-	txm    *tx.TransactionManager
+	paSrv     *service.PADomainService
+	paRepo    repo.PaymentCenterRepo
+	assembler *assembler.Assembler
+	txm       *tx.TransactionManager
 }
 
 func NewPaymentCenterAppService(paSrv *service.PADomainService, paRepo repo.PaymentCenterRepo, asb *assembler.Assembler, txm *tx.TransactionManager) *PaymentCenterAppService {
 	return &PaymentCenterAppService{
-		paSrv:  paSrv,
-		paRepo: paRepo,
-		asb:    asb,
-		txm:    txm,
+		paSrv:     paSrv,
+		paRepo:    paRepo,
+		assembler: asb,
+		txm:       txm,
 	}
 }
 
 func (s *PaymentCenterAppService) AddOrUpdatePaymentApply(ctx context.Context, req *pb.AddOrUpdatePAReq) (*pb.AddOrUpdatePAResp, error) {
-	pa := s.asb.PAHeadDtoToDo(req)
+	pa := s.assembler.PAHeadDtoToDo(req)
 	err := s.txm.Transaction(ctx, func(ctx context.Context) error {
-		return s.paSrv.AddOrUpdatePA(ctx, pa)
+		err := s.paSrv.AddOrUpdatePA(ctx, pa)
+		if err != nil {
+			return err
+		}
+		return s.paSrv.PubEvent(ctx, pa.Events()...)
 	})
 	if err != nil {
 		return nil, err

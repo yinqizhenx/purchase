@@ -12,11 +12,10 @@ import (
 var _ Event = (*PACreated)(nil)
 
 type PACreated struct {
-	EventID     string
-	PACode      string
-	AggregateID int64
-	CreatedBy   string    `json:"created_by"` // 创建人
-	CreatedAt   time.Time `json:"created_at"` // 创建时间
+	EventID   string
+	PACode    string
+	CreatedBy string    `json:"created_by"` // 创建人
+	CreatedAt time.Time `json:"created_at"` // 创建时间
 }
 
 func (e *PACreated) ID() string {
@@ -32,7 +31,7 @@ func (e *PACreated) OccurredOn() time.Time {
 }
 
 func (e *PACreated) OrderID() int64 {
-	return e.AggregateID
+	return 0
 }
 
 func (e *PACreated) EventName() string {

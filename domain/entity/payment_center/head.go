@@ -5,6 +5,7 @@ import (
 	"purchase/domain/entity/department"
 	"purchase/domain/entity/supplier"
 	"purchase/domain/entity/user"
+	"purchase/domain/event"
 	"purchase/domain/vo"
 )
 
@@ -23,8 +24,8 @@ type PAHead struct {
 	Supplier   *supplier.Supplier
 	Remark     string
 	Rows       []*PARow
-	// events    []event.PAEvent
-	snapshot *PAHead
+	events     []event.Event
+	snapshot   *PAHead
 }
 
 func deepCopy(p PAHead) *PAHead {
@@ -64,15 +65,20 @@ func (p *PAHead) ChangeProductCnt() error {
 	return nil
 }
 
+func (p *PAHead) AppendEvent(e event.Event) {
+	p.events = append(p.events, e)
+}
+
 // func (p *PAHead) raisePACreateEvent() {
 // 	p.RaiseEvent(&event.PACreated{
 // 		EventID: p.Code,
 // 	})
 // }
 
-// func (p *PAHead) Events() []event.PAEvent {
-// 	return p.events
-// }
+func (p *PAHead) Events() []event.Event {
+	return p.events
+}
+
 //
 // func (p *PAHead) EventTasks() ([]*async_task.AsyncTask, error) {
 // 	msgList := make([]*async_task.AsyncTask, 0, len(p.events))
