@@ -62,13 +62,9 @@ func (r *PARepository) Save(ctx context.Context, order *payment_center.PAHead) e
 	// 持久化
 	diff := order.DetectChanges()
 	if diff == nil {
-		// diff 为空，说明当前不需要追踪变更，采用全量更新的方式
-		// orderPO := converter.OrderToPO(order)
 		if err := r.dal.InsertPA(ctx, order); err != nil {
 			return err
 		}
-		// for _, item := range order.Items {
-		// 	itemPO := converter.OrderItemToPO(item)
 		if err := r.dal.InsertRows(ctx, order.Rows); err != nil {
 			return err
 		}
@@ -76,7 +72,6 @@ func (r *PARepository) Save(ctx context.Context, order *payment_center.PAHead) e
 	} else {
 		// 根据diff，只更新发生了变更的表
 		if diff.OrderChanged {
-			// orderPO := converter.OrderToPO(order)
 			if err := r.dal.UpdatePA(ctx, order); err != nil {
 				return err
 			}
@@ -93,24 +88,6 @@ func (r *PARepository) Save(ctx context.Context, order *payment_center.PAHead) e
 		if err := r.dal.UpdatePARows(ctx, diff.ModifiedItems); err != nil {
 			return err
 		}
-		// for _, item := range diff.RemovedRows {
-		// 	itemPO := converter.OrderItemToPO(item)
-		// 	if err != r.orderItemDal.SoftDelete(ctx, itemPO); err != nil {
-		// 		return err
-		// 	}
-		// }
-		// for _, item := range diff.AddedItems {
-		// 	itemPO := converter.OrderItemToPO(item)
-		// 	if err != r.orderItemDal.Create(ctx, itemPO); err != nil {
-		// 		return err
-		// 	}
-		// }
-		// for _, item := range diff.ModifiedItems {
-		// 	itemPO := converter.OrderItemToPO(item)
-		// 	if err != r.orderItemDal.Update(ctx, itemPO); err != nil {
-		// 		return err
-		// 	}
-		// }
 	}
 	order.Attach() // 再次调用Attach开始新一轮的追踪
 	return nil

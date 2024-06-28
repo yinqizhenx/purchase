@@ -28,14 +28,14 @@ type PAHead struct {
 	snapshot   *PAHead
 }
 
-func deepCopy(p PAHead) *PAHead {
+func (p *PAHead) deepCopy() *PAHead {
 	return nil
 }
 
 func (p *PAHead) Attach() {
-	// if e.snapshot == nil || e.snapshot.Id == e.Id {
-	// 	e.snapshot = deepCopy(e)
-	// }
+	if p.snapshot == nil || p.snapshot.Code == p.Code {
+		p.snapshot = p.deepCopy()
+	}
 }
 
 func (p *PAHead) Detach() {
@@ -67,6 +67,10 @@ func (p *PAHead) ChangeProductCnt() error {
 
 func (p *PAHead) AppendEvent(e event.Event) {
 	p.events = append(p.events, e)
+}
+
+func (p *PAHead) SetSnapshot(h *PAHead) {
+	p.snapshot = h
 }
 
 // func (p *PAHead) raisePACreateEvent() {

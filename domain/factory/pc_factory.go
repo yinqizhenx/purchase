@@ -48,7 +48,7 @@ func (f *PCFactory) BuildPA(ctx context.Context, h *payment_center.PAHead) (*pay
 		Department: dept,
 		Rows:       rows,
 	}
-	return head, nil
+	return head, f.Validate(head)
 }
 
 func (f *PCFactory) UpdatePA(ctx context.Context, pa, update *payment_center.PAHead) error {
@@ -77,4 +77,8 @@ func (f *PCFactory) UpdatePA(ctx context.Context, pa, update *payment_center.PAH
 
 func (f *PCFactory) generateCode() string {
 	return uuid.New().String()
+}
+
+func (f *PCFactory) Validate(h *payment_center.PAHead) error {
+	return nil
 }
