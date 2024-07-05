@@ -1,5 +1,7 @@
 package department
 
+import "strings"
+
 type Department struct {
 	Code          string   `json:"code"`
 	I18nName      string   `json:"i18n_name"`
@@ -11,4 +13,8 @@ type Department struct {
 	ProjOwner     string   `json:"proj_owner"` // 项目负责人
 	Disabled      bool     `json:"disabled"`   // 是否已经失效
 	IsEmptyCache  bool     `json:"is_empty_cache"`
+}
+
+func (d Department) GetPathCodeString() string {
+	return strings.Join(d.PathCodes, ">")
 }

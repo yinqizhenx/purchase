@@ -57,8 +57,44 @@ func (p *PAHead) DetectChanges() *PADiff {
 	if p.snapshot == nil {
 		return nil
 	}
-	// 其他diff逻辑
-	return nil
+	diff := &PADiff{
+		OrderChanged: p.headChanged(),
+	}
+	return diff
+}
+
+func (p *PAHead) headChanged() bool {
+	if p.State != p.snapshot.State {
+		return true
+	}
+	if p.PayAmount != p.snapshot.PayAmount {
+		return true
+	}
+	if p.Applicant.Account != p.snapshot.Applicant.Account {
+		return true
+	}
+	if p.Department.GetPathCodeString() != p.snapshot.Department.GetPathCodeString() || p.Department.I18nPathNames != p.snapshot.Department.I18nPathNames {
+		return true
+	}
+	if p.Currency != p.snapshot.Currency {
+		return true
+	}
+	if p.IsAdv != p.snapshot.IsAdv {
+		return true
+	}
+	if p.HasInvoice != p.snapshot.HasInvoice {
+		return true
+	}
+	if p.Company.Code != p.snapshot.Company.Code {
+		return true
+	}
+	if p.Supplier.Code != p.snapshot.Code {
+		return true
+	}
+	if p.Remark != p.snapshot.Remark {
+		return true
+	}
+	return false
 }
 
 func (p *PAHead) ChangeProductCnt() error {
