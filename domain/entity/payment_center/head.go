@@ -5,7 +5,6 @@ import (
 	"purchase/domain/entity/department"
 	"purchase/domain/entity/supplier"
 	"purchase/domain/entity/user"
-	"purchase/domain/event"
 	"purchase/domain/vo"
 )
 
@@ -24,7 +23,6 @@ type PAHead struct {
 	Supplier   *supplier.Supplier
 	Remark     string
 	Rows       []*PARow
-	events     []event.Event
 	snapshot   *PAHead
 }
 
@@ -39,9 +37,9 @@ func (p *PAHead) Attach() {
 }
 
 func (p *PAHead) Detach() {
-	// if e.snapshot != nil && e.snapshot.Id == e.Id {
-	// 	e.snapshot = nil
-	// }
+	if p.snapshot != nil && p.snapshot.Code == p.Code {
+		p.snapshot = nil
+	}
 }
 
 type PADiff struct {
@@ -65,9 +63,9 @@ func (p *PAHead) ChangeProductCnt() error {
 	return nil
 }
 
-func (p *PAHead) AppendEvent(e event.Event) {
-	p.events = append(p.events, e)
-}
+// func (p *PAHead) AppendEvent(e event.Event) {
+// 	p.events = append(p.events, e)
+// }
 
 func (p *PAHead) SetSnapshot(h *PAHead) {
 	p.snapshot = h
@@ -79,9 +77,9 @@ func (p *PAHead) SetSnapshot(h *PAHead) {
 // 	})
 // }
 
-func (p *PAHead) Events() []event.Event {
-	return p.events
-}
+// func (p *PAHead) Events() []event.Event {
+// 	return p.events
+// }
 
 func (p *PAHead) Update(h *PAHead) {
 
@@ -100,9 +98,9 @@ func (p *PAHead) Update(h *PAHead) {
 // 	return msgList, nil
 // }
 
-func (p *PAHead) RaiseEvent(event event.PAEvent) {
-	p.events = append(p.events, event)
-}
+// func (p *PAHead) RaiseEvent(event event.PAEvent) {
+// 	p.events = append(p.events, event)
+// }
 
 //
 // func (p *PAHead) ClearEvents() {

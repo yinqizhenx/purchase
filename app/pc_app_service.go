@@ -34,11 +34,7 @@ func (s *PaymentCenterAppService) AddPaymentApply(ctx context.Context, req *pb.A
 		return nil, err
 	}
 	err = s.txm.Transaction(ctx, func(ctx context.Context) error {
-		err = s.paSrv.AddPA(ctx, pa)
-		if err != nil {
-			return err
-		}
-		return s.paSrv.PubEvent(ctx, pa.Events()...)
+		return s.paSrv.AddPA(ctx, pa)
 	})
 	if err != nil {
 		return nil, err
@@ -47,13 +43,16 @@ func (s *PaymentCenterAppService) AddPaymentApply(ctx context.Context, req *pb.A
 }
 
 func (s *PaymentCenterAppService) UpdatePaymentApply(ctx context.Context, req *pb.UpdatePAReq) (*pb.UpdatePAResp, error) {
-	pa := s.assembler.PAUpdateDtoToDo(req)
-	err := s.txm.Transaction(ctx, func(ctx context.Context) error {
-		err := s.paSrv.UpdatePA(ctx, pa)
-		if err != nil {
-			return err
-		}
-		return s.paSrv.PubEvent(ctx, pa.Events()...)
+	pa, err := s.paRepo.MustFind(ctx, req.Code)
+	if err != nil {
+		return nil, err
+	}
+	err = s.pcFactory.UpdateBuildPA(ctx, pa, req)
+	if err != nil {
+		return nil, err
+	}
+	err = s.txm.Transaction(ctx, func(ctx context.Context) error {
+		return s.paSrv.UpdatePA(ctx, pa)
 	})
 	if err != nil {
 		return nil, err

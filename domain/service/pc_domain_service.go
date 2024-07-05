@@ -20,46 +20,35 @@ type PADomainService struct {
 	// 因为在领域层不关心具体的实现
 	repo         repo.PaymentCenterRepo
 	mdm          sal.MDMService
-	eventRepo    repo.EventRepo
+	eventService *event.EventService
 	pcFactory    *factory.PCFactory
 	eventFactory *factory.EventFactory
 }
 
-func NewPADomainService(repo repo.PaymentCenterRepo, mdm sal.MDMService, eventRepo repo.EventRepo, f *factory.PCFactory, ef *factory.EventFactory) *PADomainService {
+func NewPADomainService(repo repo.PaymentCenterRepo, mdm sal.MDMService, eventService *event.EventService, f *factory.PCFactory, ef *factory.EventFactory) *PADomainService {
 	return &PADomainService{
 		repo:         repo,
 		mdm:          mdm,
-		eventRepo:    eventRepo,
+		eventService: eventService,
 		pcFactory:    f,
 		eventFactory: ef,
 	}
 }
 
-// PubEvent 插入时间表，后台任务异步发送
-func (s *PADomainService) PubEvent(ctx context.Context, events ...event.Event) error {
-	return s.eventRepo.Save(ctx, events...)
-}
-
 func (s *PADomainService) AddPA(ctx context.Context, pa *payment_center.PAHead) error {
-	// head, err := s.pcFactory.BuildPA(ctx, pa)
-	// if err != nil {
-	// 	return err
-	// }
-	e := s.eventFactory.NewPACreateEvent(ctx, pa)
-	pa.RaiseEvent(e)
-	return s.repo.Save(ctx, pa)
-}
-
-func (s *PADomainService) UpdatePA(ctx context.Context, update *payment_center.PAHead) error {
-	pa, err := s.repo.Find(ctx, update.Code)
+	err := s.repo.Save(ctx, pa)
 	if err != nil {
 		return err
 	}
-	err = s.pcFactory.UpdatePA(ctx, pa, update)
+	e := s.eventFactory.NewPACreateEvent(ctx, pa)
+	return s.eventService.PubEventAsync(ctx, e)
+}
+
+func (s *PADomainService) UpdatePA(ctx context.Context, pa *payment_center.PAHead) error {
+	err := s.repo.Save(ctx, pa)
 	if err != nil {
 		return err
 	}
 	e := s.eventFactory.NewPAUpdateEvent(ctx, pa)
-	pa.RaiseEvent(e)
-	return s.repo.Save(ctx, pa)
+	return s.eventService.PubEventAsync(ctx, e)
 }

@@ -42,6 +42,7 @@ message PARow {
     message: "昵称只能由中文、英文字母、数字、下划线以及英文括号和中文括号组成，并且长度在20以内",
     expression: "this.matches(\"^[\u4e00-\u9fa5a-zA-Z0-9_().（）]{1,20}$\")",
   }];
+  string row_code = 6;
   option (buf.validate.message).cel = {
     id: "parow.grn_count",
     message: "grn_count must greater than 0",

@@ -66,25 +66,40 @@ func (f *PCFactory) BuildPA(ctx context.Context, dto *pb.AddPAReq) (*payment_cen
 	return head, f.Validate(head)
 }
 
-func (f *PCFactory) UpdatePA(ctx context.Context, pa, update *payment_center.PAHead) error {
-	applicant, err := f.mdm.GetUser(ctx, update.Applicant.Account)
+func (f *PCFactory) UpdateBuildPA(ctx context.Context, pa *payment_center.PAHead, update *pb.UpdatePAReq) error {
+	state := vo.DocStateDraft
+	if update.IsSubmit {
+		state = vo.DocStateSubmitted
+	}
+
+	applicant, err := f.mdm.GetUser(ctx, update.Applicant)
 	if err != nil {
 		return err
 	}
 	pa.Applicant = applicant
 
-	dept, err := f.mdm.GetDepartment(ctx, update.Department.Code)
+	dept, err := f.mdm.GetDepartment(ctx, update.ApplyDepartment)
 	if err != nil {
 		return err
 	}
 
 	pa.Department = dept
-	pa.State = update.State
+	pa.State = state
 	pa.PayAmount = update.PayAmount
 	pa.Applicant = applicant
 	pa.Department = dept
-	pa.Rows = update.Rows
+	pa.Rows = nil // 清空
 
+	for _, pbRow := range update.Rows {
+		pa.Rows = append(pa.Rows, &payment_center.PARow{
+			HeadCode:       pbRow.Code,
+			RowCode:        pbRow.RowCode,
+			GrnCount:       pbRow.GrnCount,
+			GrnAmount:      pbRow.GrnAmount,
+			PayAmount:      pbRow.PayAmount,
+			DocDescription: pbRow.DocDescription,
+		})
+	}
 	return f.Validate(pa)
 }
 
