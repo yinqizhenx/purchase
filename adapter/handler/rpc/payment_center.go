@@ -11,6 +11,10 @@ type PaymentCenterHandler struct {
 	srv *app.PaymentCenterAppService
 }
 
-func (h *PaymentCenterHandler) AddOrUpdatePaymentApply(ctx context.Context, req *pb.AddOrUpdatePAReq) (*pb.AddOrUpdatePAResp, error) {
-	return h.srv.AddOrUpdatePaymentApply(ctx, req)
+func (h *PaymentCenterHandler) AddPaymentApply(ctx context.Context, req *pb.AddPAReq) (*pb.AddPAResp, error) {
+	return h.srv.AddPaymentApply(ctx, req)
+}
+
+func (h *PaymentCenterHandler) UpdatePaymentApply(ctx context.Context, req *pb.UpdatePAReq) (*pb.UpdatePAResp, error) {
+	return h.srv.UpdatePaymentApply(ctx, req)
 }

@@ -10,12 +10,14 @@ import "buf/validate/validate.proto";
 service PaymentCenter {
 
   // 付款申请单-创建
-  rpc AddOrUpdatePaymentApply(AddOrUpdatePAReq)returns(AddOrUpdatePAResp);
+  rpc AddPaymentApply(AddPAReq)returns(AddPAResp);
+  // 付款申请单-创建
+  rpc UpdatePaymentApply(UpdatePAReq)returns(UpdatePAResp);
 }
 
 message EmptyMessage {}
 
-message AddOrUpdatePAReq {
+message AddPAReq {
   string code = 1; // 单据编码
   string pay_amount = 2; // 付款金额
   string applicant = 3; // 实际付款人
@@ -47,13 +49,28 @@ message PARow {
   };
 }
 
-message AddOrUpdatePAResp {
+message AddPAResp {
   string code = 1; // 单号
 }
 
+message UpdatePAReq {
+  string code = 1; // 单据编码
+  string pay_amount = 2; // 付款金额
+  string applicant = 3; // 实际付款人
+  string apply_department = 4; // 申请部门
+  string currency = 5;
+  bool is_adv = 6;
+  bool has_invoice = 7;
+  string company_code = 8;
+  string supplier_code = 9;
+  string remark = 10;
+  repeated PARow rows = 11;
+  bool is_submit = 12;
+}
 
-
-
+message UpdatePAResp {
+  string code = 1; // 单号
+}
 
 
 

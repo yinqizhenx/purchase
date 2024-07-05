@@ -8,6 +8,8 @@ import (
 
 	"purchase/domain/entity/payment_center"
 	"purchase/domain/sal"
+	"purchase/domain/vo"
+	pb "purchase/idl/payment_center"
 )
 
 func NewPCFactory(mdm sal.MDMService) *PCFactory {
@@ -20,34 +22,47 @@ type PCFactory struct {
 	mdm sal.MDMService
 }
 
-func (f *PCFactory) BuildPA(ctx context.Context, h *payment_center.PAHead) (*payment_center.PAHead, error) {
-	code := h.Code
+func (f *PCFactory) BuildPA(ctx context.Context, dto *pb.AddPAReq) (*payment_center.PAHead, error) {
+	code := dto.Code
 	if code == "" {
 		code = f.generateCode()
 	}
-	applicant, err := f.mdm.GetUser(ctx, h.Applicant.Account)
+
+	state := vo.DocStateDraft
+	if dto.IsSubmit {
+		state = vo.DocStateSubmitted
+	}
+
+	applicant, err := f.mdm.GetUser(ctx, dto.Applicant)
 	if err != nil {
 		return nil, err
 	}
 
-	dept, err := f.mdm.GetDepartment(ctx, h.Department.Code)
+	dept, err := f.mdm.GetDepartment(ctx, dto.ApplyDepartment)
 	if err != nil {
 		return nil, err
 	}
 
-	rows := h.Rows
-	for i, row := range rows {
-		row.HeadCode = code
-		row.RowCode = code + cast.ToString(i+1)
-	}
 	head := &payment_center.PAHead{
 		Code:       code,
-		State:      h.State,
-		PayAmount:  h.PayAmount,
+		State:      state,
+		PayAmount:  dto.PayAmount,
 		Applicant:  applicant,
 		Department: dept,
-		Rows:       rows,
 	}
+
+	for i, row := range dto.Rows {
+		r := &payment_center.PARow{
+			HeadCode:       dto.Code,
+			RowCode:        code + cast.ToString(i+1),
+			GrnCount:       row.GrnCount,
+			GrnAmount:      row.GrnAmount,
+			PayAmount:      row.PayAmount,
+			DocDescription: row.DocDescription,
+		}
+		head.Rows = append(head.Rows, r)
+	}
+
 	return head, f.Validate(head)
 }
 

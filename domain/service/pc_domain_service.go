@@ -40,21 +40,14 @@ func (s *PADomainService) PubEvent(ctx context.Context, events ...event.Event) e
 	return s.eventRepo.Save(ctx, events...)
 }
 
-func (s *PADomainService) AddOrUpdatePA(ctx context.Context, pa *payment_center.PAHead) error {
-	if pa.Code == "" {
-		return s.AddPA(ctx, pa)
-	}
-	return s.UpdatePA(ctx, pa)
-}
-
 func (s *PADomainService) AddPA(ctx context.Context, pa *payment_center.PAHead) error {
-	head, err := s.pcFactory.BuildPA(ctx, pa)
-	if err != nil {
-		return err
-	}
-	e := s.eventFactory.NewPACreateEvent(ctx, head)
-	head.RaiseEvent(e)
-	return s.repo.Save(ctx, head)
+	// head, err := s.pcFactory.BuildPA(ctx, pa)
+	// if err != nil {
+	// 	return err
+	// }
+	e := s.eventFactory.NewPACreateEvent(ctx, pa)
+	pa.RaiseEvent(e)
+	return s.repo.Save(ctx, pa)
 }
 
 func (s *PADomainService) UpdatePA(ctx context.Context, update *payment_center.PAHead) error {

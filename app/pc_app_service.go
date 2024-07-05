@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"purchase/app/assembler"
+	"purchase/domain/factory"
 	"purchase/domain/repo"
 	"purchase/domain/service"
 	pb "purchase/idl/payment_center"
@@ -15,6 +16,7 @@ type PaymentCenterAppService struct {
 	paRepo    repo.PaymentCenterRepo
 	assembler *assembler.Assembler
 	txm       *tx.TransactionManager
+	pcFactory *factory.PCFactory
 }
 
 func NewPaymentCenterAppService(paSrv *service.PADomainService, paRepo repo.PaymentCenterRepo, asb *assembler.Assembler, txm *tx.TransactionManager) *PaymentCenterAppService {
@@ -26,10 +28,13 @@ func NewPaymentCenterAppService(paSrv *service.PADomainService, paRepo repo.Paym
 	}
 }
 
-func (s *PaymentCenterAppService) AddOrUpdatePaymentApply(ctx context.Context, req *pb.AddOrUpdatePAReq) (*pb.AddOrUpdatePAResp, error) {
-	pa := s.assembler.PAHeadDtoToDo(req)
-	err := s.txm.Transaction(ctx, func(ctx context.Context) error {
-		err := s.paSrv.AddOrUpdatePA(ctx, pa)
+func (s *PaymentCenterAppService) AddPaymentApply(ctx context.Context, req *pb.AddPAReq) (*pb.AddPAResp, error) {
+	pa, err := s.pcFactory.BuildPA(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	err = s.txm.Transaction(ctx, func(ctx context.Context) error {
+		err = s.paSrv.AddPA(ctx, pa)
 		if err != nil {
 			return err
 		}
@@ -38,5 +43,20 @@ func (s *PaymentCenterAppService) AddOrUpdatePaymentApply(ctx context.Context, r
 	if err != nil {
 		return nil, err
 	}
-	return &pb.AddOrUpdatePAResp{Code: req.Code}, nil
+	return &pb.AddPAResp{Code: req.Code}, nil
+}
+
+func (s *PaymentCenterAppService) UpdatePaymentApply(ctx context.Context, req *pb.UpdatePAReq) (*pb.UpdatePAResp, error) {
+	pa := s.assembler.PAUpdateDtoToDo(req)
+	err := s.txm.Transaction(ctx, func(ctx context.Context) error {
+		err := s.paSrv.UpdatePA(ctx, pa)
+		if err != nil {
+			return err
+		}
+		return s.paSrv.PubEvent(ctx, pa.Events()...)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &pb.UpdatePAResp{Code: req.Code}, nil
 }
