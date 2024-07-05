@@ -99,10 +99,11 @@ func (p *PAHead) Update(h *PAHead) {
 // 	}
 // 	return msgList, nil
 // }
-//
-// func (p *PAHead) RaiseEvent(event event.PAEvent) {
-// 	p.events = append(p.events, event)
-// }
+
+func (p *PAHead) RaiseEvent(event event.PAEvent) {
+	p.events = append(p.events, event)
+}
+
 //
 // func (p *PAHead) ClearEvents() {
 // 	for idx := range p.events {

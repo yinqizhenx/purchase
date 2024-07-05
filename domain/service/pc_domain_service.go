@@ -2,16 +2,12 @@ package service
 
 import (
 	"context"
-	"time"
-
-	"github.com/google/uuid"
 
 	"purchase/domain/entity/payment_center"
 	"purchase/domain/event"
 	"purchase/domain/factory"
 	"purchase/domain/repo"
 	"purchase/domain/sal"
-	"purchase/infra/utils"
 )
 
 // // 在 domain.service 中定义领域服务的接口
@@ -22,18 +18,20 @@ import (
 type PADomainService struct {
 	// repository.CommentRepository 和 ContentSal 在领域层都是以接口的形式存在
 	// 因为在领域层不关心具体的实现
-	repo      repo.PaymentCenterRepo
-	mdm       sal.MDMService
-	eventRepo repo.EventRepo
-	factory   *factory.PCFactory
+	repo         repo.PaymentCenterRepo
+	mdm          sal.MDMService
+	eventRepo    repo.EventRepo
+	pcFactory    *factory.PCFactory
+	eventFactory *factory.EventFactory
 }
 
-func NewPADomainService(repo repo.PaymentCenterRepo, mdm sal.MDMService, eventRepo repo.EventRepo, f *factory.PCFactory) *PADomainService {
+func NewPADomainService(repo repo.PaymentCenterRepo, mdm sal.MDMService, eventRepo repo.EventRepo, f *factory.PCFactory, ef *factory.EventFactory) *PADomainService {
 	return &PADomainService{
-		repo:      repo,
-		mdm:       mdm,
-		eventRepo: eventRepo,
-		factory:   f,
+		repo:         repo,
+		mdm:          mdm,
+		eventRepo:    eventRepo,
+		pcFactory:    f,
+		eventFactory: ef,
 	}
 }
 
@@ -50,11 +48,12 @@ func (s *PADomainService) AddOrUpdatePA(ctx context.Context, pa *payment_center.
 }
 
 func (s *PADomainService) AddPA(ctx context.Context, pa *payment_center.PAHead) error {
-	head, err := s.factory.BuildPA(ctx, pa)
+	head, err := s.pcFactory.BuildPA(ctx, pa)
 	if err != nil {
 		return err
 	}
-	head.AppendEvent(s.buildPACreateEvent(ctx, head))
+	e := s.eventFactory.NewPACreateEvent(ctx, head)
+	head.RaiseEvent(e)
 	return s.repo.Save(ctx, head)
 }
 
@@ -63,28 +62,11 @@ func (s *PADomainService) UpdatePA(ctx context.Context, update *payment_center.P
 	if err != nil {
 		return err
 	}
-	err = s.factory.UpdatePA(ctx, pa, update)
+	err = s.pcFactory.UpdatePA(ctx, pa, update)
 	if err != nil {
 		return err
 	}
-	pa.AppendEvent(s.buildPAUpdateEvent(ctx, pa))
+	e := s.eventFactory.NewPAUpdateEvent(ctx, pa)
+	pa.RaiseEvent(e)
 	return s.repo.Save(ctx, pa)
-}
-
-func (s *PADomainService) buildPACreateEvent(ctx context.Context, h *payment_center.PAHead) event.Event {
-	return &event.PACreated{
-		EventID:   uuid.New().String(),
-		PACode:    h.Code,
-		CreatedBy: utils.GetCurrentUser(ctx),
-		CreatedAt: time.Now(),
-	}
-}
-
-func (s *PADomainService) buildPAUpdateEvent(ctx context.Context, h *payment_center.PAHead) event.Event {
-	return &event.PACreated{
-		EventID:   uuid.New().String(),
-		PACode:    h.Code,
-		CreatedBy: utils.GetCurrentUser(ctx),
-		CreatedAt: time.Now(),
-	}
 }

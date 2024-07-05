@@ -69,7 +69,8 @@ func (f *PCFactory) UpdatePA(ctx context.Context, pa, update *payment_center.PAH
 	pa.Applicant = applicant
 	pa.Department = dept
 	pa.Rows = update.Rows
-	return nil
+
+	return f.Validate(pa)
 }
 
 func (f *PCFactory) generateCode() string {
