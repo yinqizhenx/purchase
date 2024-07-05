@@ -26,6 +26,10 @@ type PAHead struct {
 	snapshot   *PAHead
 }
 
+func (p *PAHead) IsSubmit() bool {
+	return p.State == vo.DocStateSubmitted
+}
+
 func (p *PAHead) deepCopy() *PAHead {
 	return nil
 }

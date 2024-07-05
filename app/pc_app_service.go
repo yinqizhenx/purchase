@@ -34,7 +34,7 @@ func (s *PaymentCenterAppService) AddPaymentApply(ctx context.Context, req *pb.A
 		return nil, err
 	}
 	err = s.txm.Transaction(ctx, func(ctx context.Context) error {
-		return s.paSrv.AddPA(ctx, pa)
+		return s.paSrv.SavePA(ctx, pa)
 	})
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (s *PaymentCenterAppService) UpdatePaymentApply(ctx context.Context, req *p
 		return nil, err
 	}
 	err = s.txm.Transaction(ctx, func(ctx context.Context) error {
-		return s.paSrv.UpdatePA(ctx, pa)
+		return s.paSrv.SavePA(ctx, pa)
 	})
 	if err != nil {
 		return nil, err
