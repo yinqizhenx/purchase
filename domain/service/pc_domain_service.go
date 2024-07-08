@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"purchase/domain/entity/payment_center"
-	"purchase/domain/event"
 	"purchase/domain/factory"
 	"purchase/domain/repo"
 	"purchase/domain/sal"
@@ -13,12 +12,12 @@ import (
 type PADomainService struct {
 	repo         repo.PaymentCenterRepo
 	mdm          sal.MDMService
-	eventService *event.EventService
+	eventService *EventService
 	pcFactory    *factory.PCFactory
 	eventFactory *factory.EventFactory
 }
 
-func NewPADomainService(repo repo.PaymentCenterRepo, mdm sal.MDMService, eventService *event.EventService, f *factory.PCFactory, ef *factory.EventFactory) *PADomainService {
+func NewPADomainService(repo repo.PaymentCenterRepo, mdm sal.MDMService, eventService *EventService, f *factory.PCFactory, ef *factory.EventFactory) *PADomainService {
 	return &PADomainService{
 		repo:         repo,
 		mdm:          mdm,

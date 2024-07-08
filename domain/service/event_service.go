@@ -1,8 +1,9 @@
-package event
+package service
 
 import (
 	"context"
 
+	"purchase/domain/event"
 	"purchase/domain/repo"
 )
 
@@ -16,6 +17,6 @@ func NewEventService(repo repo.EventRepo) *EventService {
 	}
 }
 
-func (s *EventService) PubEventAsync(ctx context.Context, events ...Event) error {
+func (s *EventService) PubEventAsync(ctx context.Context, events ...event.Event) error {
 	return s.eventRepo.Save(ctx, events...)
 }
