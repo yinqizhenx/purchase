@@ -1,6 +1,8 @@
 package payment_center
 
 import (
+	"github.com/samber/lo"
+
 	"purchase/domain/entity/company"
 	"purchase/domain/entity/department"
 	"purchase/domain/entity/supplier"
@@ -57,8 +59,12 @@ func (p *PAHead) DetectChanges() *PADiff {
 	if p.snapshot == nil {
 		return nil
 	}
+	removed, added, modified := p.rowsDiff()
 	diff := &PADiff{
-		OrderChanged: p.headChanged(),
+		OrderChanged:  p.headChanged(),
+		RemovedRows:   removed,
+		AddedItems:    added,
+		ModifiedItems: modified,
 	}
 	return diff
 }
@@ -92,6 +98,50 @@ func (p *PAHead) headChanged() bool {
 		return true
 	}
 	if p.Remark != p.snapshot.Remark {
+		return true
+	}
+	return false
+}
+
+func (p *PAHead) rowsDiff() (removed, added, modified []*PARow) {
+	removed = make([]*PARow, 0)
+	added = make([]*PARow, 0)
+	modified = make([]*PARow, 0)
+
+	snapshotRowMap := lo.SliceToMap(p.snapshot.Rows, func(r *PARow) (string, *PARow) {
+		return r.RowCode, r
+	})
+	for _, row := range p.Rows {
+		if !lo.HasKey(snapshotRowMap, row.RowCode) {
+			added = append(added, row)
+		}
+		if p.rowChanged(row, snapshotRowMap[row.RowCode]) {
+			modified = append(modified, row)
+		}
+	}
+
+	newRowMap := lo.SliceToMap(p.Rows, func(r *PARow) (string, *PARow) {
+		return r.RowCode, r
+	})
+	for _, row := range p.snapshot.Rows {
+		if !lo.HasKey(newRowMap, row.RowCode) {
+			removed = append(removed, row)
+		}
+	}
+	return
+}
+
+func (p *PAHead) rowChanged(newRow, snapshotRow *PARow) bool {
+	if newRow.PayAmount != snapshotRow.PayAmount {
+		return true
+	}
+	if newRow.GrnAmount != snapshotRow.PayAmount {
+		return true
+	}
+	if newRow.GrnCount != snapshotRow.GrnCount {
+		return true
+	}
+	if newRow.DocDescription != snapshotRow.DocDescription {
 		return true
 	}
 	return false

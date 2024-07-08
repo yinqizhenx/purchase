@@ -2,6 +2,7 @@ package dal
 
 import (
 	"context"
+
 	"purchase/infra/persistence/convertor"
 	"purchase/infra/persistence/dal/db/ent/pahead"
 	"purchase/infra/persistence/dal/db/ent/parow"
@@ -41,7 +42,7 @@ func (dal *PADal) getRowClient(ctx context.Context) *ent.PARowClient {
 	return dal.db.PARow
 }
 
-func (dal *PADal) InsertPA(ctx context.Context, pa *payment_center.PAHead) error {
+func (dal *PADal) InsertPAHead(ctx context.Context, pa *payment_center.PAHead) error {
 	err := dal.getClient(ctx).Create().
 		SetCode(pa.Code).
 		SetState(pa.State.String()).
@@ -56,7 +57,7 @@ func (dal *PADal) InsertPA(ctx context.Context, pa *payment_center.PAHead) error
 	return err
 }
 
-func (dal *PADal) UpdatePA(ctx context.Context, pa *payment_center.PAHead) error {
+func (dal *PADal) UpdatePAHead(ctx context.Context, pa *payment_center.PAHead) error {
 	return nil
 }
 
@@ -65,6 +66,9 @@ func (dal *PADal) UpdatePARows(ctx context.Context, rows []*payment_center.PARow
 }
 
 func (dal *PADal) InsertRows(ctx context.Context, rows []*payment_center.PARow) error {
+	if len(rows) == 0 {
+		return nil
+	}
 	buildCreate := make([]*ent.PARowCreate, 0)
 	for _, row := range rows {
 		create := dal.getRowClient(ctx).Create().

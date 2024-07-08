@@ -32,7 +32,7 @@ func (r *PARepository) NextIdentity() (int64, error) {
 func (r *PARepository) Save(ctx context.Context, order *payment_center.PAHead) error {
 	diff := order.DetectChanges()
 	if diff == nil {
-		if err := r.dal.InsertPA(ctx, order); err != nil {
+		if err := r.dal.InsertPAHead(ctx, order); err != nil {
 			return err
 		}
 		if err := r.dal.InsertRows(ctx, order.Rows); err != nil {
@@ -42,7 +42,7 @@ func (r *PARepository) Save(ctx context.Context, order *payment_center.PAHead) e
 	} else {
 		// 根据diff，只更新发生了变更的表
 		if diff.OrderChanged {
-			if err := r.dal.UpdatePA(ctx, order); err != nil {
+			if err := r.dal.UpdatePAHead(ctx, order); err != nil {
 				return err
 			}
 		}
