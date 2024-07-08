@@ -47,7 +47,7 @@ func (r *PARepository) Save(ctx context.Context, order *payment_center.PAHead) e
 			}
 		}
 
-		if err := r.dal.SoftDeleteRows(ctx, diff.RemovedRows); err != nil {
+		if err := r.dal.DeleteRows(ctx, diff.RemovedRows); err != nil {
 			return err
 		}
 

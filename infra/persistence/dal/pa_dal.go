@@ -58,10 +58,39 @@ func (dal *PADal) InsertPAHead(ctx context.Context, pa *payment_center.PAHead) e
 }
 
 func (dal *PADal) UpdatePAHead(ctx context.Context, pa *payment_center.PAHead) error {
-	return nil
+	err := dal.getClient(ctx).Update().
+		// SetCode(pa.Code).
+		SetState(pa.State.String()).
+		SetApplicant(pa.Applicant.Account).
+		SetPayAmount(pa.PayAmount).
+		SetDepartmentCode(pa.Department.Code).
+		SetHasInvoice(pa.HasInvoice).
+		SetIsAdv(pa.IsAdv).
+		SetSupplierCode(pa.Supplier.Code).
+		SetRemark(pa.Remark).
+		Where(pahead.Code(pa.Code)).
+		Exec(ctx)
+	return err
 }
 
 func (dal *PADal) UpdatePARows(ctx context.Context, rows []*payment_center.PARow) error {
+	if len(rows) == 0 {
+		return nil
+	}
+	for _, row := range rows {
+		err := dal.getRowClient(ctx).Update().
+			// SetHeadCode(row.HeadCode).
+			// SetRowCode(row.RowCode).
+			SetGrnCount(row.GrnCount).
+			SetGrnAmount(row.GrnAmount).
+			SetPayAmount(row.PayAmount).
+			SetDescription(row.DocDescription).
+			Where(parow.RowCode(row.RowCode)).
+			Exec(ctx)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -86,10 +115,24 @@ func (dal *PADal) InsertRows(ctx context.Context, rows []*payment_center.PARow) 
 }
 
 func (dal *PADal) UpsertPARows(ctx context.Context, rows []*payment_center.PARow) error {
+	if len(rows) == 0 {
+		return nil
+	}
 	return nil
 }
 
-func (dal *PADal) SoftDeleteRows(ctx context.Context, rows []*payment_center.PARow) error {
+func (dal *PADal) DeleteRows(ctx context.Context, rows []*payment_center.PARow) error {
+	if len(rows) == 0 {
+		return nil
+	}
+	for _, row := range rows {
+		_, err := dal.getRowClient(ctx).Delete().
+			Where(parow.RowCode(row.RowCode)).
+			Exec(ctx)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
