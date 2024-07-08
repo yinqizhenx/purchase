@@ -21,6 +21,7 @@ import (
 	"purchase/infra/logx"
 	"purchase/infra/mq"
 	"purchase/infra/mq/kafka"
+	"purchase/infra/persistence/convertor"
 	"purchase/infra/persistence/dal"
 	"purchase/infra/persistence/data"
 	"purchase/infra/persistence/repo_impl"
@@ -41,15 +42,18 @@ func initApp() (*App, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	paDal := dal.NewPADal(client)
-	unboundedChan, cleanup := async_task.NewMessageChan()
-	asyncTaskDal := dal.NewAsyncTaskDal(client)
-	paymentCenterRepo := repo_impl.NewPARepository(paDal, unboundedChan, asyncTaskDal)
-	httpClient, cleanup2 := request.NewHttpClient(logger)
+	httpClient, cleanup := request.NewHttpClient(logger)
 	mdmService := acl.NewMDMService(httpClient)
+	convertorConvertor := convertor.NewConvertor(mdmService)
+	paDal := dal.NewPADal(client, convertorConvertor)
+	unboundedChan, cleanup2 := async_task.NewMessageChan()
+	asyncTaskDal := dal.NewAsyncTaskDal(client, convertorConvertor)
+	paymentCenterRepo := repo_impl.NewPARepository(paDal, unboundedChan, asyncTaskDal)
 	eventRepo := repo_impl.NewEventRepository(unboundedChan, asyncTaskDal)
+	eventService := service.NewEventService(eventRepo)
 	pcFactory := factory.NewPCFactory(mdmService)
-	paDomainService := service.NewPADomainService(paymentCenterRepo, mdmService, eventRepo, pcFactory)
+	eventFactory := factory.NewEventFactory()
+	paDomainService := service.NewPADomainService(paymentCenterRepo, mdmService, eventService, pcFactory, eventFactory)
 	assemblerAssembler := assembler.NewAssembler()
 	transactionManager := tx.NewTransactionManager(client)
 	paymentCenterAppService := app.NewPaymentCenterAppService(paDomainService, paymentCenterRepo, assemblerAssembler, transactionManager)

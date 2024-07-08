@@ -11,6 +11,10 @@ import (
 	"purchase/infra/utils"
 )
 
+func NewEventFactory() *EventFactory {
+	return &EventFactory{}
+}
+
 type EventFactory struct{}
 
 func (f *EventFactory) NewPACreateEvent(ctx context.Context, h *payment_center.PAHead) *event.PACreated {

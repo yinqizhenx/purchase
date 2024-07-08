@@ -22,6 +22,7 @@ import (
 	"purchase/infra/idempotent"
 	"purchase/infra/logx"
 	"purchase/infra/mq"
+	"purchase/infra/persistence/convertor"
 	"purchase/infra/persistence/dal"
 	"purchase/infra/persistence/data"
 	"purchase/infra/persistence/repo_impl"
