@@ -3,6 +3,7 @@ module purchase
 go 1.21
 
 require (
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.33.0-20240401165935-b983156c5e99.1
 	entgo.io/ent v0.12.5
 	github.com/apache/pulsar-client-go v0.11.1
 	github.com/bufbuild/protovalidate-go v0.6.2
@@ -22,6 +23,7 @@ require (
 	github.com/redis/go-redis/extra/redisotel/v9 v9.0.5
 	github.com/redis/go-redis/v9 v9.3.1
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/samber/lo v1.44.0
 	github.com/segmentio/kafka-go v0.4.47
 	github.com/spf13/cast v1.6.0
 	go.etcd.io/etcd/client/v3 v3.5.11
@@ -38,7 +40,6 @@ require (
 
 require (
 	ariga.io/atlas v0.14.1-0.20230918065911-83ad451a4935 // indirect
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.33.0-20240401165935-b983156c5e99.1 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/AthenZ/athenz v1.10.39 // indirect
@@ -76,28 +77,22 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl/v2 v2.13.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
-	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jonboulle/clockwork v0.4.0 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/lestrrat-go/strftime v1.0.6 // indirect
 	github.com/linkedin/goavro/v2 v2.9.8 // indirect
-	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/redis/go-redis/extra/rediscmd/v9 v9.0.5 // indirect
-	github.com/samber/lo v1.44.0 // indirect
 	github.com/sirupsen/logrus v1.6.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/spf13/cobra v1.7.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.11 // indirect
@@ -115,7 +110,6 @@ require (
 	golang.org/x/term v0.20.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240401170217-c3f982113cda // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda // indirect
