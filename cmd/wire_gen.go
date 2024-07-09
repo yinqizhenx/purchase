@@ -7,6 +7,7 @@
 package main
 
 import (
+	"purchase/adapter/handler/rpc"
 	"purchase/adapter/scheduler"
 	"purchase/app"
 	"purchase/app/assembler"
@@ -57,7 +58,10 @@ func initApp() (*App, func(), error) {
 	assemblerAssembler := assembler.NewAssembler()
 	transactionManager := tx.NewTransactionManager(client)
 	paymentCenterAppService := app.NewPaymentCenterAppService(paDomainService, paymentCenterRepo, assemblerAssembler, transactionManager)
-	suDal := dal.NewSUDal(client)
+	paymentCenterHandler := rpc.NewPaymentCenterHandler(paymentCenterAppService)
+	rpcServer := rpc.NewPurchaseServer(paymentCenterHandler)
+	grpcServer := server.NewGRPCServer(configConfig, logger, rpcServer)
+	httpServer := server.NewHttpServer(configConfig)
 	idGenFunc := mq.NewIDGenFunc()
 	publisher, err := kafka.NewKafkaPublisher(configConfig, idGenFunc)
 	if err != nil {
@@ -65,12 +69,6 @@ func initApp() (*App, func(), error) {
 		cleanup()
 		return nil, nil, err
 	}
-	suRepo := repo_impl.NewSURepository(suDal, publisher)
-	suDomainService := service.NewSUDomainService(suRepo)
-	suAppService := app.NewSuAppService(suDomainService, suRepo)
-	appService := app.NewPurchaseService(paymentCenterAppService, suAppService)
-	grpcServer := server.NewGRPCServer(configConfig, logger, appService)
-	httpServer := server.NewHttpServer(configConfig)
 	redisClient, err := data.NewRedis(configConfig)
 	if err != nil {
 		cleanup2()

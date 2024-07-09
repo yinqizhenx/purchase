@@ -7,6 +7,12 @@ import (
 	pb "purchase/idl/payment_center"
 )
 
+func NewPaymentCenterHandler(srv *app.PaymentCenterAppService) *PaymentCenterHandler {
+	return &PaymentCenterHandler{
+		srv: srv,
+	}
+}
+
 type PaymentCenterHandler struct {
 	srv *app.PaymentCenterAppService
 }
