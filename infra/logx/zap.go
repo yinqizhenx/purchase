@@ -87,21 +87,17 @@ func buildWriter(cfg config.Config) zapcore.WriteSyncer {
 	logFolder := GetLogFile()
 	if f := os.Getenv(logPathEnv); f != "" {
 		logFolder = f
-	} else {
-		log.Warnf("warning: no logger path found in env, use default value: %v \n", logFolder)
 	}
 	logPath := path.Join(logFolder, logName)
 	linkName := path.Join(logFolder, logLinkName)
 
 	maxAge, err := cfg.Value("logger.maxAge").Int()
 	if err != nil || maxAge == 0 {
-		log.Warnf("warning: no maxAge found in cfg, use default value: %v \n", defaultMaxAge)
 		maxAge = defaultMaxAge
 	}
 
 	rotateTime, err := cfg.Value("logger.rotateTime").Int()
 	if err != nil || rotateTime == 0 {
-		log.Warnf("warning: no rotateTime found in cfg, use default value: %v \n", defaultRotateTime)
 		rotateTime = defaultRotateTime
 	}
 
