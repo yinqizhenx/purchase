@@ -17,3 +17,6 @@ ent:
 	go run entgo.io/ent/cmd/ent generate \
 		--feature sql/execquery \
 		--template ./infra/persistence/dal/db/extension/data_upload.tmpl ./infra/persistence/dal/db/ent/schema;
+
+lint:
+	golangci-lint run

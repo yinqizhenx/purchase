@@ -11,10 +11,12 @@ type UnImplementedServer struct {
 	pb.UnimplementedPaymentCenterServer
 }
 
+var _ pb.PaymentCenterServer = (*Server)(nil)
+
 type Server struct {
-	UnImplementedServer
 	*PaymentCenterHandler
 	// ... // 对其他服务的引用等
+	UnImplementedServer
 }
 
 var ProviderSet = wire.NewSet(NewPurchaseServer, NewPaymentCenterHandler)
