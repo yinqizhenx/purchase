@@ -60,7 +60,7 @@ func initApp() (*App, func(), error) {
 	paymentCenterAppService := app.NewPaymentCenterAppService(paDomainService, paymentCenterRepo, assemblerAssembler, transactionManager, pcFactory)
 	paymentCenterHandler := rpc.NewPaymentCenterHandler(paymentCenterAppService)
 	rpcServer := rpc.NewPurchaseServer(paymentCenterHandler)
-	grpcServer := server.NewGRPCServer(configConfig, logger, rpcServer)
+	grpcServer := server.NewGRPCServer(configConfig, rpcServer)
 	httpServer := server.NewHttpServer(configConfig)
 	idGenFunc := mq.NewIDGenFunc()
 	publisher, err := kafka.NewKafkaPublisher(configConfig, idGenFunc)
