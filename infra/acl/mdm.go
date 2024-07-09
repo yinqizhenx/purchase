@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"purchase/domain/entity/department"
+	"purchase/domain/entity/supplier"
 	"purchase/domain/entity/user"
 	"purchase/domain/sal"
 	"purchase/infra/request"
@@ -32,4 +33,8 @@ func (mdm *MDMServiceImpl) GetUser(ctx context.Context, account string) (*user.U
 
 func (mdm *MDMServiceImpl) GetDepartment(ctx context.Context, code string) (*department.Department, error) {
 	return &department.Department{Code: code}, nil
+}
+
+func (mdm *MDMServiceImpl) GetSupplier(ctx context.Context, code string) (*supplier.Supplier, error) {
+	return &supplier.Supplier{Code: code}, nil
 }

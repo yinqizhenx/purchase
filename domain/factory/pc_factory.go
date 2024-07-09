@@ -43,12 +43,18 @@ func (f *PCFactory) BuildPA(ctx context.Context, dto *pb.AddPAReq) (*payment_cen
 		return nil, err
 	}
 
+	sup, err := f.mdm.GetSupplier(ctx, dto.SupplierCode)
+	if err != nil {
+		return nil, err
+	}
+
 	head := &payment_center.PAHead{
 		Code:       code,
 		State:      state,
 		PayAmount:  dto.PayAmount,
 		Applicant:  applicant,
 		Department: dept,
+		Supplier:   sup,
 	}
 
 	for i, row := range dto.Rows {
@@ -83,11 +89,17 @@ func (f *PCFactory) UpdateBuildPA(ctx context.Context, pa *payment_center.PAHead
 		return err
 	}
 
+	sup, err := f.mdm.GetSupplier(ctx, update.SupplierCode)
+	if err != nil {
+		return err
+	}
+
 	pa.Department = dept
 	pa.State = state
 	pa.PayAmount = update.PayAmount
 	pa.Applicant = applicant
 	pa.Department = dept
+	pa.Supplier = sup
 	pa.Rows = nil // 清空
 
 	for _, pbRow := range update.Rows {
