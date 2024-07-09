@@ -34,11 +34,11 @@ import (
 
 // initApp init kratos application.
 func initApp() (*App, func(), error) {
+	logger := logx.NewKratosLogger()
 	configConfig, err := config.NewConfig()
 	if err != nil {
 		return nil, nil, err
 	}
-	logger := logx.NewLogger(configConfig)
 	client, err := data.NewDB(configConfig)
 	if err != nil {
 		return nil, nil, err

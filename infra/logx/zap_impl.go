@@ -26,17 +26,17 @@ var (
 
 var _ log.Logger = (*ZapLogger)(nil)
 
+func NewZapLogger(cfg config.Config) *ZapLogger {
+	zapLog := newZapLog(cfg)
+	return &ZapLogger{logger: zapLog}
+}
+
 type ZapLogger struct {
 	logger *zap.Logger
 }
 
 func (zl *ZapLogger) Log(level log.Level, kvs ...interface{}) error {
 	kvLen := len(kvs)
-	// if kvLen == 0 || kvLen%2 != 0 {
-	// 	zl.logger.Warn(fmt.Sprint("kvs must start with a message, and the rest appear in pairs: ", kvs))
-	// 	return nil
-	// }
-
 	data := make([]zap.Field, 0, kvLen/2)
 	if kvLen > 1 {
 		for i := 0; i < kvLen; i += 2 {
