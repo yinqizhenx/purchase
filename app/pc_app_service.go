@@ -19,12 +19,13 @@ type PaymentCenterAppService struct {
 	pcFactory *factory.PCFactory
 }
 
-func NewPaymentCenterAppService(paSrv *service.PADomainService, paRepo repo.PaymentCenterRepo, asb *assembler.Assembler, txm *tx.TransactionManager) *PaymentCenterAppService {
+func NewPaymentCenterAppService(paSrv *service.PADomainService, paRepo repo.PaymentCenterRepo, asb *assembler.Assembler, txm *tx.TransactionManager, pcFactory *factory.PCFactory) *PaymentCenterAppService {
 	return &PaymentCenterAppService{
 		paSrv:     paSrv,
 		paRepo:    paRepo,
 		assembler: asb,
 		txm:       txm,
+		pcFactory: pcFactory,
 	}
 }
 

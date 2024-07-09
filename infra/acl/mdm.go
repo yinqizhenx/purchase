@@ -20,13 +20,14 @@ type MDMServiceImpl struct {
 }
 
 func (mdm *MDMServiceImpl) GetUser(ctx context.Context, account string) (*user.User, error) {
-	req := NewMDMSearchReq(account)
-	resp := NewMDMSearchResp()
-	err := mdm.client.NewRequest(MDMServiceURL, req, resp).Get(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return resp.toUser(), nil
+	return &user.User{Account: account}, nil
+	// req := NewMDMSearchReq(account)
+	// resp := NewMDMSearchResp()
+	// err := mdm.client.NewRequest(MDMServiceURL, req, resp).Get(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// return resp.toUser(), nil
 }
 
 func (mdm *MDMServiceImpl) GetDepartment(ctx context.Context, code string) (*department.Department, error) {

@@ -57,7 +57,7 @@ func initApp() (*App, func(), error) {
 	paDomainService := service.NewPADomainService(paymentCenterRepo, mdmService, eventService, pcFactory, eventFactory)
 	assemblerAssembler := assembler.NewAssembler()
 	transactionManager := tx.NewTransactionManager(client)
-	paymentCenterAppService := app.NewPaymentCenterAppService(paDomainService, paymentCenterRepo, assemblerAssembler, transactionManager)
+	paymentCenterAppService := app.NewPaymentCenterAppService(paDomainService, paymentCenterRepo, assemblerAssembler, transactionManager, pcFactory)
 	paymentCenterHandler := rpc.NewPaymentCenterHandler(paymentCenterAppService)
 	rpcServer := rpc.NewPurchaseServer(paymentCenterHandler)
 	grpcServer := server.NewGRPCServer(configConfig, logger, rpcServer)
