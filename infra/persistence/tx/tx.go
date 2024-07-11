@@ -3,10 +3,12 @@ package tx
 import (
 	"context"
 	"fmt"
+	"runtime"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 
+	"purchase/infra/logx"
 	"purchase/infra/persistence/dal/db/ent"
 )
 
@@ -113,12 +115,14 @@ func (m *TransactionManager) withRequiresNewPropagation(ctx context.Context, fn 
 // runWithTransaction 事务中执行
 func (m *TransactionManager) runWithTransaction(txCtx *TransactionContext, fn func(ctx context.Context) error) (err error) {
 	defer func() {
-		if v := recover(); v != nil {
-			err = fmt.Errorf("runWithTransaction panic: %s", v)
-			log.Error(err)
+		if p := recover(); p != nil {
+			buf := make([]byte, 64<<10) //nolint:gomnd
+			n := runtime.Stack(buf, false)
+			buf = buf[:n]
+			logx.Errorf(txCtx, "事务执行panic :%v:\n%s\n", p, buf)
 			rErr := txCtx.Rollback()
 			if rErr != nil {
-				log.Errorf("roll back transaction fail: %v", rErr)
+				logx.Errorf(txCtx, "回滚事务失败: %v", rErr)
 			}
 		}
 	}()

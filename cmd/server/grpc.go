@@ -4,7 +4,6 @@ import (
 	prom "github.com/go-kratos/kratos/contrib/metrics/prometheus/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/middleware/metrics"
-	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	ggrpc "google.golang.org/grpc"
@@ -36,7 +35,7 @@ func NewGRPCServer(c config.Config, svc *rpc.Server) *grpc.Server {
 	opts := []grpc.ServerOption{
 		grpc.Middleware(
 			middleware.InjectContext(),
-			recovery.Recovery(),
+			middleware.Recovery(),
 			tracing.Server(tracing.WithTracerProvider(tp)),
 			middleware.ServerLogging(),
 			// validate.Validator(),
