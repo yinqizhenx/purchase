@@ -115,6 +115,7 @@ func (m *TransactionManager) withRequiresNewPropagation(ctx context.Context, fn 
 func (m *TransactionManager) runWithTransaction(txCtx *TransactionContext, fn func(ctx context.Context) error) (err error) {
 	defer func() {
 		if p := recover(); p != nil {
+			err = fmt.Errorf("transaction exec panic: %v", p)
 			buf := make([]byte, 64<<10) //nolint:gomnd
 			n := runtime.Stack(buf, false)
 			buf = buf[:n]
