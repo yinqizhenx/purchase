@@ -138,7 +138,7 @@ func fmtErr(err error) slog.Value {
 func newSLogger() *slog.Logger {
 	h := &ContextHandler{slog.NewJSONHandler(&lumberjack.Logger{
 		Filename:   "../logs/foo.log",
-		MaxSize:    500, // megabytes
+		MaxSize:    1, // megabytes
 		MaxBackups: 3,
 		MaxAge:     28,   // days
 		Compress:   true, // disabled by default
