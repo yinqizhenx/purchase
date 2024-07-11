@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 
 	"purchase/infra/logx"
@@ -129,7 +128,7 @@ func (m *TransactionManager) runWithTransaction(txCtx *TransactionContext, fn fu
 
 	if err = fn(txCtx); err != nil {
 		if rErr := txCtx.Rollback(); rErr != nil {
-			log.Errorf("%w: roll back transaction fail: %v", err, rErr)
+			logx.Errorf(txCtx, "回滚事务失败: %v", rErr)
 		}
 		return err
 	}
