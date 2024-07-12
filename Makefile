@@ -10,13 +10,14 @@ pb:
            --grpc-gateway_out=paths=source_relative:. \
            $(API_PROTO_FILES)
 
-
+# sql/execquery 执行raw sql, sql/lock 行锁
 .PHONY: ent
 ent:
 	go generate ./infra/persistence/dal/db/ent && \
-	go run entgo.io/ent/cmd/ent generate \
-		--feature sql/execquery \
-		--template ./infra/persistence/dal/db/extension/data_upload.tmpl ./infra/persistence/dal/db/ent/schema;
+	go run -mod=mod entgo.io/ent/cmd/ent generate \
+		--feature sql/execquery,sql/lock,sql/upsert \
+		--template ./infra/persistence/dal/db/extension/data_upload.tmpl \
+		./infra/persistence/dal/db/ent/schema;
 
 lint:
 	golangci-lint run

@@ -29,7 +29,7 @@ var (
 	// PaHeadsColumns holds the columns for the "pa_heads" table.
 	PaHeadsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
-		{Name: "code", Type: field.TypeString},
+		{Name: "code", Type: field.TypeString, Unique: true},
 		{Name: "state", Type: field.TypeString},
 		{Name: "pay_amount", Type: field.TypeString},
 		{Name: "applicant", Type: field.TypeString},

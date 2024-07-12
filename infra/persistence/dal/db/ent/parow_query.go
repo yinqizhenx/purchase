@@ -9,6 +9,7 @@ import (
 	"purchase/infra/persistence/dal/db/ent/parow"
 	"purchase/infra/persistence/dal/db/ent/predicate"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -21,6 +22,7 @@ type PARowQuery struct {
 	order      []parow.OrderOption
 	inters     []Interceptor
 	predicates []predicate.PARow
+	modifiers  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -342,6 +344,9 @@ func (prq *PARowQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PARow
 		nodes = append(nodes, node)
 		return node.assignValues(columns, values)
 	}
+	if len(prq.modifiers) > 0 {
+		_spec.Modifiers = prq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -356,6 +361,9 @@ func (prq *PARowQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PARow
 
 func (prq *PARowQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := prq.querySpec()
+	if len(prq.modifiers) > 0 {
+		_spec.Modifiers = prq.modifiers
+	}
 	_spec.Node.Columns = prq.ctx.Fields
 	if len(prq.ctx.Fields) > 0 {
 		_spec.Unique = prq.ctx.Unique != nil && *prq.ctx.Unique
@@ -418,6 +426,9 @@ func (prq *PARowQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if prq.ctx.Unique != nil && *prq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range prq.modifiers {
+		m(selector)
+	}
 	for _, p := range prq.predicates {
 		p(selector)
 	}
@@ -433,6 +444,32 @@ func (prq *PARowQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// ForUpdate locks the selected rows against concurrent updates, and prevent them from being
+// updated, deleted or "selected ... for update" by other sessions, until the transaction is
+// either committed or rolled-back.
+func (prq *PARowQuery) ForUpdate(opts ...sql.LockOption) *PARowQuery {
+	if prq.driver.Dialect() == dialect.Postgres {
+		prq.Unique(false)
+	}
+	prq.modifiers = append(prq.modifiers, func(s *sql.Selector) {
+		s.ForUpdate(opts...)
+	})
+	return prq
+}
+
+// ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
+// on any rows that are read. Other sessions can read the rows, but cannot modify them
+// until your transaction commits.
+func (prq *PARowQuery) ForShare(opts ...sql.LockOption) *PARowQuery {
+	if prq.driver.Dialect() == dialect.Postgres {
+		prq.Unique(false)
+	}
+	prq.modifiers = append(prq.modifiers, func(s *sql.Selector) {
+		s.ForShare(opts...)
+	})
+	return prq
 }
 
 // PARowGroupBy is the group-by builder for PARow entities.

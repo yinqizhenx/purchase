@@ -9,6 +9,7 @@ import (
 	"purchase/infra/persistence/dal/db/ent/pahead"
 	"purchase/infra/persistence/dal/db/ent/predicate"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -21,6 +22,7 @@ type PAHeadQuery struct {
 	order      []pahead.OrderOption
 	inters     []Interceptor
 	predicates []predicate.PAHead
+	modifiers  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -342,6 +344,9 @@ func (phq *PAHeadQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PAHe
 		nodes = append(nodes, node)
 		return node.assignValues(columns, values)
 	}
+	if len(phq.modifiers) > 0 {
+		_spec.Modifiers = phq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -356,6 +361,9 @@ func (phq *PAHeadQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PAHe
 
 func (phq *PAHeadQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := phq.querySpec()
+	if len(phq.modifiers) > 0 {
+		_spec.Modifiers = phq.modifiers
+	}
 	_spec.Node.Columns = phq.ctx.Fields
 	if len(phq.ctx.Fields) > 0 {
 		_spec.Unique = phq.ctx.Unique != nil && *phq.ctx.Unique
@@ -418,6 +426,9 @@ func (phq *PAHeadQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if phq.ctx.Unique != nil && *phq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range phq.modifiers {
+		m(selector)
+	}
 	for _, p := range phq.predicates {
 		p(selector)
 	}
@@ -433,6 +444,32 @@ func (phq *PAHeadQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// ForUpdate locks the selected rows against concurrent updates, and prevent them from being
+// updated, deleted or "selected ... for update" by other sessions, until the transaction is
+// either committed or rolled-back.
+func (phq *PAHeadQuery) ForUpdate(opts ...sql.LockOption) *PAHeadQuery {
+	if phq.driver.Dialect() == dialect.Postgres {
+		phq.Unique(false)
+	}
+	phq.modifiers = append(phq.modifiers, func(s *sql.Selector) {
+		s.ForUpdate(opts...)
+	})
+	return phq
+}
+
+// ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
+// on any rows that are read. Other sessions can read the rows, but cannot modify them
+// until your transaction commits.
+func (phq *PAHeadQuery) ForShare(opts ...sql.LockOption) *PAHeadQuery {
+	if phq.driver.Dialect() == dialect.Postgres {
+		phq.Unique(false)
+	}
+	phq.modifiers = append(phq.modifiers, func(s *sql.Selector) {
+		s.ForShare(opts...)
+	})
+	return phq
 }
 
 // PAHeadGroupBy is the group-by builder for PAHead entities.

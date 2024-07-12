@@ -17,7 +17,7 @@ type PAHead struct {
 func (PAHead) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int64("id"),
-		field.String("code"),
+		field.String("code").Unique(),
 		field.String("state"),
 		field.String("pay_amount"),
 		field.String("applicant"),
