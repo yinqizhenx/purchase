@@ -118,6 +118,7 @@ func (c *TransactionContext) Commit() error {
 	return nil
 }
 
+// Rollback 如果程序设置了请求超时，在Rollback运行之前已经超时了，会Rollback失败，transaction has been rollback or committed
 func (c *TransactionContext) Rollback() error {
 	if !c.existSavepoint() {
 		err := c.tx.Rollback()

@@ -7,10 +7,10 @@ trace:
 server:
   http:
     addr: 0.0.0.0:8000
-    timeout: 1 # second
+    timeout: 0 # second
   grpc:
     addr: 0.0.0.0:50051
-    timeout: 1 # second
+    timeout: 0 # second, 0 代表无超时限制
 
 data:
   database:
