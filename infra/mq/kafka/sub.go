@@ -14,6 +14,7 @@ import (
 	"purchase/infra/idempotent"
 	"purchase/infra/logx"
 	"purchase/infra/mq"
+	"purchase/infra/utils"
 	"purchase/pkg/retry"
 )
 
@@ -271,14 +272,14 @@ func (s *Sub) Subscribe(ctx context.Context) {
 				if err != nil {
 					return err
 				}
-				return h.Handle(ctx, msg)
+				return h(ctx, msg)
 			}
 			return nil
 		}
 	}
 	for e, handlers := range s.handlers {
 		for _, h := range handlers {
-			c, err := NewConsumer(e.EventName(), h.Name().String(), s.address, transferHandler(e, h), s.idp)
+			c, err := NewConsumer(e.EventName(), utils.GetMethodName(h), s.address, transferHandler(e, h), s.idp)
 			if err != nil {
 				logx.Errorf(ctx, "new consuer error")
 				continue

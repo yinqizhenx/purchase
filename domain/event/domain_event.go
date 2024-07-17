@@ -28,16 +28,18 @@ type ProductEvent interface {
 	ProductID() int64
 }
 
-type Handler interface {
-	Handle(context.Context, Event) error
-	Name() HandlerType
-}
+// type Handler interface {
+// 	Handle(context.Context, Event) error
+// 	Name() HandlerType
+// }
 
-type HandlerType string
+// type HandlerType string
+//
+// func (h HandlerType) String() string {
+// 	return string(h)
+// }
 
-func (h HandlerType) String() string {
-	return string(h)
-}
+type Handler func(context.Context, Event) error
 
 type HandlerAggregator interface {
 	Build() map[Event][]Handler

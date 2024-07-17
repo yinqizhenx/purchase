@@ -22,7 +22,7 @@ func NewDomainEventHandler(sub *kafka.Sub) *DomainEventHandler {
 	app := &DomainEventHandler{
 		handlers: make(map[domainEvent.Event][]domainEvent.Handler),
 	}
-	app.registerEventHandler(&domainEvent.PACreated{}, OnPACreatedHandler{})
+	app.registerEventHandler(&domainEvent.PACreated{}, app.OnPACreated)
 	return app
 }
 
@@ -40,14 +40,4 @@ func (s *DomainEventHandler) OnPACreated(ctx context.Context, e domainEvent.Even
 		// return errors.New("an error happened 11")
 	}
 	return nil
-}
-
-type OnPACreatedHandler struct{}
-
-func (h OnPACreatedHandler) Handle(ctx context.Context, e domainEvent.Event) error {
-	return nil
-}
-
-func (h OnPACreatedHandler) Name() domainEvent.HandlerType {
-	return "pa_created_handler"
 }
