@@ -240,19 +240,19 @@ func (c *Consumer) ReconsumeLater(m *Message) {
 // 	return 60 * time.Second
 // }
 
-type Sub struct {
+type KafkaSub struct {
 	handlers map[domainEvent.Event][]domainEvent.Handler
 	address  []string
 	idp      idempotent.Idempotent
 }
 
-func NewSub(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator) (*Sub, error) {
+func NewKafkaSub(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator) (mq.Subscriber, error) {
 	address := make([]string, 0)
 	err := cfg.Value("kafka.address").Scan(&address)
 	if err != nil {
 		return nil, err
 	}
-	s := &Sub{
+	s := &KafkaSub{
 		handlers: handlerAgg.Build(),
 		address:  address,
 		idp:      idp,
@@ -260,11 +260,11 @@ func NewSub(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent
 	return s, nil
 }
 
-func (s *Sub) RegisterEventHandler(e domainEvent.Event, h domainEvent.Handler) {
-	s.handlers[e] = append(s.handlers[e], h)
-}
+// func (s *Sub) RegisterEventHandler(e domainEvent.Event, h domainEvent.Handler) {
+// 	s.handlers[e] = append(s.handlers[e], h)
+// }
 
-func (s *Sub) Subscribe(ctx context.Context) {
+func (s *KafkaSub) Subscribe(ctx context.Context) {
 	transferHandler := func(e domainEvent.Event, h domainEvent.Handler) mq.Handler {
 		return func(ctx context.Context, m *mq.Message) error {
 			if e.EventName() == m.HeaderGet(mq.EventName) {
@@ -287,4 +287,8 @@ func (s *Sub) Subscribe(ctx context.Context) {
 			go c.Run(ctx)
 		}
 	}
+}
+
+func (s *KafkaSub) Close() error {
+	return nil
 }

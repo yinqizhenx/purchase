@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/wire"
+
 	domainEvent "purchase/domain/event"
-	"purchase/infra/mq/kafka"
 )
 
-// type Handler func(context.Context, domainEvent.Event) error
+var ProviderSet = wire.NewSet(NewDomainEventHandler)
 
 type DomainEventHandler struct {
 	handlers map[domainEvent.Event][]domainEvent.Handler
@@ -18,7 +19,7 @@ type DomainEventHandler struct {
 // DomainEventHandler 里的每个方法，都是对特定某个领域事件的处理。
 // 方法的参数一般是 Context 和对应监听的领域事件，而返回值只是一个error，用来标识当前处理是否成功
 
-func NewDomainEventHandler(sub *kafka.Sub) *DomainEventHandler {
+func NewDomainEventHandler() domainEvent.HandlerAggregator {
 	app := &DomainEventHandler{
 		handlers: make(map[domainEvent.Event][]domainEvent.Handler),
 	}

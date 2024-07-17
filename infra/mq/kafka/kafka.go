@@ -20,12 +20,12 @@ import (
 )
 
 var (
-	_ mq.Publisher  = (*kafkaPublisher)(nil)
-	_ mq.Subscriber = (*kafkaSubscriber)(nil)
+	_ mq.Publisher = (*kafkaPublisher)(nil)
+	// _ mq.Subscriber = (*kafkaSubscriber)(nil)
 	// _ Event      = (*Message)(nil)
 )
 
-var ProviderSet = wire.NewSet(NewKafkaPublisher, NewKafkaSubscriber)
+var ProviderSet = wire.NewSet(NewKafkaPublisher, NewKafkaSub)
 
 type kafkaPublisher struct {
 	writer *kafka.Writer
@@ -86,6 +86,7 @@ type kafkaSubscriber struct {
 	retryEnabled bool
 	rlq          *retryRouter
 	dlq          *dlqRouter
+	h            mq.Handler
 }
 
 type Option struct {
@@ -164,7 +165,7 @@ func NewKafkaSubscriber(c config.Config, idp idempotent.Idempotent, log log.Logg
 	return k, nil
 }
 
-func (k *kafkaSubscriber) Subscribe(ctx context.Context, h mq.Handler) {
+func (k *kafkaSubscriber) Subscribe(ctx context.Context) {
 	for {
 		m, err := k.reader.FetchMessage(context.Background())
 		if err != nil {
@@ -173,7 +174,7 @@ func (k *kafkaSubscriber) Subscribe(ctx context.Context, h mq.Handler) {
 			}
 			continue
 		}
-		k.handleMessage(ctx, m, h)
+		k.handleMessage(ctx, m, k.h)
 	}
 }
 

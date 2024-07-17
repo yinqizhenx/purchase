@@ -10,6 +10,7 @@ import (
 
 	"purchase/adapter/handler/rpc"
 	"purchase/app"
+	"purchase/app/event_handler"
 	"purchase/cmd/server"
 	"purchase/domain/factory"
 	"purchase/infra/mq/kafka"
@@ -56,6 +57,7 @@ func initApp() (*App, func(), error) {
 		idempotent.ProviderSet,
 		factory.ProviderSet,
 		convertor.ProviderSet,
+		event_handler.ProviderSet,
 		newApp,
 	))
 }

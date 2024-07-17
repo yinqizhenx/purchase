@@ -16,7 +16,7 @@ type Publisher interface {
 }
 
 type Subscriber interface {
-	Subscribe(ctx context.Context, h Handler)
+	Subscribe(ctx context.Context)
 	Close() error
 }
 

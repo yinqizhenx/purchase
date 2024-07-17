@@ -3,17 +3,17 @@ package consumer
 import (
 	"context"
 
-	"purchase/infra/mq/kafka"
+	"purchase/infra/mq"
 )
 
 type EventConsumer struct {
-	sub *kafka.Sub
+	sub mq.Subscriber
 	// appService *event_handler.DomainEventHandler
 	// mdw        []MiddleWare
 	// address    []string
 }
 
-func NewEventConsumer(sub *kafka.Sub) *EventConsumer {
+func NewEventConsumer(sub mq.Subscriber) *EventConsumer {
 	ec := &EventConsumer{
 		sub: sub,
 		// appService: srv,
@@ -41,6 +41,5 @@ func (s *EventConsumer) Start(ctx context.Context) error {
 // }
 
 func (s *EventConsumer) Stop(ctx context.Context) error {
-	// return s.sub.Close()
-	return nil
+	return s.sub.Close()
 }

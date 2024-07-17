@@ -79,14 +79,14 @@ func initApp() (*App, func(), error) {
 	lockBuilder := dlock.NewRedisLock(redisClient)
 	asyncTaskMux := scheduler.NewAsyncTaskServer(publisher, asyncTaskDal, transactionManager, unboundedChan, lockBuilder)
 	idempotentIdempotent := idempotent.NewIdempotentImpl(redisClient)
-	subscriber, err := kafka.NewKafkaSubscriber(configConfig, idempotentIdempotent, logger)
+	handlerAggregator := event_handler.NewDomainEventHandler()
+	subscriber, err := kafka.NewKafkaSub(configConfig, idempotentIdempotent, handlerAggregator)
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	domainEventAppService := event_handler.NewDomainEventAppService()
-	eventConsumer := server.NewEventConsumerServer(subscriber, domainEventAppService)
+	eventConsumer := server.NewEventConsumerServer(subscriber)
 	mainApp := newApp(logger, grpcServer, httpServer, asyncTaskMux, eventConsumer)
 	return mainApp, func() {
 		cleanup2()

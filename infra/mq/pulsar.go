@@ -12,7 +12,8 @@ import (
 )
 
 var _ Publisher = (*pulsarPublisher)(nil)
-var _ Subscriber = (*pulsarSubscriber)(nil)
+
+// var _ Subscriber = (*pulsarSubscriber)(nil)
 
 type pulsarPublisher struct {
 	client   pulsar.Client
@@ -63,6 +64,7 @@ type pulsarSubscriber struct {
 	consumer pulsar.Consumer
 	idp      idempotent.Idempotent
 	sem      chan struct{} // 限制最大并发消费
+	h        Handler
 }
 
 func NewPulsarSubscriber(idp idempotent.Idempotent) (Subscriber, error) {
@@ -96,7 +98,7 @@ func NewPulsarSubscriber(idp idempotent.Idempotent) (Subscriber, error) {
 	return sub, nil
 }
 
-func (sub pulsarSubscriber) Subscribe(ctx context.Context, h Handler) {
+func (sub pulsarSubscriber) Subscribe(ctx context.Context) {
 	// todo 定时清除长时间未消费成功的消息幂等键
 	for {
 		msg, err := sub.consumer.Receive(ctx)
@@ -141,7 +143,7 @@ func (sub pulsarSubscriber) Subscribe(ctx context.Context, h Handler) {
 					Body: msg.Payload(),
 				}
 				m.HeaderSet(EventName, msg.Properties()[EventName])
-				err = h(ctx, m)
+				err = sub.h(ctx, m)
 				if err != nil {
 					// 消费失败, 投入重试队列
 					// 如果RemoveFailKey失败，ReconsumeLater成功，重会等到key过期删除，然后被消费
