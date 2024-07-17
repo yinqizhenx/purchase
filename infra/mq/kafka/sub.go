@@ -18,14 +18,75 @@ import (
 	"purchase/pkg/retry"
 )
 
-type Consumer struct {
-	reader       *kafka.Reader
-	handler      mq.Handler
-	idp          idempotent.Idempotent
-	retryEnabled bool
-	rlq          *retryRouter
-	dlq          *dlqRouter
-	topic        string
+const (
+	defaultRetryTopic = "KAFKA_RETRY_TOPIC"
+	defaultDeadTopic  = "KAFKA_DEAD_TOPIC"
+	defaultMaxRetry   = 3
+)
+
+var retryTopic = map[time.Duration]string{
+	5 * time.Second:  "retry_in_5s",
+	10 * time.Second: "retry_in_10s",
+	60 * time.Second: "retry_in_60s",
+}
+
+func retryBackoff(n int) time.Duration {
+	if n == 1 {
+		return 5 * time.Second
+	}
+	if n == 2 {
+		return 10 * time.Second
+	}
+	return 60 * time.Second
+}
+
+type kafkaSubscriber struct {
+	handlers map[domainEvent.Event][]domainEvent.Handler
+	address  []string
+	idp      idempotent.Idempotent
+}
+
+func NewKafkaSub(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator) (mq.Subscriber, error) {
+	address := make([]string, 0)
+	err := cfg.Value("kafka.address").Scan(&address)
+	if err != nil {
+		return nil, err
+	}
+	s := &kafkaSubscriber{
+		handlers: handlerAgg.Build(),
+		address:  address,
+		idp:      idp,
+	}
+	return s, nil
+}
+
+func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
+	transferHandler := func(e domainEvent.Event, h domainEvent.Handler) mq.Handler {
+		return func(ctx context.Context, m *mq.Message) error {
+			if e.EventName() == m.HeaderGet(mq.EventName) {
+				msg, err := e.Decode(m.Body)
+				if err != nil {
+					return err
+				}
+				return h(ctx, msg)
+			}
+			return nil
+		}
+	}
+	for e, handlers := range s.handlers {
+		for _, h := range handlers {
+			c, err := NewConsumer(e.EventName(), utils.GetMethodName(h), s.address, transferHandler(e, h), s.idp)
+			if err != nil {
+				logx.Errorf(ctx, "new consuer error")
+				continue
+			}
+			go c.Run(ctx)
+		}
+	}
+}
+
+func (s *kafkaSubscriber) Close() error {
+	return nil
 }
 
 func NewConsumer(topic string, consumerGroup string, address []string, handler mq.Handler, idp idempotent.Idempotent) (*Consumer, error) {
@@ -67,6 +128,16 @@ func NewConsumer(topic string, consumerGroup string, address []string, handler m
 	}
 	go c.consumeRetryTopic(context.Background(), address)
 	return c, nil
+}
+
+type Consumer struct {
+	reader       *kafka.Reader
+	handler      mq.Handler
+	idp          idempotent.Idempotent
+	retryEnabled bool
+	rlq          *retryRouter
+	dlq          *dlqRouter
+	topic        string
 }
 
 func (c *Consumer) Run(ctx context.Context) {
@@ -222,73 +293,4 @@ func (c *Consumer) ReconsumeLater(m *Message) {
 	} else {
 		c.rlq.Chan() <- m
 	}
-}
-
-// var retryTopic = map[time.Duration]string{
-// 	5 * time.Second:  "retry_in_5s",
-// 	10 * time.Second: "retry_in_10s",
-// 	60 * time.Second: "retry_in_60s",
-// }
-
-// func retryBackoff(n int) time.Duration {
-// 	if n == 1 {
-// 		return 5 * time.Second
-// 	}
-// 	if n == 2 {
-// 		return 10 * time.Second
-// 	}
-// 	return 60 * time.Second
-// }
-
-type KafkaSub struct {
-	handlers map[domainEvent.Event][]domainEvent.Handler
-	address  []string
-	idp      idempotent.Idempotent
-}
-
-func NewKafkaSub(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator) (mq.Subscriber, error) {
-	address := make([]string, 0)
-	err := cfg.Value("kafka.address").Scan(&address)
-	if err != nil {
-		return nil, err
-	}
-	s := &KafkaSub{
-		handlers: handlerAgg.Build(),
-		address:  address,
-		idp:      idp,
-	}
-	return s, nil
-}
-
-// func (s *Sub) RegisterEventHandler(e domainEvent.Event, h domainEvent.Handler) {
-// 	s.handlers[e] = append(s.handlers[e], h)
-// }
-
-func (s *KafkaSub) Subscribe(ctx context.Context) {
-	transferHandler := func(e domainEvent.Event, h domainEvent.Handler) mq.Handler {
-		return func(ctx context.Context, m *mq.Message) error {
-			if e.EventName() == m.HeaderGet(mq.EventName) {
-				msg, err := e.Decode(m.Body)
-				if err != nil {
-					return err
-				}
-				return h(ctx, msg)
-			}
-			return nil
-		}
-	}
-	for e, handlers := range s.handlers {
-		for _, h := range handlers {
-			c, err := NewConsumer(e.EventName(), utils.GetMethodName(h), s.address, transferHandler(e, h), s.idp)
-			if err != nil {
-				logx.Errorf(ctx, "new consuer error")
-				continue
-			}
-			go c.Run(ctx)
-		}
-	}
-}
-
-func (s *KafkaSub) Close() error {
-	return nil
 }
