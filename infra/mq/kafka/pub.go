@@ -46,11 +46,7 @@ func (s *kafkaPublisher) Publish(ctx context.Context, msg *mq.Message) error {
 }
 
 func (s *kafkaPublisher) Close() error {
-	err := s.writer.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.writer.Close()
 }
 
 func NewKafkaPublisher(c config.Config, idg mq.IDGenFunc) (mq.Publisher, error) {
