@@ -52,9 +52,9 @@ func NewGRPCServer(c config.Config, svc *rpc.Server) *grpc.Server {
 	if conf.Addr != "" {
 		opts = append(opts, grpc.Address(conf.Addr))
 	}
-	if conf.Timeout != 0 {
-		opts = append(opts, grpc.Timeout(utils.Float2Duration(conf.Timeout)))
-	}
+
+	opts = append(opts, grpc.Timeout(utils.Float2Duration(conf.Timeout)))
+
 	srv := grpc.NewServer(opts...)
 	registerServer(srv, svc)
 	return srv

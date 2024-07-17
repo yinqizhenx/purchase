@@ -5,11 +5,11 @@ import "context"
 const CurrentUserKey = "current_user"
 
 func GetCurrentUser(ctx context.Context) string {
-	user := ctx.Value(CurrentUserKey).(string)
-	if user == "" {
-		user = "fake_user"
+	user := ctx.Value(CurrentUserKey)
+	if user == nil {
+		return "fake_user"
 	}
-	return user
+	return user.(string)
 }
 
 func SetCurrentUser(ctx context.Context, user string) context.Context {

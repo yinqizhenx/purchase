@@ -20,8 +20,8 @@ var ProviderSet = wire.NewSet(NewKafkaPublisher, NewKafkaSubscriber)
 
 type kafkaPublisher struct {
 	writer *kafka.Writer
-	topic  string
-	idg    mq.IDGenFunc
+	// topic  string
+	idg mq.IDGenFunc
 }
 
 func (s *kafkaPublisher) Publish(ctx context.Context, msg *mq.Message) error {
@@ -34,6 +34,7 @@ func (s *kafkaPublisher) Publish(ctx context.Context, msg *mq.Message) error {
 	m.SetMessageID(s.idg())
 
 	kMsg, err := m.ToKafkaMessage()
+	kMsg.Topic = msg.HeaderGet(mq.EventName)
 	if err != nil {
 		return err
 	}
@@ -58,14 +59,14 @@ func NewKafkaPublisher(c config.Config, idg mq.IDGenFunc) (mq.Publisher, error) 
 	if err != nil {
 		return nil, err
 	}
-	topic, err := c.Value("kafka.topic").String()
-	if err != nil {
-		return nil, err
-	}
+	// topic, err := c.Value("kafka.topic").String()
+	// if err != nil {
+	// 	return nil, err
+	// }
 	w := &kafka.Writer{
-		Topic:    topic,
+		// Topic:    topic,
 		Addr:     kafka.TCP(address...),
 		Balancer: &kafka.LeastBytes{},
 	}
-	return &kafkaPublisher{writer: w, topic: topic, idg: idg}, nil
+	return &kafkaPublisher{writer: w, idg: idg}, nil
 }
