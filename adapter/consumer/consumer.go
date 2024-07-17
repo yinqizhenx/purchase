@@ -3,23 +3,20 @@ package consumer
 import (
 	"context"
 
-	"github.com/go-kratos/kratos/v2/config"
-
-	"purchase/app/event_handler"
-	"purchase/infra/mq"
+	"purchase/infra/mq/kafka"
 )
 
 type EventConsumer struct {
-	// sub        mq.Subscriber
-	appService *event_handler.DomainEventAppService
+	sub *kafka.Sub
+	// appService *event_handler.DomainEventHandler
 	// mdw        []MiddleWare
 	// address    []string
 }
 
-func NewEventConsumer(s mq.Subscriber, srv *event_handler.DomainEventAppService, cfg config.Config) *EventConsumer {
+func NewEventConsumer(sub *kafka.Sub) *EventConsumer {
 	ec := &EventConsumer{
-		// sub:        s,
-		appService: srv,
+		sub: sub,
+		// appService: srv,
 	}
 	// ec.use()
 	return ec
@@ -27,7 +24,7 @@ func NewEventConsumer(s mq.Subscriber, srv *event_handler.DomainEventAppService,
 
 func (s *EventConsumer) Start(ctx context.Context) error {
 	// s.sub.Subscribe(ctx, s.Consume)
-	s.appService.Handle(ctx)
+	s.sub.Subscribe(ctx)
 	return nil
 }
 

@@ -30,5 +30,15 @@ type ProductEvent interface {
 
 type Handler interface {
 	Handle(context.Context, Event) error
-	Name() string
+	Name() HandlerType
+}
+
+type HandlerType string
+
+func (h HandlerType) String() string {
+	return string(h)
+}
+
+type HandlerAggregator interface {
+	Build() map[Event][]Handler
 }

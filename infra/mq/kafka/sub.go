@@ -245,14 +245,14 @@ type Sub struct {
 	idp      idempotent.Idempotent
 }
 
-func NewSub(cfg config.Config, idp idempotent.Idempotent, handlers map[domainEvent.Event][]domainEvent.Handler) (*Sub, error) {
+func NewSub(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator) (*Sub, error) {
 	address := make([]string, 0)
 	err := cfg.Value("kafka.address").Scan(&address)
 	if err != nil {
 		return nil, err
 	}
 	s := &Sub{
-		handlers: handlers,
+		handlers: handlerAgg.Build(),
 		address:  address,
 		idp:      idp,
 	}
@@ -278,7 +278,7 @@ func (s *Sub) Subscribe(ctx context.Context) {
 	}
 	for e, handlers := range s.handlers {
 		for _, h := range handlers {
-			c, err := NewConsumer(e.EventName(), h.Name(), s.address, transferHandler(e, h), s.idp)
+			c, err := NewConsumer(e.EventName(), h.Name().String(), s.address, transferHandler(e, h), s.idp)
 			if err != nil {
 				logx.Errorf(ctx, "new consuer error")
 				continue
