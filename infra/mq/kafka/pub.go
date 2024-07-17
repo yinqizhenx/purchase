@@ -11,12 +11,12 @@ import (
 )
 
 var (
-	_ mq.Publisher = (*kafkaPublisher)(nil)
-	// _ mq.Subscriber = (*kafkaSubscriber)(nil)
+	_ mq.Publisher  = (*kafkaPublisher)(nil)
+	_ mq.Subscriber = (*kafkaSubscriber)(nil)
 	// _ Event      = (*Message)(nil)
 )
 
-var ProviderSet = wire.NewSet(NewKafkaPublisher, NewKafkaSub)
+var ProviderSet = wire.NewSet(NewKafkaPublisher, NewKafkaSubscriber)
 
 type kafkaPublisher struct {
 	writer *kafka.Writer
@@ -68,9 +68,4 @@ func NewKafkaPublisher(c config.Config, idg mq.IDGenFunc) (mq.Publisher, error) 
 		Balancer: &kafka.LeastBytes{},
 	}
 	return &kafkaPublisher{writer: w, topic: topic, idg: idg}, nil
-}
-
-type Option struct {
-	topic        string
-	retryEnabled bool
 }

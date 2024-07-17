@@ -41,12 +41,13 @@ func retryBackoff(n int) time.Duration {
 }
 
 type kafkaSubscriber struct {
-	handlers map[domainEvent.Event][]domainEvent.Handler
-	address  []string
-	idp      idempotent.Idempotent
+	handlers  map[domainEvent.Event][]domainEvent.Handler
+	address   []string
+	idp       idempotent.Idempotent
+	consumers []*Consumer
 }
 
-func NewKafkaSub(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator) (mq.Subscriber, error) {
+func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator) (mq.Subscriber, error) {
 	address := make([]string, 0)
 	err := cfg.Value("kafka.address").Scan(&address)
 	if err != nil {
@@ -80,12 +81,20 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 				logx.Errorf(ctx, "new consuer error")
 				continue
 			}
+			s.registerConsumer(c)
 			go c.Run(ctx)
 		}
 	}
 }
 
+func (s *kafkaSubscriber) registerConsumer(c *Consumer) {
+	s.consumers = append(s.consumers, c)
+}
+
 func (s *kafkaSubscriber) Close() error {
+	for _, c := range s.consumers {
+		c.Close()
+	}
 	return nil
 }
 
