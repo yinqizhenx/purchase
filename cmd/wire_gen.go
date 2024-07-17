@@ -11,6 +11,7 @@ import (
 	"purchase/adapter/scheduler"
 	"purchase/app"
 	"purchase/app/assembler"
+	"purchase/app/event_handler"
 	"purchase/cmd/server"
 	"purchase/domain/factory"
 	"purchase/domain/service"
@@ -84,7 +85,7 @@ func initApp() (*App, func(), error) {
 		cleanup()
 		return nil, nil, err
 	}
-	domainEventAppService := app.NewDomainEventAppService()
+	domainEventAppService := event_handler.NewDomainEventAppService()
 	eventConsumer := server.NewEventConsumerServer(subscriber, domainEventAppService)
 	mainApp := newApp(logger, grpcServer, httpServer, asyncTaskMux, eventConsumer)
 	return mainApp, func() {

@@ -1,6 +1,7 @@
 package event
 
 import (
+	"context"
 	"time"
 
 	"purchase/domain/entity/async_task"
@@ -25,4 +26,9 @@ type PAEvent interface {
 type ProductEvent interface {
 	Event
 	ProductID() int64
+}
+
+type Handler interface {
+	Handle(context.Context, Event) error
+	Name() string
 }

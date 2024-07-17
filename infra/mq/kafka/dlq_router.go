@@ -34,13 +34,12 @@ type DLQPolicy struct {
 	Address []string
 }
 
-func newDlqRouter(policy *DLQPolicy, logger log.Logger, rawReader *kafka.Reader) (*dlqRouter, error) {
+func newDlqRouter(policy *DLQPolicy, rawReader *kafka.Reader) (*dlqRouter, error) {
 	if policy == nil {
 		return nil, errors.New("policy can not be nil")
 	}
 	r := &dlqRouter{
 		policy: policy,
-		log:    logger,
 	}
 
 	if policy != nil {
@@ -54,7 +53,6 @@ func newDlqRouter(policy *DLQPolicy, logger log.Logger, rawReader *kafka.Reader)
 
 		r.messageCh = make(chan *Message)
 		r.closeCh = make(chan interface{}, 1)
-		r.log = logger
 		r.writer = &kafka.Writer{
 			// Topic:    policy.DeadLetterTopic,
 			Addr:                   kafka.TCP(policy.Address...),

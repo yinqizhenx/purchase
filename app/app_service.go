@@ -1,5 +1,9 @@
 package app
 
-import "github.com/google/wire"
+import (
+	"github.com/google/wire"
 
-var ProviderSet = wire.NewSet(NewDomainEventAppService, NewPaymentCenterAppService, NewSuAppService)
+	"purchase/app/event_handler"
+)
+
+var ProviderSet = wire.NewSet(event_handler.NewDomainEventAppService, NewPaymentCenterAppService, NewSuAppService)

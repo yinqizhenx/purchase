@@ -5,140 +5,42 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	// "log"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/config"
-	"github.com/go-kratos/kratos/v2/log"
-	"github.com/google/wire"
 	"github.com/segmentio/kafka-go"
 
+	domainEvent "purchase/domain/event"
 	"purchase/infra/idempotent"
 	"purchase/infra/logx"
 	"purchase/infra/mq"
 	"purchase/pkg/retry"
 )
 
-var (
-	_ mq.Publisher  = (*kafkaPublisher)(nil)
-	_ mq.Subscriber = (*kafkaSubscriber)(nil)
-	// _ Event      = (*Message)(nil)
-)
-
-var ProviderSet = wire.NewSet(NewKafkaPublisher, NewKafkaSubscriber)
-
-type kafkaPublisher struct {
-	writer *kafka.Writer
-	topic  string
-	idg    mq.IDGenFunc
-}
-
-func (s *kafkaPublisher) Publish(ctx context.Context, msg *mq.Message) error {
-	kMsg := &kafka.Message{
-		Key:   []byte(msg.HeaderGet(mq.EntityID)),
-		Value: msg.Body,
-	}
-	m := NewMessage(kMsg)
-	m.SetEventName(msg.HeaderGet(mq.EventName))
-	m.SetMessageID(s.idg())
-
-	kMsg, err := m.ToKafkaMessage()
-	if err != nil {
-		return err
-	}
-	err = s.writer.WriteMessages(ctx, *kMsg)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *kafkaPublisher) Close() error {
-	err := s.writer.Close()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func NewKafkaPublisher(c config.Config, idg mq.IDGenFunc) (mq.Publisher, error) {
-	address := make([]string, 0)
-	err := c.Value("kafka.address").Scan(&address)
-	if err != nil {
-		return nil, err
-	}
-	topic, err := c.Value("kafka.topic").String()
-	if err != nil {
-		return nil, err
-	}
-	w := &kafka.Writer{
-		Topic:    topic,
-		Addr:     kafka.TCP(address...),
-		Balancer: &kafka.LeastBytes{},
-	}
-	return &kafkaPublisher{writer: w, topic: topic, idg: idg}, nil
-}
-
-type kafkaSubscriber struct {
+type Consumer struct {
 	reader       *kafka.Reader
-	topic        string
+	handler      mq.Handler
 	idp          idempotent.Idempotent
 	retryEnabled bool
 	rlq          *retryRouter
 	dlq          *dlqRouter
-}
-
-type Option struct {
 	topic        string
-	retryEnabled bool
 }
 
-type retryPolicy struct {
-	rlqTopic    string
-	dlqTopic    string
-	backOff     retry.BackoffPolicy
-	rlqReader   *kafka.Reader // 读取重试队列
-	retryWriter *kafka.Writer // 发送到重试队列
-	deadWriter  *kafka.Writer
-}
-
-// type DLQ struct {
-// 	maxRetry int
-// 	topic    string
-// 	writer   *kafka.Writer // 发送到死信队列
-// }
-
-const (
-	defaultRetryTopic = "KAFKA_RETRY_TOPIC"
-	defaultDeadTopic  = "KAFKA_DEAD_TOPIC"
-	defaultMaxRetry   = 3
-)
-
-func NewKafkaSubscriber(c config.Config, idp idempotent.Idempotent, log log.Logger) (mq.Subscriber, error) {
-	address := make([]string, 0)
-	err := c.Value("kafka.address").Scan(&address)
-	if err != nil {
-		return nil, err
-	}
-	topic, err := c.Value("kafka.topic").String()
-	if err != nil {
-		return nil, err
-	}
-
-	r := kafka.NewReader(kafka.ReaderConfig{
+func NewConsumer(topic string, consumerGroup string, address []string, handler mq.Handler, idp idempotent.Idempotent) (*Consumer, error) {
+	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  address,
-		GroupID:  "group-a",
+		GroupID:  consumerGroup,
 		Topic:    topic,
 		MinBytes: 10e3, // 10KB
 		MaxBytes: 10e6, // 10MB
 	})
-
 	rlqPolicy := &RLQPolicy{
 		RetryLetterTopic: defaultRetryTopic,
 		Address:          address,
 		GroupID:          "group-b",
 	}
-	retryRouter, err := newRetryRouter(rlqPolicy, r)
+	retryRouter, err := newRetryRouter(rlqPolicy, reader)
 	if err != nil {
 		return nil, err
 	}
@@ -149,58 +51,60 @@ func NewKafkaSubscriber(c config.Config, idp idempotent.Idempotent, log log.Logg
 		Address:         address,
 		GroupID:         "group-b",
 	}
-	dlqRouter, err := newDlqRouter(dlqPolicy, r)
+	dlqRouter, err := newDlqRouter(dlqPolicy, reader)
 	if err != nil {
 		return nil, err
 	}
-	k := &kafkaSubscriber{
-		topic:  topic,
-		reader: r,
-		idp:    idp,
-		rlq:    retryRouter,
-		dlq:    dlqRouter,
+
+	c := &Consumer{
+		reader:  reader,
+		handler: handler,
+		topic:   topic,
+		idp:     idp,
+		rlq:     retryRouter,
+		dlq:     dlqRouter,
 	}
-	go k.consumeRetryTopic(context.Background(), address)
-	return k, nil
+	go c.consumeRetryTopic(context.Background(), address)
+	return c, nil
 }
 
-func (k *kafkaSubscriber) Subscribe(ctx context.Context, h mq.Handler) {
+func (c *Consumer) Run(ctx context.Context) {
 	for {
-		m, err := k.reader.FetchMessage(context.Background())
+		m, err := c.reader.FetchMessage(ctx)
 		if err != nil {
 			if err != io.EOF {
 				logx.Error(ctx, "kafka fetch message fail", slog.Any("error", err))
 			}
 			continue
 		}
-		k.handleMessage(ctx, m, h)
+		c.handleMessage(ctx, m, c.handler)
 	}
 }
 
 // handleMessage 幂等消费消息
-func (k *kafkaSubscriber) handleMessage(ctx context.Context, m kafka.Message, h mq.Handler) {
+func (c *Consumer) handleMessage(ctx context.Context, m kafka.Message, h mq.Handler) {
 	msg := NewMessage(&m)
 	key := msg.PropsMessageID()
-	ok, err := k.idp.SetKeyPendingWithDDL(ctx, key, time.Second*time.Duration(10*60))
+	ok, err := c.idp.SetKeyPendingWithDDL(ctx, key, time.Second*time.Duration(10*60))
 	if err != nil {
 		logx.Error(ctx, "subscriber SetKeyPendingWithDDL fail", slog.Any("error", err), slog.String("key", key), slog.Any("message", m))
 		return
 	}
 	// 已经消费过
 	if !ok {
-		state, err := k.idp.GetKeyState(ctx, key)
+		state, err := c.idp.GetKeyState(ctx, key)
 		if err != nil {
 			logx.Error(ctx, "subscriber GetKeyState fail", slog.Any("error", err), slog.String("key", key), slog.Any("message", m))
 			return
 		}
 		if state == idempotent.Done {
 			// 已经消费过，且消费成功了, 即使提交失败了，只要后面的message能成功，之前的message都会被提交
-			if err = k.reader.CommitMessages(ctx, m); err != nil {
+			if err = c.reader.CommitMessages(ctx, m); err != nil {
 				logx.Error(ctx, "failed to commit messages:", slog.Any("error", err), slog.Any("message", m))
 			}
 		} else {
 			// 已经消费过，但消费失败了
-			k.ReconsumeLater(msg)
+			c.ReconsumeLater(msg)
 		}
 	} else {
 		// 未消费过，执行消费逻辑
@@ -216,22 +120,22 @@ func (k *kafkaSubscriber) handleMessage(ctx context.Context, m kafka.Message, h 
 			// 如果RemoveFailKey成功，ReconsumeLater失败，不会再次消费
 			// 如果RemoveFailKey失败，ReconsumeLater失败，队列未提交ack，会等到key过期删除，不会再次被消费
 			err = retry.Run(func() error {
-				return k.idp.RemoveFailKey(ctx, key)
+				return c.idp.RemoveFailKey(ctx, key)
 			}, 2)
 			if err != nil {
 				logx.Error(ctx, "RemoveFailKey fail after retry 2 times", slog.Any("error", err), slog.String("key", key))
 			}
-			k.ReconsumeLater(msg)
+			c.ReconsumeLater(msg)
 		} else {
 			// 消费采成功
 			err = retry.Run(func() error {
-				return k.idp.UpdateKeyDone(ctx, key)
+				return c.idp.UpdateKeyDone(ctx, key)
 			}, 2)
 			if err != nil {
 				logx.Error(ctx, "UpdateKeyDone fail after retry 2 times", slog.Any("error", err), slog.String("key", key))
 			}
 			err = retry.Run(func() error {
-				return k.reader.CommitMessages(ctx, m)
+				return c.reader.CommitMessages(ctx, m)
 			}, 2)
 			if err != nil {
 				logx.Error(ctx, "consumer ack fail after retry 2 times", slog.Any("error", err), slog.Any("message", m))
@@ -240,8 +144,8 @@ func (k *kafkaSubscriber) handleMessage(ctx context.Context, m kafka.Message, h 
 	}
 }
 
-func (k *kafkaSubscriber) Close() error {
-	err := k.reader.Close()
+func (c *Consumer) Close() error {
+	err := c.reader.Close()
 	fmt.Print("close kafka reader")
 	if err != nil {
 		return err
@@ -250,7 +154,7 @@ func (k *kafkaSubscriber) Close() error {
 }
 
 // consumeRetryTopic 重新投递到原来的队列
-func (k *kafkaSubscriber) consumeRetryTopic(ctx context.Context, address []string) {
+func (c *Consumer) consumeRetryTopic(ctx context.Context, address []string) {
 	w := &kafka.Writer{
 		// Topic:    topic,
 		Addr:     kafka.TCP(address...),
@@ -266,12 +170,12 @@ func (k *kafkaSubscriber) consumeRetryTopic(ctx context.Context, address []strin
 				MinBytes: 10e3, // 10KB
 				MaxBytes: 10e6, // 10MB
 			})
-			k.redelivery(ctx, r, w)
+			c.redelivery(ctx, r, w)
 		}(topic)
 	}
 }
 
-func (k *kafkaSubscriber) redelivery(ctx context.Context, r *kafka.Reader, w *kafka.Writer) {
+func (c *Consumer) redelivery(ctx context.Context, r *kafka.Reader, w *kafka.Writer) {
 	for {
 		m, err := r.FetchMessage(context.Background())
 		if err != nil {
@@ -308,29 +212,78 @@ func (k *kafkaSubscriber) redelivery(ctx context.Context, r *kafka.Reader, w *ka
 	}
 }
 
-func (k *kafkaSubscriber) ReconsumeLater(m *Message) {
-	m.SetRealTopic(k.topic)
+func (c *Consumer) ReconsumeLater(m *Message) {
+	m.SetRealTopic(c.topic)
 	m.IncrReconsumeTimes()
 	m.SetDelayTime(retryBackoff(m.PropsReconsumeTimes()))
-	if m.PropsReconsumeTimes() > k.dlq.maxRetry() {
-		k.dlq.Chan() <- m
+	if m.PropsReconsumeTimes() > c.dlq.maxRetry() {
+		c.dlq.Chan() <- m
 	} else {
-		k.rlq.Chan() <- m
+		c.rlq.Chan() <- m
 	}
 }
 
-var retryTopic = map[time.Duration]string{
-	5 * time.Second:  "retry_in_5s",
-	10 * time.Second: "retry_in_10s",
-	60 * time.Second: "retry_in_60s",
+// var retryTopic = map[time.Duration]string{
+// 	5 * time.Second:  "retry_in_5s",
+// 	10 * time.Second: "retry_in_10s",
+// 	60 * time.Second: "retry_in_60s",
+// }
+
+// func retryBackoff(n int) time.Duration {
+// 	if n == 1 {
+// 		return 5 * time.Second
+// 	}
+// 	if n == 2 {
+// 		return 10 * time.Second
+// 	}
+// 	return 60 * time.Second
+// }
+
+type Sub struct {
+	handlers map[domainEvent.Event][]domainEvent.Handler
+	address  []string
+	idp      idempotent.Idempotent
 }
 
-func retryBackoff(n int) time.Duration {
-	if n == 1 {
-		return 5 * time.Second
+func NewSub(cfg config.Config, idp idempotent.Idempotent, handlers map[domainEvent.Event][]domainEvent.Handler) (*Sub, error) {
+	address := make([]string, 0)
+	err := cfg.Value("kafka.address").Scan(&address)
+	if err != nil {
+		return nil, err
 	}
-	if n == 2 {
-		return 10 * time.Second
+	s := &Sub{
+		handlers: handlers,
+		address:  address,
+		idp:      idp,
 	}
-	return 60 * time.Second
+	return s, nil
+}
+
+func (s *Sub) RegisterEventHandler(e domainEvent.Event, h domainEvent.Handler) {
+	s.handlers[e] = append(s.handlers[e], h)
+}
+
+func (s *Sub) Subscribe(ctx context.Context) {
+	transferHandler := func(e domainEvent.Event, h domainEvent.Handler) mq.Handler {
+		return func(ctx context.Context, m *mq.Message) error {
+			if e.EventName() == m.HeaderGet(mq.EventName) {
+				msg, err := e.Decode(m.Body)
+				if err != nil {
+					return err
+				}
+				return h.Handle(ctx, msg)
+			}
+			return nil
+		}
+	}
+	for e, handlers := range s.handlers {
+		for _, h := range handlers {
+			c, err := NewConsumer(e.EventName(), h.Name(), s.address, transferHandler(e, h), s.idp)
+			if err != nil {
+				logx.Errorf(ctx, "new consuer error")
+				continue
+			}
+			go c.Run(ctx)
+		}
+	}
 }

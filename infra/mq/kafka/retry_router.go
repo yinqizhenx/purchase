@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/go-kratos/kratos/v2/log"
 	// "github.com/apache/pulsar-client-go/pulsar/log"
 	"github.com/segmentio/kafka-go"
 
@@ -20,7 +19,6 @@ type retryRouter struct {
 	policy    *RLQPolicy
 	messageCh chan *Message
 	closeCh   chan interface{}
-	log       log.Logger
 }
 
 type RLQPolicy struct {
@@ -30,13 +28,12 @@ type RLQPolicy struct {
 	RetryLetterTopic string
 }
 
-func newRetryRouter(policy *RLQPolicy, logger log.Logger, rawReader *kafka.Reader) (*retryRouter, error) {
+func newRetryRouter(policy *RLQPolicy, rawReader *kafka.Reader) (*retryRouter, error) {
 	if policy == nil {
 		return nil, errors.New("policy can not be nil")
 	}
 	r := &retryRouter{
 		policy: policy,
-		log:    logger,
 	}
 
 	if policy.RetryLetterTopic == "" {
@@ -45,7 +42,7 @@ func newRetryRouter(policy *RLQPolicy, logger log.Logger, rawReader *kafka.Reade
 	r.consumer = rawReader
 	r.messageCh = make(chan *Message)
 	r.closeCh = make(chan interface{}, 1)
-	r.log = logger
+	// r.log = logger
 	r.writer = &kafka.Writer{
 		Addr:                   kafka.TCP(policy.Address...),
 		Balancer:               &kafka.LeastBytes{},
@@ -66,7 +63,7 @@ func (r *retryRouter) run() {
 		case rm := <-r.messageCh:
 			rtyTopic := genRetryTopic(rm.PropsDelayTime())
 			rm.SetRetryTopic(rtyTopic)
-			
+
 			msg, err := rm.ToKafkaMessage(rtyTopic)
 			if err != nil {
 				logx.Error(nil, "message transfer to kafka message fail", slog.Any("message", rm), slog.Any("error", err))
