@@ -106,23 +106,13 @@ func NewConsumer(topic string, consumerGroup string, address []string, handler m
 		MinBytes: 10e3, // 10KB
 		MaxBytes: 10e6, // 10MB
 	})
-	rlqPolicy := &RLQPolicy{
-		RetryLetterTopic: defaultRetryTopic,
-		Address:          address,
-		GroupID:          "group-b",
-	}
-	retryRouter, err := newRetryRouter(rlqPolicy, reader)
+
+	rlq, err := newRetryRouter(address, reader)
 	if err != nil {
 		return nil, err
 	}
 
-	dlqPolicy := &DLQPolicy{
-		MaxDeliveries:   3,
-		DeadLetterTopic: defaultDeadTopic,
-		Address:         address,
-		GroupID:         "group-b",
-	}
-	dlqRouter, err := newDlqRouter(dlqPolicy, reader)
+	dlq, err := newDlqRouter(address, reader)
 	if err != nil {
 		return nil, err
 	}
@@ -132,10 +122,12 @@ func NewConsumer(topic string, consumerGroup string, address []string, handler m
 		handler: handler,
 		topic:   topic,
 		idp:     idp,
-		rlq:     retryRouter,
-		dlq:     dlqRouter,
+		rlq:     rlq,
+		dlq:     dlq,
 	}
+
 	go c.consumeRetryTopic(context.Background(), address)
+
 	return c, nil
 }
 

@@ -12,6 +12,10 @@ import (
 	"purchase/infra/logx"
 )
 
+type MessageCommitter interface {
+	CommitMessages(ctx context.Context, msgs ...Message) error
+}
+
 type retryRouter struct {
 	// client    kafka.Dialer
 	consumer  *kafka.Reader
@@ -28,10 +32,13 @@ type RLQPolicy struct {
 	RetryLetterTopic string
 }
 
-func newRetryRouter(policy *RLQPolicy, rawReader *kafka.Reader) (*retryRouter, error) {
-	if policy == nil {
-		return nil, errors.New("policy can not be nil")
+func newRetryRouter(address []string, rawReader *kafka.Reader) (*retryRouter, error) {
+	policy := &RLQPolicy{
+		RetryLetterTopic: defaultRetryTopic,
+		Address:          address,
+		GroupID:          "group-b",
 	}
+
 	r := &retryRouter{
 		policy: policy,
 	}

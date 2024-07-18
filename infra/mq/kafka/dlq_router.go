@@ -34,33 +34,36 @@ type DLQPolicy struct {
 	Address []string
 }
 
-func newDlqRouter(policy *DLQPolicy, rawReader *kafka.Reader) (*dlqRouter, error) {
-	if policy == nil {
-		return nil, errors.New("policy can not be nil")
+func newDlqRouter(address []string, rawReader *kafka.Reader) (*dlqRouter, error) {
+	policy := &DLQPolicy{
+		MaxDeliveries:   3,
+		DeadLetterTopic: defaultDeadTopic,
+		Address:         address,
+		GroupID:         "group-b",
 	}
+
 	r := &dlqRouter{
 		policy: policy,
 	}
 
-	if policy != nil {
-		if policy.MaxDeliveries <= 0 {
-			return nil, errors.New("DLQPolicy.MaxDeliveries needs to be > 0")
-		}
-
-		if policy.DeadLetterTopic == "" {
-			return nil, errors.New("DLQPolicy.Topic needs to be set to a valid topic name")
-		}
-
-		r.messageCh = make(chan *Message)
-		r.closeCh = make(chan interface{}, 1)
-		r.writer = &kafka.Writer{
-			// Topic:    policy.DeadLetterTopic,
-			Addr:                   kafka.TCP(policy.Address...),
-			Balancer:               &kafka.LeastBytes{},
-			AllowAutoTopicCreation: true,
-		}
-		go r.run()
+	if policy.MaxDeliveries <= 0 {
+		return nil, errors.New("DLQPolicy.MaxDeliveries needs to be > 0")
 	}
+
+	if policy.DeadLetterTopic == "" {
+		return nil, errors.New("DLQPolicy.Topic needs to be set to a valid topic name")
+	}
+
+	r.messageCh = make(chan *Message)
+	r.closeCh = make(chan interface{}, 1)
+	r.writer = &kafka.Writer{
+		// Topic:    policy.DeadLetterTopic,
+		Addr:                   kafka.TCP(policy.Address...),
+		Balancer:               &kafka.LeastBytes{},
+		AllowAutoTopicCreation: true,
+	}
+	go r.run()
+
 	r.consumer = rawReader
 	return r, nil
 }
