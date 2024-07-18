@@ -88,6 +88,8 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 			go c.Run(ctx)
 		}
 	}
+
+	s.consumeRetryTopic(ctx, s.address)
 }
 
 func (s *kafkaSubscriber) registerConsumer(c *Consumer) {
@@ -130,8 +132,6 @@ func NewConsumer(topic string, consumerGroup string, address []string, handler m
 
 	c.rlq = rlq
 	c.dlq = dlq
-
-	go c.consumeRetryTopic(context.Background(), address)
 
 	return c, nil
 }
@@ -264,62 +264,67 @@ func (c *Consumer) Close() error {
 }
 
 // consumeRetryTopic 重新投递到原来的队列
-func (c *Consumer) consumeRetryTopic(ctx context.Context, address []string) {
-	w := &kafka.Writer{
-		// Topic:    topic,
-		Addr:     kafka.TCP(address...),
-		Balancer: &kafka.LeastBytes{},
-	}
+func (s *kafkaSubscriber) consumeRetryTopic(ctx context.Context, address []string) {
+	// w := &kafka.Writer{
+	// 	// Topic:    topic,
+	// 	Addr:     kafka.TCP(address...),
+	// 	Balancer: &kafka.LeastBytes{},
+	// }
 	for _, topic := range retryTopic {
 		// 从重试队列拉去消息，发送到消息原来的topic重新消费
 		go func(t string) {
-			r := kafka.NewReader(kafka.ReaderConfig{
-				Brokers:  address,
-				GroupID:  "group-retry",
-				Topic:    t,
-				MinBytes: 10e3, // 10KB
-				MaxBytes: 10e6, // 10MB
-			})
-			c.redelivery(ctx, r, w)
+			// r := kafka.NewReader(kafka.ReaderConfig{
+			// 	Brokers:  address,
+			// 	GroupID:  "group-retry",
+			// 	Topic:    t,
+			// 	MinBytes: 10e3, // 10KB
+			// 	MaxBytes: 10e6, // 10MB
+			// })
+			c, err := NewConsumer(t, "group-retry", address, s.redelivery, s.idp, s.pub)
+			if err != nil {
+				logx.Error(ctx, "2122")
+			}
+			c.Run(ctx)
 		}(topic)
 	}
 }
 
-func (c *Consumer) redelivery(ctx context.Context, r *kafka.Reader, w *kafka.Writer) {
-	for {
-		m, err := r.FetchMessage(context.Background())
-		if err != nil {
-			if err != io.EOF {
-				logx.Error(ctx, "kafka fetch message fail", slog.Any("error", err))
-			}
-			continue
-		}
-		msg := NewMessage(&m)
-		msg.SetMessageTopic(msg.PropsRealTopic())
-		// // 未到消费时间，sleep, 此处应该调用kafka的pause和resume api，不然会导致重平衡，但是此kafka client不支持
-		// if expTime := msg.PropsRedeliveryTime().Add(msg.PropsDelayTime()); expTime.After(time.Now()) {
-		// 	fmt.Println("开始sleep ", time.Now().Sub(expTime).Seconds())
-		// 	time.Sleep(time.Now().Sub(expTime))
-		// }
-
-		// 未消费过，执行消费逻辑
-		kmsg, err := msg.ToKafkaMessage()
-		if err != nil {
-			logx.Error(ctx, "message transfer to kafka message fail", slog.Any("message", msg), slog.Any("error", err))
-			continue
-		}
-		err = retry.Run(func() error { return w.WriteMessages(ctx, *kmsg) }, 2)
-		if err != nil {
-			logx.Error(ctx, "write consume message to topic fail after retry 2 times", slog.String("topic", msg.PropsRealTopic()), slog.Any("error", err))
-			continue
-		}
-
-		kmsg.Topic = msg.PropsRetryTopic()
-		err = r.CommitMessages(ctx, *kmsg)
-		if err != nil {
-			logx.Error(ctx, "retry message consumer ack fail", slog.Any("error", err))
-		}
-	}
+func (s *kafkaSubscriber) redelivery(ctx context.Context, m *mq.Message) error {
+	return s.pub.Publish(ctx, m)
+	// for {
+	// 	m, err := r.FetchMessage(context.Background())
+	// 	if err != nil {
+	// 		if err != io.EOF {
+	// 			logx.Error(ctx, "kafka fetch message fail", slog.Any("error", err))
+	// 		}
+	// 		continue
+	// 	}
+	// 	msg := NewMessage(&m)
+	// 	msg.SetMessageTopic(msg.PropsRealTopic())
+	// 	// // 未到消费时间，sleep, 此处应该调用kafka的pause和resume api，不然会导致重平衡，但是此kafka client不支持
+	// 	// if expTime := msg.PropsRedeliveryTime().Add(msg.PropsDelayTime()); expTime.After(time.Now()) {
+	// 	// 	fmt.Println("开始sleep ", time.Now().Sub(expTime).Seconds())
+	// 	// 	time.Sleep(time.Now().Sub(expTime))
+	// 	// }
+	//
+	// 	// 未消费过，执行消费逻辑
+	// 	kmsg, err := msg.ToKafkaMessage()
+	// 	if err != nil {
+	// 		logx.Error(ctx, "message transfer to kafka message fail", slog.Any("message", msg), slog.Any("error", err))
+	// 		continue
+	// 	}
+	// 	err = retry.Run(func() error { return s.pub.Publish(ctx, *kmsg) }, 2)
+	// 	if err != nil {
+	// 		logx.Error(ctx, "write consume message to topic fail after retry 2 times", slog.String("topic", msg.PropsRealTopic()), slog.Any("error", err))
+	// 		continue
+	// 	}
+	//
+	// 	kmsg.Topic = msg.PropsRetryTopic()
+	// 	err = r.CommitMessages(ctx, *kmsg)
+	// 	if err != nil {
+	// 		logx.Error(ctx, "retry message consumer ack fail", slog.Any("error", err))
+	// 	}
+	// }
 }
 
 func (c *Consumer) ReconsumeLater(m *mq.Message) {
