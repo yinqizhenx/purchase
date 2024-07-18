@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -64,7 +65,7 @@ func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg
 func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 	transferHandler := func(e domainEvent.Event, h domainEvent.Handler) mq.Handler {
 		return func(ctx context.Context, m *mq.Message) error {
-			if e.EventName() == m.HeaderGet(mq.EventName) {
+			if e.EventName() == m.EventName() {
 				msg, err := e.Decode(m.Body)
 				if err != nil {
 					return err
@@ -107,24 +108,27 @@ func NewConsumer(topic string, consumerGroup string, address []string, handler m
 		MaxBytes: 10e6, // 10MB
 	})
 
-	rlq, err := newRetryRouter(address, reader)
-	if err != nil {
-		return nil, err
-	}
-
-	dlq, err := newDlqRouter(address, reader)
-	if err != nil {
-		return nil, err
-	}
-
 	c := &Consumer{
 		reader:  reader,
 		handler: handler,
 		topic:   topic,
 		idp:     idp,
-		rlq:     rlq,
-		dlq:     dlq,
+		// rlq:     rlq,
+		// dlq:     dlq,
 	}
+
+	rlq, err := newRetryRouter(address, c)
+	if err != nil {
+		return nil, err
+	}
+
+	dlq, err := newDlqRouter(address, c)
+	if err != nil {
+		return nil, err
+	}
+
+	c.rlq = rlq
+	c.dlq = dlq
 
 	go c.consumeRetryTopic(context.Background(), address)
 
@@ -139,15 +143,21 @@ type Consumer struct {
 	rlq          *retryRouter
 	dlq          *dlqRouter
 	topic        string
+	pub          mq.Publisher
 }
 
 func (c *Consumer) Run(ctx context.Context) {
 	for {
-		m, err := c.reader.FetchMessage(ctx)
+		kmsg, err := c.reader.FetchMessage(ctx)
 		if err != nil {
 			if err != io.EOF {
 				logx.Error(ctx, "kafka fetch message fail", slog.Any("error", err))
 			}
+			continue
+		}
+		m, err := c.buildMessage(kmsg)
+		if err != nil {
+			logx.Error(ctx, "buildMessage fail", slog.Any("error", err))
 			continue
 		}
 		c.handleMessage(ctx, m, c.handler)
@@ -155,37 +165,37 @@ func (c *Consumer) Run(ctx context.Context) {
 }
 
 // handleMessage 幂等消费消息
-func (c *Consumer) handleMessage(ctx context.Context, m kafka.Message, h mq.Handler) {
-	msg := NewMessage(&m)
-	key := msg.PropsMessageID()
-	ok, err := c.idp.SetKeyPendingWithDDL(ctx, key, time.Second*time.Duration(10*60))
+func (c *Consumer) handleMessage(ctx context.Context, m *mq.Message, h mq.Handler) {
+	// msg := NewMessage(&m)
+	// key := msg.PropsMessageID()
+	ok, err := c.idp.SetKeyPendingWithDDL(ctx, m.ID, time.Second*time.Duration(10*60))
 	if err != nil {
-		logx.Error(ctx, "subscriber SetKeyPendingWithDDL fail", slog.Any("error", err), slog.String("key", key), slog.Any("message", m))
+		logx.Error(ctx, "subscriber SetKeyPendingWithDDL fail", slog.Any("error", err), slog.String("key", m.ID), slog.Any("message", m))
 		return
 	}
 	// 已经消费过
 	if !ok {
-		state, err := c.idp.GetKeyState(ctx, key)
+		state, err := c.idp.GetKeyState(ctx, m.ID)
 		if err != nil {
-			logx.Error(ctx, "subscriber GetKeyState fail", slog.Any("error", err), slog.String("key", key), slog.Any("message", m))
+			logx.Error(ctx, "subscriber GetKeyState fail", slog.Any("error", err), slog.String("key", m.ID), slog.Any("message", m))
 			return
 		}
 		if state == idempotent.Done {
 			// 已经消费过，且消费成功了, 即使提交失败了，只要后面的message能成功，之前的message都会被提交
-			if err = c.reader.CommitMessages(ctx, m); err != nil {
+			if err = c.CommitMessage(ctx, m); err != nil {
 				logx.Error(ctx, "failed to commit messages:", slog.Any("error", err), slog.Any("message", m))
 			}
 		} else {
 			// 已经消费过，但消费失败了
-			c.ReconsumeLater(msg)
+			c.ReconsumeLater(m)
 		}
 	} else {
 		// 未消费过，执行消费逻辑
-		message := &mq.Message{
-			Body: m.Value,
-		}
-		message.HeaderSet(mq.EventName, msg.PropsEventName())
-		err = h(ctx, message)
+		// message := &mq.Message{
+		// 	Body: m.Value,
+		// }
+		// message.HeaderSet(mq.EventName, msg.PropsEventName())
+		err = h(ctx, m)
 		if err != nil {
 			logx.Error(ctx, "consume message fail", slog.Any("error", err), slog.Any("message", m))
 			// 消费失败, 清除掉幂等key
@@ -193,28 +203,54 @@ func (c *Consumer) handleMessage(ctx context.Context, m kafka.Message, h mq.Hand
 			// 如果RemoveFailKey成功，ReconsumeLater失败，不会再次消费
 			// 如果RemoveFailKey失败，ReconsumeLater失败，队列未提交ack，会等到key过期删除，不会再次被消费
 			err = retry.Run(func() error {
-				return c.idp.RemoveFailKey(ctx, key)
+				return c.idp.RemoveFailKey(ctx, m.ID)
 			}, 2)
 			if err != nil {
-				logx.Error(ctx, "RemoveFailKey fail after retry 2 times", slog.Any("error", err), slog.String("key", key))
+				logx.Error(ctx, "RemoveFailKey fail after retry 2 times", slog.Any("error", err), slog.String("key", m.ID))
 			}
-			c.ReconsumeLater(msg)
+			c.ReconsumeLater(m)
 		} else {
 			// 消费采成功
 			err = retry.Run(func() error {
-				return c.idp.UpdateKeyDone(ctx, key)
+				return c.idp.UpdateKeyDone(ctx, m.ID)
 			}, 2)
 			if err != nil {
-				logx.Error(ctx, "UpdateKeyDone fail after retry 2 times", slog.Any("error", err), slog.String("key", key))
+				logx.Error(ctx, "UpdateKeyDone fail after retry 2 times", slog.Any("error", err), slog.String("key", m.ID))
 			}
 			err = retry.Run(func() error {
-				return c.reader.CommitMessages(ctx, m)
+				return c.CommitMessage(ctx, m)
 			}, 2)
 			if err != nil {
 				logx.Error(ctx, "consumer ack fail after retry 2 times", slog.Any("error", err), slog.Any("message", m))
 			}
 		}
 	}
+}
+
+func (c *Consumer) buildMessage(m kafka.Message) (*mq.Message, error) {
+	msg := &mq.Message{
+		Body: m.Value,
+	}
+	for _, header := range m.Headers {
+		if header.Key == mq.MessageID {
+			msg.ID = string(header.Value)
+		}
+		if header.Key == HeaderPropertyKey {
+			props := &mq.Header{}
+			err := json.Unmarshal(header.Value, props)
+			if err != nil {
+				return nil, err
+			}
+			msg.SetHeader(*props)
+		}
+	}
+	msg.SetRawMessage(m)
+
+	return msg, nil
+}
+
+func (c *Consumer) CommitMessage(ctx context.Context, m *mq.Message) error {
+	return c.reader.CommitMessages(ctx, m.RawMessage().(kafka.Message))
 }
 
 func (c *Consumer) Close() error {
@@ -285,11 +321,11 @@ func (c *Consumer) redelivery(ctx context.Context, r *kafka.Reader, w *kafka.Wri
 	}
 }
 
-func (c *Consumer) ReconsumeLater(m *Message) {
+func (c *Consumer) ReconsumeLater(m *mq.Message) {
 	m.SetRealTopic(c.topic)
 	m.IncrReconsumeTimes()
-	m.SetDelayTime(retryBackoff(m.PropsReconsumeTimes()))
-	if m.PropsReconsumeTimes() > c.dlq.maxRetry() {
+	m.SetDelayTime(retryBackoff(m.ReconsumeTimes()))
+	if m.ReconsumeTimes() > c.dlq.maxRetry() {
 		c.dlq.Chan() <- m
 	} else {
 		c.rlq.Chan() <- m

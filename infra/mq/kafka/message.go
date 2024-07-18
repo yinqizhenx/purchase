@@ -7,7 +7,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-const HeaderPropertyKey = "props"
+// const HeaderPropertyKey = "props"
 
 func NewMessage(m *kafka.Message) *Message {
 	if m == nil {

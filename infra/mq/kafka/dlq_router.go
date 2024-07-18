@@ -6,17 +6,17 @@ import (
 	"log/slog"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/segmentio/kafka-go"
 
 	"purchase/infra/logx"
+	"purchase/infra/mq"
 	"purchase/pkg/retry"
 )
 
 type dlqRouter struct {
-	consumer  *kafka.Reader
-	writer    *kafka.Writer
+	committer mq.MessageCommitter
+	pub       mq.Publisher
 	policy    *DLQPolicy
-	messageCh chan *Message
+	messageCh chan *mq.Message
 	closeCh   chan interface{}
 	log       log.Logger
 }
@@ -34,7 +34,7 @@ type DLQPolicy struct {
 	Address []string
 }
 
-func newDlqRouter(address []string, rawReader *kafka.Reader) (*dlqRouter, error) {
+func newDlqRouter(address []string, committer mq.MessageCommitter, pub mq.Publisher) (*dlqRouter, error) {
 	policy := &DLQPolicy{
 		MaxDeliveries:   3,
 		DeadLetterTopic: defaultDeadTopic,
@@ -43,7 +43,9 @@ func newDlqRouter(address []string, rawReader *kafka.Reader) (*dlqRouter, error)
 	}
 
 	r := &dlqRouter{
-		policy: policy,
+		policy:    policy,
+		committer: committer,
+		pub:       pub,
 	}
 
 	if policy.MaxDeliveries <= 0 {
@@ -54,17 +56,15 @@ func newDlqRouter(address []string, rawReader *kafka.Reader) (*dlqRouter, error)
 		return nil, errors.New("DLQPolicy.Topic needs to be set to a valid topic name")
 	}
 
-	r.messageCh = make(chan *Message)
+	r.messageCh = make(chan *mq.Message)
 	r.closeCh = make(chan interface{}, 1)
-	r.writer = &kafka.Writer{
-		// Topic:    policy.DeadLetterTopic,
-		Addr:                   kafka.TCP(policy.Address...),
-		Balancer:               &kafka.LeastBytes{},
-		AllowAutoTopicCreation: true,
-	}
+	// r.writer = &kafka.Writer{
+	// 	// Topic:    policy.DeadLetterTopic,
+	// 	Addr:                   kafka.TCP(policy.Address...),
+	// 	Balancer:               &kafka.LeastBytes{},
+	// 	AllowAutoTopicCreation: true,
+	// }
 	go r.run()
-
-	r.consumer = rawReader
 	return r, nil
 }
 
@@ -79,36 +79,36 @@ func (r *dlqRouter) maxRetry() int {
 	return r.policy.MaxDeliveries
 }
 
-func (r *dlqRouter) Chan() chan *Message {
+func (r *dlqRouter) Chan() chan *mq.Message {
 	return r.messageCh
 }
 
 func (r *dlqRouter) run() {
 	for {
 		select {
-		case rm := <-r.messageCh:
-			msg, err := rm.ToKafkaMessage(defaultDeadTopic)
-			if err != nil {
-				logx.Error(nil, "message transfer to kafka message fail", slog.Any("message", rm), slog.Any("error", err))
-				break
-			}
-			err = retry.Run(func() error {
-				return r.writer.WriteMessages(context.Background(), *msg)
+		case msg := <-r.messageCh:
+			// msg, err := rm.ToKafkaMessage(defaultDeadTopic)
+			// if err != nil {
+			// 	logx.Error(nil, "message transfer to kafka message fail", slog.Any("message", rm), slog.Any("error", err))
+			// 	break
+			// }
+			err := retry.Run(func() error {
+				return r.pub.Publish(context.Background(), msg)
 			}, 3, retry.NewDefaultBackoffPolicy())
 
 			if err != nil {
-				logx.Error(nil, "message send to dead queue fail after retry 3 times", slog.Any("message", rm), slog.Any("error", err))
+				logx.Error(nil, "message send to dead queue fail after retry 3 times", slog.Any("message", msg), slog.Any("error", err))
 				break
 			}
 
-			msg.Topic = rm.PropsRealTopic()
-			err = r.consumer.CommitMessages(context.Background(), *msg)
+			// msg.Topic = rm.PropsRealTopic()
+			err = r.committer.CommitMessage(context.Background(), msg)
 			if err != nil {
-				logx.Error(nil, "commit message fail", slog.Any("message", rm), slog.Any("error", err))
+				logx.Error(nil, "commit message fail", slog.Any("message", msg), slog.Any("error", err))
 			}
 		case <-r.closeCh:
-			if r.writer != nil {
-				r.writer.Close()
+			if r.pub != nil {
+				r.pub.Close()
 			}
 			return
 		}

@@ -17,11 +17,13 @@ var (
 	// _ Event      = (*Message)(nil)
 )
 
+const HeaderPropertyKey = "props"
+
 var ProviderSet = wire.NewSet(NewKafkaPublisher, NewKafkaSubscriber)
 
 type kafkaPublisher struct {
 	writer *kafka.Writer
-	idg    mq.IDGenFunc
+	// idg    mq.IDGenFunc
 }
 
 func (s *kafkaPublisher) Publish(ctx context.Context, msg *mq.Message) error {
@@ -32,31 +34,35 @@ func (s *kafkaPublisher) Publish(ctx context.Context, msg *mq.Message) error {
 	return s.writer.WriteMessages(ctx, *kmsg)
 }
 
-func (s *kafkaPublisher) buildKafkaMessage(msg *mq.Message) (*kafka.Message, error) {
-	kmsg := &kafka.Message{
-		Key:   []byte(msg.HeaderGet(mq.EntityID)),
-		Value: msg.Body,
-		Topic: msg.HeaderGet(mq.EventName),
-	}
+func (s *kafkaPublisher) buildKafkaMessage(m *mq.Message) (*kafka.Message, error) {
+	header := make([]kafka.Header, 0)
+	header = append(header, kafka.Header{
+		Key:   mq.MessageID,
+		Value: []byte(m.ID),
+	})
 
-	for k, v := range msg.Header() {
-		err := SetMessageHeader(kmsg, k, v)
-		if err != nil {
-			return nil, err
-		}
-	}
-	err := SetMessageHeader(kmsg, mq.MessageID, s.idg())
+	p, err := json.Marshal(m.Header())
 	if err != nil {
 		return nil, err
 	}
-	return kmsg, nil
+	header = append(header, kafka.Header{
+		Key:   HeaderPropertyKey,
+		Value: p,
+	})
+
+	return &kafka.Message{
+		Key:     []byte(m.BizCode()),
+		Value:   m.Body,
+		Topic:   m.EventName(),
+		Headers: header,
+	}, nil
 }
 
 func (s *kafkaPublisher) Close() error {
 	return s.writer.Close()
 }
 
-func NewKafkaPublisher(c config.Config, idg mq.IDGenFunc) (mq.Publisher, error) {
+func NewKafkaPublisher(c config.Config) (mq.Publisher, error) {
 	address := make([]string, 0)
 	err := c.Value("kafka.address").Scan(&address)
 	if err != nil {
@@ -66,7 +72,7 @@ func NewKafkaPublisher(c config.Config, idg mq.IDGenFunc) (mq.Publisher, error) 
 		Addr:     kafka.TCP(address...),
 		Balancer: &kafka.LeastBytes{},
 	}
-	return &kafkaPublisher{writer: w, idg: idg}, nil
+	return &kafkaPublisher{writer: w}, nil
 }
 
 func SetMessageHeader(m *kafka.Message, k string, v interface{}) error {

@@ -47,8 +47,8 @@ func (pub *pulsarPublisher) Publish(ctx context.Context, m *Message) error {
 	// }
 	msg := &pulsar.ProducerMessage{
 		// Key:   []byte(e.EntityID()),
-		Payload:    m.Body,
-		Properties: m.Header(),
+		Payload: m.Body,
+		// Properties: m.Header(),
 	}
 	_, err := pub.producer.Send(context.Background(), msg)
 	return err
@@ -142,7 +142,7 @@ func (sub pulsarSubscriber) Subscribe(ctx context.Context) {
 				m := &Message{
 					Body: msg.Payload(),
 				}
-				m.HeaderSet(EventName, msg.Properties()[EventName])
+				m.SetEventName(msg.Properties()[EventName])
 				err = sub.h(ctx, m)
 				if err != nil {
 					// 消费失败, 投入重试队列

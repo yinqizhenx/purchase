@@ -6,10 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	// "github.com/apache/pulsar-client-go/pulsar/log"
-	"github.com/segmentio/kafka-go"
-
 	"purchase/infra/logx"
+	"purchase/infra/mq"
 )
 
 type MessageCommitter interface {
@@ -18,10 +16,10 @@ type MessageCommitter interface {
 
 type retryRouter struct {
 	// client    kafka.Dialer
-	consumer  *kafka.Reader
-	writer    *kafka.Writer
+	committer mq.MessageCommitter
+	pub       mq.Publisher
 	policy    *RLQPolicy
-	messageCh chan *Message
+	messageCh chan *mq.Message
 	closeCh   chan interface{}
 }
 
@@ -32,7 +30,7 @@ type RLQPolicy struct {
 	RetryLetterTopic string
 }
 
-func newRetryRouter(address []string, rawReader *kafka.Reader) (*retryRouter, error) {
+func newRetryRouter(address []string, committer mq.MessageCommitter, pub mq.Publisher) (*retryRouter, error) {
 	policy := &RLQPolicy{
 		RetryLetterTopic: defaultRetryTopic,
 		Address:          address,
@@ -40,58 +38,59 @@ func newRetryRouter(address []string, rawReader *kafka.Reader) (*retryRouter, er
 	}
 
 	r := &retryRouter{
-		policy: policy,
+		policy:    policy,
+		committer: committer,
+		pub:       pub,
 	}
 
 	if policy.RetryLetterTopic == "" {
 		return nil, errors.New("DLQPolicy.RetryLetterTopic needs to be set to a valid topic name")
 	}
-	r.consumer = rawReader
-	r.messageCh = make(chan *Message)
+	r.messageCh = make(chan *mq.Message)
 	r.closeCh = make(chan interface{}, 1)
 	// r.log = logger
-	r.writer = &kafka.Writer{
-		Addr:                   kafka.TCP(policy.Address...),
-		Balancer:               &kafka.LeastBytes{},
-		AllowAutoTopicCreation: true,
-	}
+	// r.writer = &kafka.Writer{
+	// 	Addr:                   kafka.TCP(policy.Address...),
+	// 	Balancer:               &kafka.LeastBytes{},
+	// 	AllowAutoTopicCreation: true,
+	// }
 	go r.run()
 
 	return r, nil
 }
 
-func (r *retryRouter) Chan() chan *Message {
+func (r *retryRouter) Chan() chan *mq.Message {
 	return r.messageCh
 }
 
 func (r *retryRouter) run() {
 	for {
 		select {
-		case rm := <-r.messageCh:
-			rtyTopic := genRetryTopic(rm.PropsDelayTime())
-			rm.SetRetryTopic(rtyTopic)
+		case msg := <-r.messageCh:
+			rtyTopic := genRetryTopic(msg.DelayTime())
+			msg.SetRetryTopic(rtyTopic)
 
-			msg, err := rm.ToKafkaMessage(rtyTopic)
+			// msg, err := rm.ToKafkaMessage(rtyTopic)
+			// if err != nil {
+			// 	logx.Error(nil, "message transfer to kafka message fail", slog.Any("message", rm), slog.Any("error", err))
+			// 	break
+			// }
+
+			err := r.pub.Publish(context.Background(), msg)
 			if err != nil {
-				logx.Error(nil, "message transfer to kafka message fail", slog.Any("message", rm), slog.Any("error", err))
+				logx.Error(nil, "message send to retry queue fail", slog.Any("message", msg), slog.Any("error", err))
 				break
 			}
 
-			err = r.writer.WriteMessages(context.Background(), *msg)
+			// msg.Topic = rm.PropsRealTopic()
+			err = r.committer.CommitMessage(context.Background(), msg)
 			if err != nil {
-				logx.Error(nil, "message send to retry queue fail", slog.Any("message", rm), slog.Any("error", err))
-				break
-			}
-
-			msg.Topic = rm.PropsRealTopic()
-			err = r.consumer.CommitMessages(context.Background(), *msg)
-			if err != nil {
-				logx.Error(nil, "commit message fail", slog.Any("message", rm), slog.Any("error", err))
+				logx.Error(nil, "commit message fail", slog.Any("message", msg), slog.Any("error", err))
 			}
 
 		case <-r.closeCh:
-			if r.writer != nil {
-				r.writer.Close()
+			if r.pub != nil {
+				r.pub.Close()
 			}
 			// r.log.Debug("Closed RLQ router")
 			return
