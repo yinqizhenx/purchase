@@ -36,6 +36,7 @@ type Header struct {
 	DelayTime      time.Duration `json:"delay_time"`
 	RealTopic      string        `json:"real_topic"`
 	RetryTopic     string        `json:"retry_topic"`
+	DeadTopic      string        `json:"dead_topic"`
 	ReconsumeTimes int           `json:"reconsume_times"`
 	MessageID      string        `json:"message_id"`
 	EventName      string        `json:"event_name"`
@@ -134,6 +135,14 @@ func (m *Message) RetryTopic() string {
 
 func (m *Message) SetRetryTopic(topic string) {
 	m.header.RetryTopic = topic
+}
+
+func (m *Message) DeadTopic() string {
+	return m.header.DeadTopic
+}
+
+func (m *Message) SetDeadTopic(topic string) {
+	m.header.DeadTopic = topic
 }
 
 func (m *Message) ReconsumeTimes() int {

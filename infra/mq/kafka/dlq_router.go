@@ -58,12 +58,6 @@ func newDlqRouter(address []string, committer mq.MessageCommitter, pub mq.Publis
 
 	r.messageCh = make(chan *mq.Message)
 	r.closeCh = make(chan interface{}, 1)
-	// r.writer = &kafka.Writer{
-	// 	// Topic:    policy.DeadLetterTopic,
-	// 	Addr:                   kafka.TCP(policy.Address...),
-	// 	Balancer:               &kafka.LeastBytes{},
-	// 	AllowAutoTopicCreation: true,
-	// }
 	go r.run()
 	return r, nil
 }
@@ -87,11 +81,7 @@ func (r *dlqRouter) run() {
 	for {
 		select {
 		case msg := <-r.messageCh:
-			// msg, err := rm.ToKafkaMessage(defaultDeadTopic)
-			// if err != nil {
-			// 	logx.Error(nil, "message transfer to kafka message fail", slog.Any("message", rm), slog.Any("error", err))
-			// 	break
-			// }
+			msg.SetDeadTopic(defaultDeadTopic)
 			err := retry.Run(func() error {
 				return r.pub.Publish(context.Background(), msg)
 			}, 3, retry.NewDefaultBackoffPolicy())
@@ -101,7 +91,6 @@ func (r *dlqRouter) run() {
 				break
 			}
 
-			// msg.Topic = rm.PropsRealTopic()
 			err = r.committer.CommitMessage(context.Background(), msg)
 			if err != nil {
 				logx.Error(nil, "commit message fail", slog.Any("message", msg), slog.Any("error", err))

@@ -50,12 +50,23 @@ func (s *kafkaPublisher) buildKafkaMessage(m *mq.Message) (*kafka.Message, error
 		Value: p,
 	})
 
-	return &kafka.Message{
+	kmsg := &kafka.Message{
 		Key:     []byte(m.BizCode()),
 		Value:   m.Body,
 		Topic:   m.EventName(),
 		Headers: header,
-	}, nil
+	}
+
+	// 重投的消息
+	if m.RetryTopic() != "" {
+		kmsg.Topic = m.RetryTopic()
+	}
+
+	// 死信消息
+	if m.DeadTopic() != "" {
+		kmsg.Topic = m.DeadTopic()
+	}
+	return kmsg, nil
 }
 
 func (s *kafkaPublisher) Close() error {

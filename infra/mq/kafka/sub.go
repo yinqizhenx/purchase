@@ -46,9 +46,10 @@ type kafkaSubscriber struct {
 	address   []string
 	idp       idempotent.Idempotent
 	consumers []*Consumer
+	pub       mq.Publisher
 }
 
-func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator) (mq.Subscriber, error) {
+func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator, pub mq.Publisher) (mq.Subscriber, error) {
 	address := make([]string, 0)
 	err := cfg.Value("kafka.address").Scan(&address)
 	if err != nil {
@@ -58,6 +59,7 @@ func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg
 		handlers: handlerAgg.Build(),
 		address:  address,
 		idp:      idp,
+		pub:      pub,
 	}
 	return s, nil
 }
@@ -77,7 +79,7 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 	}
 	for e, handlers := range s.handlers {
 		for _, h := range handlers {
-			c, err := NewConsumer(e.EventName(), utils.GetMethodName(h), s.address, transferHandler(e, h), s.idp)
+			c, err := NewConsumer(e.EventName(), utils.GetMethodName(h), s.address, transferHandler(e, h), s.idp, s.pub)
 			if err != nil {
 				logx.Errorf(ctx, "new consuer error")
 				continue
@@ -99,7 +101,7 @@ func (s *kafkaSubscriber) Close() error {
 	return nil
 }
 
-func NewConsumer(topic string, consumerGroup string, address []string, handler mq.Handler, idp idempotent.Idempotent) (*Consumer, error) {
+func NewConsumer(topic string, consumerGroup string, address []string, handler mq.Handler, idp idempotent.Idempotent, pub mq.Publisher) (*Consumer, error) {
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  address,
 		GroupID:  consumerGroup,
@@ -113,16 +115,15 @@ func NewConsumer(topic string, consumerGroup string, address []string, handler m
 		handler: handler,
 		topic:   topic,
 		idp:     idp,
-		// rlq:     rlq,
-		// dlq:     dlq,
+		pub:     pub,
 	}
 
-	rlq, err := newRetryRouter(address, c)
+	rlq, err := newRetryRouter(address, c, pub)
 	if err != nil {
 		return nil, err
 	}
 
-	dlq, err := newDlqRouter(address, c)
+	dlq, err := newDlqRouter(address, c, pub)
 	if err != nil {
 		return nil, err
 	}
