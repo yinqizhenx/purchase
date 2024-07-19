@@ -92,7 +92,7 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 
 	s.dlq = newDlqRouter(s.pub)
 
-	s.consumeRetryTopic(ctx, s.address)
+	s.consumeRetryTopic(ctx)
 }
 
 func (s *kafkaSubscriber) registerConsumer(c *Consumer) {
@@ -251,7 +251,7 @@ func (c *Consumer) Close() error {
 }
 
 // consumeRetryTopic 重新投递到原来的队列
-func (s *kafkaSubscriber) consumeRetryTopic(ctx context.Context, address []string) {
+func (s *kafkaSubscriber) consumeRetryTopic(ctx context.Context) {
 	for _, topic := range retryTopic {
 		// 从重试队列拉去消息，发送到消息原来的topic重新消费
 		go func(t string) {
