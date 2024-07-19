@@ -40,7 +40,8 @@ type Header struct {
 	ReconsumeTimes int           `json:"reconsume_times"`
 	MessageID      string        `json:"message_id"`
 	EventName      string        `json:"event_name"`
-	RedeliveryTime time.Time     `json:"redelivery_time"`
+	DeliveryTime   time.Time     `json:"delivery_time"`
+	Partition      int32         `json:"partition"`
 }
 
 type Message struct {
@@ -97,7 +98,7 @@ func (m *Message) SetRawMessage(msg interface{}) {
 
 const (
 	MessageID = "message_id"
-	// BizCode   = "biz_code"
+	Partition = "partition"
 	EventName = "event_name"
 )
 
@@ -161,12 +162,20 @@ func (m *Message) SetEventName(name string) {
 	m.header.EventName = name
 }
 
-func (m *Message) RedeliveryTime() time.Time {
-	return m.header.RedeliveryTime
+func (m *Message) DeliveryTime() time.Time {
+	return m.header.DeliveryTime
 }
 
-func (m *Message) SetRedeliveryTime() {
-	m.header.RedeliveryTime = time.Now()
+func (m *Message) SetDeliveryTime(t time.Time) {
+	m.header.DeliveryTime = t
+}
+
+func (m *Message) Partition() int32 {
+	return m.header.Partition
+}
+
+func (m *Message) SetPartition(p int32) {
+	m.header.Partition = p
 }
 
 func (m *Message) IncrReconsumeTimes() {

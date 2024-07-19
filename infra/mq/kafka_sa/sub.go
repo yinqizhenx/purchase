@@ -238,6 +238,7 @@ func (c *Consumer) buildMessage(m *sarama.ConsumerMessage) (*mq.Message, error) 
 	msg := &mq.Message{
 		Body: m.Value,
 	}
+	msg.SetPartition(m.Partition)
 	for _, header := range m.Headers {
 		if string(header.Key) == mq.MessageID {
 			msg.ID = string(header.Value)
@@ -305,16 +306,27 @@ func (s *kafkaSubscriber) consumeRetryTopic(ctx context.Context) {
 }
 
 func (c *Consumer) redelivery(ctx context.Context, m *mq.Message) error {
+	// 未到消费时间，sleep, 此处应该调用kafka的pause和resume api，不然会导致重平衡，但是此kafka client不支持
+	readyRedelivery := true
+	if expTime := m.DeliveryTime().Add(m.DelayTime()); expTime.After(time.Now()) {
+		readyRedelivery = false
+		partitions := map[string][]int32{
+			m.RetryTopic(): {m.Partition()},
+		}
+		c.cg.Pause(partitions)
+		go func() {
+			fmt.Println("开始sleep ", time.Now().Sub(expTime).Seconds())
+			time.Sleep(time.Now().Sub(expTime))
+			c.cg.Resume(partitions)
+		}()
+	}
 	// 清空死信topic和重投topic
 	// 让消息发送到原始topic里
-	m.SetDeadTopic("")
-	m.SetRetryTopic("")
-	// todo 时间还未到，需要不投
-	// // 未到消费时间，sleep, 此处应该调用kafka的pause和resume api，不然会导致重平衡，但是此kafka client不支持
-	// if expTime := m.RedeliveryTime().Add(m.DelayTime()); expTime.After(time.Now()) {
-	// 	fmt.Println("开始sleep ", time.Now().Sub(expTime).Seconds())
-	// 	time.Sleep(time.Now().Sub(expTime))
-	// }
+	if readyRedelivery {
+		m.SetDeadTopic("")
+		m.SetRetryTopic("")
+	}
+
 	err := c.sub.pub.Publish(ctx, m)
 	if err != nil {
 		return err

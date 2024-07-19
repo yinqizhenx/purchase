@@ -3,6 +3,7 @@ package kafka_sa
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/go-kratos/kratos/v2/config"
@@ -28,6 +29,7 @@ type kafkaPublisher struct {
 }
 
 func (s *kafkaPublisher) Publish(ctx context.Context, msg *mq.Message) error {
+	msg.SetDeliveryTime(time.Now())
 	kmsg, err := s.buildKafkaMessage(msg)
 	if err != nil {
 		return err
