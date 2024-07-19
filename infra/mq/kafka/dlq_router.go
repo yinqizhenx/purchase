@@ -9,14 +9,13 @@ import (
 
 	"purchase/infra/logx"
 	"purchase/infra/mq"
-	"purchase/pkg/retry"
 )
 
 type dlqRouter struct {
-	committer mq.MessageCommitter
+	// committer mq.MessageCommitter
 	pub       mq.Publisher
 	policy    *DLQPolicy
-	messageCh chan *mq.Message
+	messageCh chan RetryMessage
 	closeCh   chan interface{}
 	log       log.Logger
 }
@@ -34,7 +33,7 @@ type DLQPolicy struct {
 	Address []string
 }
 
-func newDlqRouter(address []string, committer mq.MessageCommitter, pub mq.Publisher) (*dlqRouter, error) {
+func newDlqRouter(address []string, pub mq.Publisher) (*dlqRouter, error) {
 	policy := &DLQPolicy{
 		MaxDeliveries:   3,
 		DeadLetterTopic: defaultDeadTopic,
@@ -43,9 +42,9 @@ func newDlqRouter(address []string, committer mq.MessageCommitter, pub mq.Publis
 	}
 
 	r := &dlqRouter{
-		policy:    policy,
-		committer: committer,
-		pub:       pub,
+		policy: policy,
+		// committer: committer,
+		pub: pub,
 	}
 
 	if policy.MaxDeliveries <= 0 {
@@ -56,7 +55,7 @@ func newDlqRouter(address []string, committer mq.MessageCommitter, pub mq.Publis
 		return nil, errors.New("DLQPolicy.Topic needs to be set to a valid topic name")
 	}
 
-	r.messageCh = make(chan *mq.Message)
+	r.messageCh = make(chan RetryMessage)
 	r.closeCh = make(chan interface{}, 1)
 	go r.run()
 	return r, nil
@@ -73,7 +72,7 @@ func (r *dlqRouter) maxRetry() int {
 	return r.policy.MaxDeliveries
 }
 
-func (r *dlqRouter) Chan() chan *mq.Message {
+func (r *dlqRouter) Chan() chan RetryMessage {
 	return r.messageCh
 }
 
@@ -82,16 +81,14 @@ func (r *dlqRouter) run() {
 		select {
 		case msg := <-r.messageCh:
 			msg.SetDeadTopic(defaultDeadTopic)
-			err := retry.Run(func() error {
-				return r.pub.Publish(context.Background(), msg)
-			}, 3, retry.NewDefaultBackoffPolicy())
 
+			err := r.pub.Publish(context.Background(), msg.Message)
 			if err != nil {
 				logx.Error(nil, "message send to dead queue fail after retry 3 times", slog.Any("message", msg), slog.Any("error", err))
 				break
 			}
 
-			err = r.committer.CommitMessage(context.Background(), msg)
+			err = msg.Commit(context.Background())
 			if err != nil {
 				logx.Error(nil, "commit message fail", slog.Any("message", msg), slog.Any("error", err))
 			}

@@ -10,16 +10,12 @@ import (
 	"purchase/infra/mq"
 )
 
-type MessageCommitter interface {
-	CommitMessages(ctx context.Context, msgs ...Message) error
-}
-
 type retryRouter struct {
 	// client    kafka.Dialer
-	committer mq.MessageCommitter
+	// committer mq.MessageCommitter
 	pub       mq.Publisher
 	policy    *RLQPolicy
-	messageCh chan *mq.Message
+	messageCh chan RetryMessage
 	closeCh   chan interface{}
 }
 
@@ -30,7 +26,7 @@ type RLQPolicy struct {
 	RetryLetterTopic string
 }
 
-func newRetryRouter(address []string, committer mq.MessageCommitter, pub mq.Publisher) (*retryRouter, error) {
+func newRetryRouter(address []string, pub mq.Publisher) (*retryRouter, error) {
 	policy := &RLQPolicy{
 		RetryLetterTopic: defaultRetryTopic,
 		Address:          address,
@@ -38,15 +34,15 @@ func newRetryRouter(address []string, committer mq.MessageCommitter, pub mq.Publ
 	}
 
 	r := &retryRouter{
-		policy:    policy,
-		committer: committer,
-		pub:       pub,
+		policy: policy,
+		// committer: committer,
+		pub: pub,
 	}
 
 	if policy.RetryLetterTopic == "" {
 		return nil, errors.New("DLQPolicy.RetryLetterTopic needs to be set to a valid topic name")
 	}
-	r.messageCh = make(chan *mq.Message)
+	r.messageCh = make(chan RetryMessage)
 	r.closeCh = make(chan interface{}, 1)
 	// r.log = logger
 	// r.writer = &kafka.Writer{
@@ -59,7 +55,7 @@ func newRetryRouter(address []string, committer mq.MessageCommitter, pub mq.Publ
 	return r, nil
 }
 
-func (r *retryRouter) Chan() chan *mq.Message {
+func (r *retryRouter) Chan() chan RetryMessage {
 	return r.messageCh
 }
 
@@ -76,14 +72,14 @@ func (r *retryRouter) run() {
 			// 	break
 			// }
 
-			err := r.pub.Publish(context.Background(), msg)
+			err := r.pub.Publish(context.Background(), msg.Message)
 			if err != nil {
 				logx.Error(nil, "message send to retry queue fail", slog.Any("message", msg), slog.Any("error", err))
 				break
 			}
 
 			// msg.Topic = rm.PropsRealTopic()
-			err = r.committer.CommitMessage(context.Background(), msg)
+			err = msg.Commit(context.Background())
 			if err != nil {
 				logx.Error(nil, "commit message fail", slog.Any("message", msg), slog.Any("error", err))
 			}

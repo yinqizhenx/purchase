@@ -113,9 +113,9 @@ func NewConsumer(topic string, consumerGroup string, address []string, handler m
 	})
 
 	c := &Consumer{
-		reader:    reader,
-		handler:   handler,
-		topic:     topic,
+		reader:  reader,
+		handler: handler,
+		// topic:     topic,
 		idp:       idp,
 		pub:       pub,
 		reconsume: reconsume,
@@ -125,12 +125,12 @@ func NewConsumer(topic string, consumerGroup string, address []string, handler m
 		c.handler = c.redelivery
 	}
 
-	rlq, err := newRetryRouter(address, c, pub)
+	rlq, err := newRetryRouter(address, pub)
 	if err != nil {
 		return nil, err
 	}
 
-	dlq, err := newDlqRouter(address, c, pub)
+	dlq, err := newDlqRouter(address, pub)
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +148,8 @@ type Consumer struct {
 	reconsume bool
 	rlq       *retryRouter
 	dlq       *dlqRouter
-	topic     string
-	pub       mq.Publisher
+	// topic     string
+	pub mq.Publisher
 }
 
 func (c *Consumer) Run(ctx context.Context) {
@@ -312,9 +312,22 @@ func (c *Consumer) ReconsumeLater(m *mq.Message) {
 	// m.SetOriginalTopic(c.topic)
 	m.IncrReconsumeTimes()
 	m.SetDelayTime(retryBackoff(m.ReconsumeTimes()))
-	if m.ReconsumeTimes() > c.dlq.maxRetry() {
-		c.dlq.Chan() <- m
-	} else {
-		c.rlq.Chan() <- m
+	retryMessage := RetryMessage{
+		Message:          m,
+		MessageCommitter: c,
 	}
+	if m.ReconsumeTimes() > c.dlq.maxRetry() {
+		c.dlq.Chan() <- retryMessage
+	} else {
+		c.rlq.Chan() <- retryMessage
+	}
+}
+
+type RetryMessage struct {
+	*mq.Message
+	mq.MessageCommitter
+}
+
+func (r RetryMessage) Commit(ctx context.Context) error {
+	return r.MessageCommitter.CommitMessage(ctx, r.Message)
 }
