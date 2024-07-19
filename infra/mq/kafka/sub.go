@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	defaultRetryTopic = "KAFKA_RETRY_TOPIC"
-	defaultDeadTopic  = "KAFKA_DEAD_TOPIC"
-	defaultMaxRetry   = 3
+	defaultRetryConsumerGroup = "retry_consumer_group"
+	defaultDeadTopic          = "dead_topic"
+	defaultMaxRetry           = 3
 )
 
 var retryTopic = map[time.Duration]string{
@@ -82,11 +82,7 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 
 	for e, handlers := range s.handlers {
 		for _, h := range handlers {
-			c, err := NewConsumer(s, e.EventName(), utils.GetMethodName(h), transferHandler(e, h), true)
-			if err != nil {
-				logx.Errorf(ctx, "new consuer error")
-				continue
-			}
+			c := NewConsumer(s, e.EventName(), utils.GetMethodName(h), transferHandler(e, h), true)
 			s.registerConsumer(c)
 			go c.Run(ctx)
 		}
@@ -110,7 +106,7 @@ func (s *kafkaSubscriber) Close() error {
 	return nil
 }
 
-func NewConsumer(sub *kafkaSubscriber, topic string, consumerGroup string, handler mq.Handler, isConsumeRlq bool) (*Consumer, error) {
+func NewConsumer(sub *kafkaSubscriber, topic string, consumerGroup string, handler mq.Handler, isConsumeRlq bool) *Consumer {
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  sub.address,
 		GroupID:  consumerGroup,
@@ -130,7 +126,7 @@ func NewConsumer(sub *kafkaSubscriber, topic string, consumerGroup string, handl
 		c.handler = c.redelivery
 	}
 
-	return c, nil
+	return c
 }
 
 type Consumer struct {
@@ -265,10 +261,7 @@ func (s *kafkaSubscriber) consumeRetryTopic(ctx context.Context, address []strin
 	for _, topic := range retryTopic {
 		// 从重试队列拉去消息，发送到消息原来的topic重新消费
 		go func(t string) {
-			c, err := NewConsumer(s, t, "group-retry", nil, false)
-			if err != nil {
-				logx.Error(ctx, "2122")
-			}
+			c := NewConsumer(s, t, defaultRetryConsumerGroup, nil, false)
 			c.Run(ctx)
 		}(topic)
 	}
