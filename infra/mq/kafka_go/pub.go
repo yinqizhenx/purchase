@@ -1,10 +1,9 @@
-package kafka
+package kafka_go
 
 import (
 	"context"
 	"encoding/json"
 
-	"github.com/IBM/sarama"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/google/wire"
 	"github.com/segmentio/kafka-go"
@@ -23,7 +22,7 @@ const HeaderPropertyKey = "props"
 var ProviderSet = wire.NewSet(NewKafkaPublisher, NewKafkaSubscriber)
 
 type kafkaPublisher struct {
-	writer sarama.SyncProducer
+	writer *kafka.Writer
 	idg    mq.IDGenFunc
 }
 
@@ -32,14 +31,13 @@ func (s *kafkaPublisher) Publish(ctx context.Context, msg *mq.Message) error {
 	if err != nil {
 		return err
 	}
-	_, _, err = s.writer.SendMessage(kmsg)
-	return err
+	return s.writer.WriteMessages(ctx, *kmsg)
 }
 
-func (s *kafkaPublisher) buildKafkaMessage(m *mq.Message) (*sarama.ProducerMessage, error) {
-	header := make([]sarama.RecordHeader, 0)
-	header = append(header, sarama.RecordHeader{
-		Key:   []byte(mq.MessageID),
+func (s *kafkaPublisher) buildKafkaMessage(m *mq.Message) (*kafka.Message, error) {
+	header := make([]kafka.Header, 0)
+	header = append(header, kafka.Header{
+		Key:   mq.MessageID,
 		Value: []byte(s.idg()),
 	})
 
@@ -47,14 +45,14 @@ func (s *kafkaPublisher) buildKafkaMessage(m *mq.Message) (*sarama.ProducerMessa
 	if err != nil {
 		return nil, err
 	}
-	header = append(header, sarama.RecordHeader{
-		Key:   []byte(HeaderPropertyKey),
+	header = append(header, kafka.Header{
+		Key:   HeaderPropertyKey,
 		Value: p,
 	})
 
-	kmsg := &sarama.ProducerMessage{
-		Key:     sarama.StringEncoder(m.BizCode()),
-		Value:   sarama.ByteEncoder(m.Body),
+	kmsg := &kafka.Message{
+		Key:     []byte(m.BizCode()),
+		Value:   m.Body,
 		Topic:   m.EventName(),
 		Headers: header,
 	}
@@ -81,17 +79,12 @@ func NewKafkaPublisher(c config.Config, idg mq.IDGenFunc) (mq.Publisher, error) 
 	if err != nil {
 		return nil, err
 	}
-	config := sarama.NewConfig()
-	config.Producer.Retry.Max = 3                    // 最大尝试发送次数
-	config.Producer.RequiredAcks = sarama.WaitForAll // 发送完数据需要leader和follow都确认
-	config.Producer.Return.Errors = true
-
-	// 连接 Kafka 服务器
-	producer, err := sarama.NewSyncProducer(address, config)
-	if err != nil {
-		return nil, err
+	w := &kafka.Writer{
+		Addr:                   kafka.TCP(address...),
+		Balancer:               &kafka.LeastBytes{},
+		AllowAutoTopicCreation: true,
 	}
-	return &kafkaPublisher{writer: producer, idg: idg}, nil
+	return &kafkaPublisher{writer: w, idg: idg}, nil
 }
 
 func SetMessageHeader(m *kafka.Message, k string, v interface{}) error {

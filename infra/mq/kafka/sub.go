@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"time"
 
+	"github.com/IBM/sarama"
 	"github.com/go-kratos/kratos/v2/config"
-	"github.com/segmentio/kafka-go"
+	"github.com/samber/lo"
 
 	domainEvent "purchase/domain/event"
 	"purchase/infra/idempotent"
@@ -49,6 +49,7 @@ type kafkaSubscriber struct {
 	pub       mq.Publisher
 	rlq       *retryRouter
 	dlq       *dlqRouter
+	conf      *sarama.Config
 }
 
 func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator, pub mq.Publisher) (mq.Subscriber, error) {
@@ -57,35 +58,60 @@ func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg
 	if err != nil {
 		return nil, err
 	}
+
+	conf := sarama.NewConfig()
+	conf.Producer.Return.Successes = true               // 成功发送的消息将写到 Successes 通道
+	conf.Consumer.Return.Errors = true                  // 消费时错误信息将写到 Errors 通道
+	conf.Consumer.Fetch.Default = 3 * 1024 * 1024       // 默认请求的字节数
+	conf.Consumer.Offsets.Initial = sarama.OffsetNewest // 从最新的 offset 读取，如果设置为 OffsetOldest 则从最旧的 offset 读取
+	conf.Consumer.Offsets.AutoCommit.Enable = true      // 将已消费的 offset 发送给 broker，默认为 true
+
 	s := &kafkaSubscriber{
 		handlers: handlerAgg.Build(),
 		address:  address,
 		idp:      idp,
 		pub:      pub,
+		conf:     conf,
 	}
 	return s, nil
 }
 
 func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
-	transferHandler := func(e domainEvent.Event, h domainEvent.Handler) mq.Handler {
+	transferHandler := func(events []domainEvent.Event, h domainEvent.Handler) mq.Handler {
 		return func(ctx context.Context, m *mq.Message) error {
-			if e.EventName() == m.EventName() {
-				msg, err := e.Decode(m.Body)
-				if err != nil {
-					return err
+			for _, e := range events {
+				if e.EventName() == m.EventName() {
+					msg, err := e.Decode(m.Body)
+					if err != nil {
+						return err
+					}
+					return h(ctx, msg)
 				}
-				return h(ctx, msg)
 			}
 			return nil
 		}
 	}
 
+	handlerEvents := make(map[string][]domainEvent.Event)
+	handlerMap := make(map[string]domainEvent.Handler)
 	for e, handlers := range s.handlers {
 		for _, h := range handlers {
-			c := NewConsumer(s, e.EventName(), utils.GetMethodName(h), transferHandler(e, h), true)
-			s.registerConsumer(c)
-			go c.Run(ctx)
+			handlerName := utils.GetMethodName(h)
+			handlerEvents[handlerName] = append(handlerEvents[handlerName], e)
+			handlerMap[handlerName] = h
 		}
+	}
+
+	for handlerName, events := range handlerEvents {
+		topics := lo.Map(events, func(e domainEvent.Event, _ int) string {
+			return e.EventName()
+		})
+		c, err := NewConsumer(s, topics, handlerName, transferHandler(events, handlerMap[handlerName]), true)
+		if err != nil {
+			logx.Error(ctx, "new consume err", slog.Any("error", err))
+		}
+		s.registerConsumer(c)
+		go c.Run(ctx)
 	}
 
 	s.rlq = newRetryRouter(s.pub)
@@ -106,51 +132,43 @@ func (s *kafkaSubscriber) Close() error {
 	return nil
 }
 
-func NewConsumer(sub *kafkaSubscriber, topic string, consumerGroup string, handler mq.Handler, isConsumeRlq bool) *Consumer {
-	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  sub.address,
-		GroupID:  consumerGroup,
-		Topic:    topic,
-		MinBytes: 10e3, // 10KB
-		MaxBytes: 10e6, // 10MB
-	})
+func NewConsumer(sub *kafkaSubscriber, topics []string, consumerGroup string, handler mq.Handler, isConsumeRlq bool) (*Consumer, error) {
+	cg, err := sarama.NewConsumerGroup(sub.address, consumerGroup, sub.conf)
+	if err != nil {
+		return nil, err
+	}
 
 	c := &Consumer{
 		sub:          sub,
-		reader:       reader,
 		handler:      handler,
 		isConsumeRlq: isConsumeRlq,
+		cg:           cg,
+		topics:       topics,
 	}
 
 	if c.isConsumeRlq {
 		c.handler = c.redelivery
 	}
 
-	return c
+	return c, nil
 }
 
 type Consumer struct {
 	sub          *kafkaSubscriber
-	reader       *kafka.Reader
 	handler      mq.Handler
 	isConsumeRlq bool
+	ctx          context.Context
+	sess         sarama.ConsumerGroupSession
+	cg           sarama.ConsumerGroup
+	topics       []string
 }
 
 func (c *Consumer) Run(ctx context.Context) {
 	for {
-		kmsg, err := c.reader.FetchMessage(ctx)
+		err := c.cg.Consume(ctx, c.topics, c) // 传入定义好的 ConsumerGroupHandler 结构体
 		if err != nil {
-			if err != io.EOF {
-				logx.Error(ctx, "kafka fetch message fail", slog.Any("error", err))
-			}
-			continue
+			fmt.Printf("consume error: %#v\n", err)
 		}
-		m, err := c.buildMessage(kmsg)
-		if err != nil {
-			logx.Error(ctx, "buildMessage fail", slog.Any("error", err))
-			continue
-		}
-		c.handleMessage(ctx, m, c.handler)
 	}
 }
 
@@ -215,15 +233,15 @@ func (c *Consumer) handleMessage(ctx context.Context, m *mq.Message, h mq.Handle
 	}
 }
 
-func (c *Consumer) buildMessage(m kafka.Message) (*mq.Message, error) {
+func (c *Consumer) buildMessage(m *sarama.ConsumerMessage) (*mq.Message, error) {
 	msg := &mq.Message{
 		Body: m.Value,
 	}
 	for _, header := range m.Headers {
-		if header.Key == mq.MessageID {
+		if string(header.Key) == mq.MessageID {
 			msg.ID = string(header.Value)
 		}
-		if header.Key == HeaderPropertyKey {
+		if string(header.Key) == HeaderPropertyKey {
 			props := &mq.Header{}
 			err := json.Unmarshal(header.Value, props)
 			if err != nil {
@@ -238,11 +256,12 @@ func (c *Consumer) buildMessage(m kafka.Message) (*mq.Message, error) {
 }
 
 func (c *Consumer) CommitMessage(ctx context.Context, m *mq.Message) error {
-	return c.reader.CommitMessages(ctx, m.RawMessage().(kafka.Message))
+	c.sess.MarkMessage(m.RawMessage().(*sarama.ConsumerMessage), "")
+	return nil
 }
 
 func (c *Consumer) Close() error {
-	err := c.reader.Close()
+	err := c.cg.Close()
 	fmt.Print("close kafka reader")
 	if err != nil {
 		return err
@@ -250,15 +269,37 @@ func (c *Consumer) Close() error {
 	return nil
 }
 
+func (c *Consumer) Setup(_ sarama.ConsumerGroupSession) error { return nil }
+
+func (c *Consumer) Cleanup(_ sarama.ConsumerGroupSession) error { return nil }
+
+func (c *Consumer) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	c.sess = sess
+
+	for msg := range claim.Messages() {
+		m, err := c.buildMessage(msg)
+		if err != nil {
+			logx.Error(c.ctx, "buildMessage fail", slog.Any("error", err))
+			continue
+		}
+		c.handleMessage(c.ctx, m, c.handler)
+	}
+	return nil
+}
+
 // consumeRetryTopic 重新投递到原来的队列
 func (s *kafkaSubscriber) consumeRetryTopic(ctx context.Context) {
-	for _, topic := range retryTopic {
-		// 从重试队列拉去消息，发送到消息原来的topic重新消费
-		go func(t string) {
-			c := NewConsumer(s, t, defaultRetryConsumerGroup, nil, false)
-			c.Run(ctx)
-		}(topic)
-	}
+	retryTopics := lo.MapToSlice(retryTopic, func(k time.Duration, v string) string {
+		return v
+	})
+	// 从重试队列拉去消息，发送到消息原来的topic重新消费
+	go func() {
+		c, err := NewConsumer(s, retryTopics, defaultRetryConsumerGroup, nil, false)
+		if err != nil {
+			logx.Error(ctx, "new consume err", slog.Any("error", err))
+		}
+		c.Run(ctx)
+	}()
 }
 
 func (c *Consumer) redelivery(ctx context.Context, m *mq.Message) error {

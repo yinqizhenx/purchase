@@ -10,12 +10,10 @@ import (
 
 	"purchase/adapter/handler/rpc"
 	"purchase/app"
+	"purchase/app/assembler"
 	"purchase/app/event_handler"
 	"purchase/cmd/server"
 	"purchase/domain/factory"
-	"purchase/infra/mq/kafka"
-
-	"purchase/app/assembler"
 	"purchase/domain/service"
 	"purchase/infra/acl"
 	"purchase/infra/async_task"
@@ -45,7 +43,7 @@ func initApp() (*App, func(), error) {
 		rpc.ProviderSet,
 		// async_queue.ProviderSet,
 		mq.ProviderSet,
-		kafka.ProviderSet,
+		kafka_go.ProviderSet,
 		tx.ProviderSet,
 		assembler.ProviderSet,
 		dal.ProviderSet,

@@ -64,7 +64,7 @@ func initApp() (*App, func(), error) {
 	grpcServer := server.NewGRPCServer(configConfig, rpcServer)
 	httpServer := server.NewHttpServer(configConfig)
 	idGenFunc := mq.NewIDGenFunc()
-	publisher, err := kafka.NewKafkaPublisher(configConfig, idGenFunc)
+	publisher, err := kafka_go.NewKafkaPublisher(configConfig, idGenFunc)
 	if err != nil {
 		cleanup2()
 		cleanup()
@@ -80,7 +80,7 @@ func initApp() (*App, func(), error) {
 	asyncTaskMux := scheduler.NewAsyncTaskServer(publisher, asyncTaskDal, transactionManager, unboundedChan, lockBuilder)
 	idempotentIdempotent := idempotent.NewIdempotentImpl(redisClient)
 	handlerAggregator := event_handler.NewDomainEventHandler()
-	subscriber, err := kafka.NewKafkaSubscriber(configConfig, idempotentIdempotent, handlerAggregator, publisher)
+	subscriber, err := kafka_go.NewKafkaSubscriber(configConfig, idempotentIdempotent, handlerAggregator, publisher)
 	if err != nil {
 		cleanup2()
 		cleanup()
