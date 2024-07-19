@@ -82,7 +82,7 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 
 	for e, handlers := range s.handlers {
 		for _, h := range handlers {
-			c := NewConsumer(s, e.EventName(), utils.GetMethodName(h), transferHandler(e, h), true)
+			c := NewConsumer(s, e.EventName(), utils.GetMethodName(h), transferHandler(e, h), false)
 			s.registerConsumer(c)
 			go c.Run(ctx)
 		}
@@ -255,7 +255,7 @@ func (s *kafkaSubscriber) consumeRetryTopic(ctx context.Context) {
 	for _, topic := range retryTopic {
 		// 从重试队列拉去消息，发送到消息原来的topic重新消费
 		go func(t string) {
-			c := NewConsumer(s, t, defaultRetryConsumerGroup, nil, false)
+			c := NewConsumer(s, t, defaultRetryConsumerGroup, nil, true)
 			c.Run(ctx)
 		}(topic)
 	}

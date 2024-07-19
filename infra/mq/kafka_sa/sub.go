@@ -106,7 +106,7 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 		topics := lo.Map(events, func(e domainEvent.Event, _ int) string {
 			return e.EventName()
 		})
-		c, err := NewConsumer(s, topics, handlerName, transferHandler(events, handlerMap[handlerName]), true)
+		c, err := NewConsumer(s, topics, handlerName, transferHandler(events, handlerMap[handlerName]), false)
 		if err != nil {
 			logx.Error(ctx, "new consume err", slog.Any("error", err))
 		}
@@ -279,6 +279,7 @@ func (c *Consumer) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.C
 
 	for msg := range claim.Messages() {
 		m, err := c.buildMessage(msg)
+		fmt.Printf("topic=%s, partition=%d, offset=%d\n", msg.Topic, msg.Partition, msg.Offset)
 		if err != nil {
 			logx.Error(c.ctx, "buildMessage fail", slog.Any("error", err))
 			continue
@@ -295,7 +296,7 @@ func (s *kafkaSubscriber) consumeRetryTopic(ctx context.Context) {
 	})
 	// 从重试队列拉去消息，发送到消息原来的topic重新消费
 	go func() {
-		c, err := NewConsumer(s, retryTopics, defaultRetryConsumerGroup, nil, false)
+		c, err := NewConsumer(s, retryTopics, defaultRetryConsumerGroup, nil, true)
 		if err != nil {
 			logx.Error(ctx, "new consume err", slog.Any("error", err))
 		}
