@@ -307,25 +307,20 @@ func (s *kafkaSubscriber) consumeRetryTopic(ctx context.Context) {
 
 func (c *Consumer) redelivery(ctx context.Context, m *mq.Message) error {
 	// 未到消费时间，sleep, 此处应该调用kafka的pause和resume api，不然会导致重平衡，但是此kafka client不支持
-	readyRedelivery := true
-	if expTime := m.DeliveryTime().Add(m.DelayTime()); expTime.After(time.Now()) {
-		readyRedelivery = false
+	now := time.Now()
+	if expTime := m.DeliveryTime().Add(m.DelayTime()); expTime.After(now) {
 		partitions := map[string][]int32{
 			m.RetryTopic(): {m.Partition()},
 		}
 		c.cg.Pause(partitions)
-		go func() {
-			fmt.Println("开始sleep ", time.Now().Sub(expTime).Seconds())
-			time.Sleep(time.Now().Sub(expTime))
-			c.cg.Resume(partitions)
-		}()
+		fmt.Println("开始sleep ", expTime.Sub(now).Seconds())
+		time.Sleep(time.Now().Sub(expTime))
+		c.cg.Resume(partitions)
 	}
 	// 清空死信topic和重投topic
 	// 让消息发送到原始topic里
-	if readyRedelivery {
-		m.SetDeadTopic("")
-		m.SetRetryTopic("")
-	}
+	m.SetDeadTopic("")
+	m.SetRetryTopic("")
 
 	err := c.sub.pub.Publish(ctx, m)
 	if err != nil {
