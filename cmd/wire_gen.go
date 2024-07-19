@@ -80,7 +80,7 @@ func initApp() (*App, func(), error) {
 	asyncTaskMux := scheduler.NewAsyncTaskServer(publisher, asyncTaskDal, transactionManager, unboundedChan, lockBuilder)
 	idempotentIdempotent := idempotent.NewIdempotentImpl(redisClient)
 	handlerAggregator := event_handler.NewDomainEventHandler()
-	subscriber, err := kafka.NewKafkaSubscriber(configConfig, idempotentIdempotent, handlerAggregator)
+	subscriber, err := kafka.NewKafkaSubscriber(configConfig, idempotentIdempotent, handlerAggregator, publisher)
 	if err != nil {
 		cleanup2()
 		cleanup()

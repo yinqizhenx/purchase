@@ -288,8 +288,8 @@ func (m *AsyncTaskMux) SendMessage(ctx context.Context, task *async_task.AsyncTa
 	msg := &mq.Message{
 		Body: []byte(task.TaskData),
 	}
-	msg.HeaderSet(mq.EntityID, task.EntityID)
-	msg.HeaderSet(mq.EventName, task.TaskName)
+	msg.SetBizCode(task.EntityID)
+	msg.SetEventName(task.TaskName)
 	return m.pub.Publish(ctx, msg)
 }
 
