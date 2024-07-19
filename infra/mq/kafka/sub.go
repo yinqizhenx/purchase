@@ -110,7 +110,7 @@ func (s *kafkaSubscriber) Close() error {
 	return nil
 }
 
-func NewConsumer(sub *kafkaSubscriber, topic string, consumerGroup string, handler mq.Handler, reconsume bool) (*Consumer, error) {
+func NewConsumer(sub *kafkaSubscriber, topic string, consumerGroup string, handler mq.Handler, isConsumeRlq bool) (*Consumer, error) {
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  sub.address,
 		GroupID:  consumerGroup,
@@ -120,13 +120,13 @@ func NewConsumer(sub *kafkaSubscriber, topic string, consumerGroup string, handl
 	})
 
 	c := &Consumer{
-		sub:       sub,
-		reader:    reader,
-		handler:   handler,
-		reconsume: reconsume,
+		sub:          sub,
+		reader:       reader,
+		handler:      handler,
+		isConsumeRlq: isConsumeRlq,
 	}
 
-	if c.handler == nil {
+	if c.isConsumeRlq {
 		c.handler = c.redelivery
 	}
 
@@ -134,10 +134,10 @@ func NewConsumer(sub *kafkaSubscriber, topic string, consumerGroup string, handl
 }
 
 type Consumer struct {
-	sub       *kafkaSubscriber
-	reader    *kafka.Reader
-	handler   mq.Handler
-	reconsume bool
+	sub          *kafkaSubscriber
+	reader       *kafka.Reader
+	handler      mq.Handler
+	isConsumeRlq bool
 }
 
 func (c *Consumer) Run(ctx context.Context) {
@@ -180,7 +180,7 @@ func (c *Consumer) handleMessage(ctx context.Context, m *mq.Message, h mq.Handle
 				logx.Error(ctx, "failed to commit messages:", slog.Any("error", err), slog.Any("message", m))
 			}
 		} else {
-			if c.reconsume {
+			if !c.isConsumeRlq {
 				// 已经消费过，但消费失败了
 				c.ReconsumeLater(m)
 			}
@@ -204,7 +204,7 @@ func (c *Consumer) handleMessage(ctx context.Context, m *mq.Message, h mq.Handle
 			if err != nil {
 				logx.Error(ctx, "RemoveFailKey fail after retry 2 times", slog.Any("error", err), slog.String("key", m.ID))
 			}
-			if c.reconsume {
+			if !c.isConsumeRlq {
 				c.ReconsumeLater(m)
 			}
 		} else {
