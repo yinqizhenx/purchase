@@ -80,8 +80,9 @@ func NewKafkaPublisher(c config.Config, idg mq.IDGenFunc) (mq.Publisher, error) 
 		return nil, err
 	}
 	w := &kafka.Writer{
-		Addr:     kafka.TCP(address...),
-		Balancer: &kafka.LeastBytes{},
+		Addr:                   kafka.TCP(address...),
+		Balancer:               &kafka.LeastBytes{},
+		AllowAutoTopicCreation: true,
 	}
 	return &kafkaPublisher{writer: w, idg: idg}, nil
 }

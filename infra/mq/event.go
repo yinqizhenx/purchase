@@ -76,7 +76,7 @@ func (m *Message) SetHeader(h Header) {
 }
 
 func (m *Message) RawMessage() interface{} {
-	return m.header
+	return m.rawMessage
 }
 
 func (m *Message) SetRawMessage(msg interface{}) {
