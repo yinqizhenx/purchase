@@ -4,19 +4,14 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/go-kratos/kratos/v2/log"
-
 	"purchase/infra/logx"
 	"purchase/infra/mq"
 )
 
 type dlqRouter struct {
-	// committer mq.MessageCommitter
 	pub       mq.Publisher
-	policy    *DLQPolicy
 	messageCh chan RetryMessage
 	closeCh   chan interface{}
-	log       log.Logger
 }
 
 // DLQPolicy represents the configuration for the Dead Letter Queue consumer policy.
@@ -32,27 +27,11 @@ type DLQPolicy struct {
 	Address []string
 }
 
-func newDlqRouter(address []string, pub mq.Publisher) *dlqRouter {
-	policy := &DLQPolicy{
-		MaxDeliveries:   3,
-		DeadLetterTopic: defaultDeadTopic,
-		Address:         address,
-		GroupID:         "group-b",
-	}
+func newDlqRouter(pub mq.Publisher) *dlqRouter {
 
 	r := &dlqRouter{
-		policy: policy,
-		// committer: committer,
 		pub: pub,
 	}
-
-	// if policy.MaxDeliveries <= 0 {
-	// 	return nil, errors.New("DLQPolicy.MaxDeliveries needs to be > 0")
-	// }
-	//
-	// if policy.DeadLetterTopic == "" {
-	// 	return nil, errors.New("DLQPolicy.Topic needs to be set to a valid topic name")
-	// }
 
 	r.messageCh = make(chan RetryMessage)
 	r.closeCh = make(chan interface{}, 1)
@@ -60,15 +39,8 @@ func newDlqRouter(address []string, pub mq.Publisher) *dlqRouter {
 	return r
 }
 
-func (r *dlqRouter) shouldSendToDlq(cm *Message) bool {
-	if r.policy == nil {
-		return false
-	}
-	return cm.PropsReconsumeTimes() != 0 && cm.PropsReconsumeTimes() >= r.policy.MaxDeliveries
-}
-
 func (r *dlqRouter) maxRetry() int {
-	return r.policy.MaxDeliveries
+	return defaultMaxRetry
 }
 
 func (r *dlqRouter) Chan() chan RetryMessage {

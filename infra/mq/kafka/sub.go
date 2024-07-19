@@ -92,9 +92,9 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 		}
 	}
 
-	s.rlq = newRetryRouter(s.address, s.pub)
+	s.rlq = newRetryRouter(s.pub)
 
-	s.dlq = newDlqRouter(s.address, s.pub)
+	s.dlq = newDlqRouter(s.pub)
 
 	s.consumeRetryTopic(ctx, s.address)
 }
