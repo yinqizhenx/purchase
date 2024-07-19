@@ -34,7 +34,7 @@ type Handler func(context.Context, *Message) error
 type Header struct {
 	BizCode        string        `json:"biz_code"`
 	DelayTime      time.Duration `json:"delay_time"`
-	RealTopic      string        `json:"real_topic"`
+	OriginalTopic  string        `json:"original_topic"`
 	RetryTopic     string        `json:"retry_topic"`
 	DeadTopic      string        `json:"dead_topic"`
 	ReconsumeTimes int           `json:"reconsume_times"`
@@ -121,12 +121,12 @@ func (m *Message) SetDelayTime(t time.Duration) {
 	m.header.DelayTime = t
 }
 
-func (m *Message) RealTopic() string {
-	return m.header.RealTopic
+func (m *Message) OriginalTopic() string {
+	return m.header.OriginalTopic
 }
 
-func (m *Message) SetRealTopic(topic string) {
-	m.header.RealTopic = topic
+func (m *Message) SetOriginalTopic(topic string) {
+	m.header.OriginalTopic = topic
 }
 
 func (m *Message) RetryTopic() string {
