@@ -181,10 +181,6 @@ func (c *Consumer) handleMessage(ctx context.Context, m *mq.Message, h mq.Handle
 		}
 	} else {
 		// 未消费过，执行消费逻辑
-		// message := &mq.Message{
-		// 	Body: m.Value,
-		// }
-		// message.HeaderSet(mq.EventName, msg.PropsEventName())
 		err = h(ctx, m)
 		if err != nil {
 			logx.Error(ctx, "consume message fail", slog.Any("error", err), slog.Any("message", m))
