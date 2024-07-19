@@ -47,6 +47,8 @@ type kafkaSubscriber struct {
 	idp       idempotent.Idempotent
 	consumers []*Consumer
 	pub       mq.Publisher
+	rlq       *retryRouter
+	dlq       *dlqRouter
 }
 
 func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator, pub mq.Publisher) (mq.Subscriber, error) {
@@ -77,9 +79,10 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 			return nil
 		}
 	}
+
 	for e, handlers := range s.handlers {
 		for _, h := range handlers {
-			c, err := NewConsumer(e.EventName(), utils.GetMethodName(h), s.address, transferHandler(e, h), s.idp, s.pub, true)
+			c, err := NewConsumer(s, e.EventName(), utils.GetMethodName(h), transferHandler(e, h), true)
 			if err != nil {
 				logx.Errorf(ctx, "new consuer error")
 				continue
@@ -88,6 +91,10 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 			go c.Run(ctx)
 		}
 	}
+
+	s.rlq = newRetryRouter(s.address, s.pub)
+
+	s.dlq = newDlqRouter(s.address, s.pub)
 
 	s.consumeRetryTopic(ctx, s.address)
 }
@@ -103,9 +110,9 @@ func (s *kafkaSubscriber) Close() error {
 	return nil
 }
 
-func NewConsumer(topic string, consumerGroup string, address []string, handler mq.Handler, idp idempotent.Idempotent, pub mq.Publisher, reconsume bool) (*Consumer, error) {
+func NewConsumer(sub *kafkaSubscriber, topic string, consumerGroup string, handler mq.Handler, reconsume bool) (*Consumer, error) {
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  address,
+		Brokers:  sub.address,
 		GroupID:  consumerGroup,
 		Topic:    topic,
 		MinBytes: 10e3, // 10KB
@@ -113,11 +120,9 @@ func NewConsumer(topic string, consumerGroup string, address []string, handler m
 	})
 
 	c := &Consumer{
-		reader:  reader,
-		handler: handler,
-		// topic:     topic,
-		idp:       idp,
-		pub:       pub,
+		sub:       sub,
+		reader:    reader,
+		handler:   handler,
 		reconsume: reconsume,
 	}
 
@@ -125,31 +130,14 @@ func NewConsumer(topic string, consumerGroup string, address []string, handler m
 		c.handler = c.redelivery
 	}
 
-	rlq, err := newRetryRouter(address, pub)
-	if err != nil {
-		return nil, err
-	}
-
-	dlq, err := newDlqRouter(address, pub)
-	if err != nil {
-		return nil, err
-	}
-
-	c.rlq = rlq
-	c.dlq = dlq
-
 	return c, nil
 }
 
 type Consumer struct {
+	sub       *kafkaSubscriber
 	reader    *kafka.Reader
 	handler   mq.Handler
-	idp       idempotent.Idempotent
 	reconsume bool
-	rlq       *retryRouter
-	dlq       *dlqRouter
-	// topic     string
-	pub mq.Publisher
 }
 
 func (c *Consumer) Run(ctx context.Context) {
@@ -174,14 +162,14 @@ func (c *Consumer) Run(ctx context.Context) {
 func (c *Consumer) handleMessage(ctx context.Context, m *mq.Message, h mq.Handler) {
 	// msg := NewMessage(&m)
 	// key := msg.PropsMessageID()
-	ok, err := c.idp.SetKeyPendingWithDDL(ctx, m.ID, time.Second*time.Duration(10*60))
+	ok, err := c.sub.idp.SetKeyPendingWithDDL(ctx, m.ID, time.Second*time.Duration(10*60))
 	if err != nil {
 		logx.Error(ctx, "subscriber SetKeyPendingWithDDL fail", slog.Any("error", err), slog.String("key", m.ID), slog.Any("message", m))
 		return
 	}
 	// 已经消费过
 	if !ok {
-		state, err := c.idp.GetKeyState(ctx, m.ID)
+		state, err := c.sub.idp.GetKeyState(ctx, m.ID)
 		if err != nil {
 			logx.Error(ctx, "subscriber GetKeyState fail", slog.Any("error", err), slog.String("key", m.ID), slog.Any("message", m))
 			return
@@ -211,7 +199,7 @@ func (c *Consumer) handleMessage(ctx context.Context, m *mq.Message, h mq.Handle
 			// 如果RemoveFailKey成功，ReconsumeLater失败，不会再次消费
 			// 如果RemoveFailKey失败，ReconsumeLater失败，队列未提交ack，会等到key过期删除，不会再次被消费
 			err = retry.Run(func() error {
-				return c.idp.RemoveFailKey(ctx, m.ID)
+				return c.sub.idp.RemoveFailKey(ctx, m.ID)
 			}, 2)
 			if err != nil {
 				logx.Error(ctx, "RemoveFailKey fail after retry 2 times", slog.Any("error", err), slog.String("key", m.ID))
@@ -222,7 +210,7 @@ func (c *Consumer) handleMessage(ctx context.Context, m *mq.Message, h mq.Handle
 		} else {
 			// 消费采成功
 			err = retry.Run(func() error {
-				return c.idp.UpdateKeyDone(ctx, m.ID)
+				return c.sub.idp.UpdateKeyDone(ctx, m.ID)
 			}, 2)
 			if err != nil {
 				logx.Error(ctx, "UpdateKeyDone fail after retry 2 times", slog.Any("error", err), slog.String("key", m.ID))
@@ -277,7 +265,7 @@ func (s *kafkaSubscriber) consumeRetryTopic(ctx context.Context, address []strin
 	for _, topic := range retryTopic {
 		// 从重试队列拉去消息，发送到消息原来的topic重新消费
 		go func(t string) {
-			c, err := NewConsumer(t, "group-retry", address, nil, s.idp, s.pub, false)
+			c, err := NewConsumer(s, t, "group-retry", nil, false)
 			if err != nil {
 				logx.Error(ctx, "2122")
 			}
@@ -297,7 +285,7 @@ func (c *Consumer) redelivery(ctx context.Context, m *mq.Message) error {
 	// 	fmt.Println("开始sleep ", time.Now().Sub(expTime).Seconds())
 	// 	time.Sleep(time.Now().Sub(expTime))
 	// }
-	err := c.pub.Publish(ctx, m)
+	err := c.sub.pub.Publish(ctx, m)
 	if err != nil {
 		return err
 	}
@@ -316,10 +304,10 @@ func (c *Consumer) ReconsumeLater(m *mq.Message) {
 		Message:          m,
 		MessageCommitter: c,
 	}
-	if m.ReconsumeTimes() > c.dlq.maxRetry() {
-		c.dlq.Chan() <- retryMessage
+	if m.ReconsumeTimes() > c.sub.dlq.maxRetry() {
+		c.sub.dlq.Chan() <- retryMessage
 	} else {
-		c.rlq.Chan() <- retryMessage
+		c.sub.rlq.Chan() <- retryMessage
 	}
 }
 

@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -33,7 +32,7 @@ type DLQPolicy struct {
 	Address []string
 }
 
-func newDlqRouter(address []string, pub mq.Publisher) (*dlqRouter, error) {
+func newDlqRouter(address []string, pub mq.Publisher) *dlqRouter {
 	policy := &DLQPolicy{
 		MaxDeliveries:   3,
 		DeadLetterTopic: defaultDeadTopic,
@@ -47,18 +46,18 @@ func newDlqRouter(address []string, pub mq.Publisher) (*dlqRouter, error) {
 		pub: pub,
 	}
 
-	if policy.MaxDeliveries <= 0 {
-		return nil, errors.New("DLQPolicy.MaxDeliveries needs to be > 0")
-	}
-
-	if policy.DeadLetterTopic == "" {
-		return nil, errors.New("DLQPolicy.Topic needs to be set to a valid topic name")
-	}
+	// if policy.MaxDeliveries <= 0 {
+	// 	return nil, errors.New("DLQPolicy.MaxDeliveries needs to be > 0")
+	// }
+	//
+	// if policy.DeadLetterTopic == "" {
+	// 	return nil, errors.New("DLQPolicy.Topic needs to be set to a valid topic name")
+	// }
 
 	r.messageCh = make(chan RetryMessage)
 	r.closeCh = make(chan interface{}, 1)
 	go r.run()
-	return r, nil
+	return r
 }
 
 func (r *dlqRouter) shouldSendToDlq(cm *Message) bool {

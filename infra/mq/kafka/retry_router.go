@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"time"
 
@@ -26,7 +25,7 @@ type RLQPolicy struct {
 	RetryLetterTopic string
 }
 
-func newRetryRouter(address []string, pub mq.Publisher) (*retryRouter, error) {
+func newRetryRouter(address []string, pub mq.Publisher) *retryRouter {
 	policy := &RLQPolicy{
 		RetryLetterTopic: defaultRetryTopic,
 		Address:          address,
@@ -39,9 +38,6 @@ func newRetryRouter(address []string, pub mq.Publisher) (*retryRouter, error) {
 		pub: pub,
 	}
 
-	if policy.RetryLetterTopic == "" {
-		return nil, errors.New("DLQPolicy.RetryLetterTopic needs to be set to a valid topic name")
-	}
 	r.messageCh = make(chan RetryMessage)
 	r.closeCh = make(chan interface{}, 1)
 	// r.log = logger
@@ -52,7 +48,7 @@ func newRetryRouter(address []string, pub mq.Publisher) (*retryRouter, error) {
 	// }
 	go r.run()
 
-	return r, nil
+	return r
 }
 
 func (r *retryRouter) Chan() chan RetryMessage {
