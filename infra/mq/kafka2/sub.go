@@ -102,10 +102,6 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 		}
 	}
 
-	s.rlq = newRetryRouter(s.pub)
-
-	s.dlq = newDlqRouter(s.pub)
-
 	for handlerName, events := range handlerEvents {
 		topics := lo.Map(events, func(e domainEvent.Event, _ int) string {
 			return e.EventName()
@@ -117,6 +113,10 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 		s.registerConsumer(c)
 		go c.Run(ctx)
 	}
+
+	s.rlq = newRetryRouter(s.pub)
+
+	s.dlq = newDlqRouter(s.pub)
 
 	s.consumeRetryTopic(ctx)
 }

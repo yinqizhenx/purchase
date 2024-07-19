@@ -80,10 +80,6 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 		}
 	}
 
-	s.rlq = newRetryRouter(s.pub)
-
-	s.dlq = newDlqRouter(s.pub)
-
 	for e, handlers := range s.handlers {
 		for _, h := range handlers {
 			c := NewConsumer(s, e.EventName(), utils.GetMethodName(h), transferHandler(e, h), true)
@@ -91,6 +87,10 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 			go c.Run(ctx)
 		}
 	}
+
+	s.rlq = newRetryRouter(s.pub)
+
+	s.dlq = newDlqRouter(s.pub)
 
 	s.consumeRetryTopic(ctx)
 }
