@@ -156,8 +156,6 @@ func (c *Consumer) Run(ctx context.Context) {
 
 // handleMessage 幂等消费消息
 func (c *Consumer) handleMessage(ctx context.Context, m *mq.Message, h mq.Handler) {
-	// msg := NewMessage(&m)
-	// key := msg.PropsMessageID()
 	ok, err := c.sub.idp.SetKeyPendingWithDDL(ctx, m.ID, time.Second*time.Duration(10*60))
 	if err != nil {
 		logx.Error(ctx, "subscriber SetKeyPendingWithDDL fail", slog.Any("error", err), slog.String("key", m.ID), slog.Any("message", m))
