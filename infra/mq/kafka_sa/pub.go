@@ -84,7 +84,7 @@ func NewKafkaPublisher(c config.Config, idg mq.IDGenFunc) (mq.Publisher, error) 
 	config := sarama.NewConfig()
 	config.Producer.Retry.Max = 3                    // 最大尝试发送次数
 	config.Producer.RequiredAcks = sarama.WaitForAll // 发送完数据需要leader和follow都确认
-	config.Producer.Return.Errors = true
+	config.Producer.Return.Successes = true
 
 	// 连接 Kafka 服务器
 	producer, err := sarama.NewSyncProducer(address, config)

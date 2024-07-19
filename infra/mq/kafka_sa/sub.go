@@ -144,6 +144,7 @@ func NewConsumer(sub *kafkaSubscriber, topics []string, consumerGroup string, ha
 		isConsumeRlq: isConsumeRlq,
 		cg:           cg,
 		topics:       topics,
+		ctx:          context.Background(),
 	}
 
 	if c.isConsumeRlq {

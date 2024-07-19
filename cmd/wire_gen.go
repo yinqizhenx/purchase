@@ -22,7 +22,7 @@ import (
 	"purchase/infra/idempotent"
 	"purchase/infra/logx"
 	"purchase/infra/mq"
-	"purchase/infra/mq/kafka"
+	"purchase/infra/mq/kafka_sa"
 	"purchase/infra/persistence/convertor"
 	"purchase/infra/persistence/dal"
 	"purchase/infra/persistence/data"
@@ -64,7 +64,7 @@ func initApp() (*App, func(), error) {
 	grpcServer := server.NewGRPCServer(configConfig, rpcServer)
 	httpServer := server.NewHttpServer(configConfig)
 	idGenFunc := mq.NewIDGenFunc()
-	publisher, err := kafka_go.NewKafkaPublisher(configConfig, idGenFunc)
+	publisher, err := kafka_sa.NewKafkaPublisher(configConfig, idGenFunc)
 	if err != nil {
 		cleanup2()
 		cleanup()
@@ -80,7 +80,7 @@ func initApp() (*App, func(), error) {
 	asyncTaskMux := scheduler.NewAsyncTaskServer(publisher, asyncTaskDal, transactionManager, unboundedChan, lockBuilder)
 	idempotentIdempotent := idempotent.NewIdempotentImpl(redisClient)
 	handlerAggregator := event_handler.NewDomainEventHandler()
-	subscriber, err := kafka_go.NewKafkaSubscriber(configConfig, idempotentIdempotent, handlerAggregator, publisher)
+	subscriber, err := kafka_sa.NewKafkaSubscriber(configConfig, idempotentIdempotent, handlerAggregator, publisher)
 	if err != nil {
 		cleanup2()
 		cleanup()

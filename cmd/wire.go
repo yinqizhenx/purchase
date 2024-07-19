@@ -22,6 +22,7 @@ import (
 	"purchase/infra/idempotent"
 	"purchase/infra/logx"
 	"purchase/infra/mq"
+	"purchase/infra/mq/kafka_sa"
 	"purchase/infra/persistence/convertor"
 	"purchase/infra/persistence/dal"
 	"purchase/infra/persistence/data"
@@ -43,7 +44,7 @@ func initApp() (*App, func(), error) {
 		rpc.ProviderSet,
 		// async_queue.ProviderSet,
 		mq.ProviderSet,
-		kafka_go.ProviderSet,
+		kafka_sa.ProviderSet,
 		tx.ProviderSet,
 		assembler.ProviderSet,
 		dal.ProviderSet,
