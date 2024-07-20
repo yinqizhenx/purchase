@@ -2,6 +2,7 @@ package event_handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/wire"
@@ -38,7 +39,7 @@ func (s *DomainEventHandler) Build() map[domainEvent.Event][]domainEvent.Handler
 func (s *DomainEventHandler) OnPACreated(ctx context.Context, e domainEvent.Event) error {
 	if created, ok := e.(*domainEvent.PACreated); ok {
 		fmt.Println("created event", created)
-		// return errors.New("an error happened 11")
+		return errors.New("an error happened 11")
 	}
 	return nil
 }

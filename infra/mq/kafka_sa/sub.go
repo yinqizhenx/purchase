@@ -313,15 +313,16 @@ func (c *Consumer) redelivery(ctx context.Context, m *mq.Message) error {
 			m.RetryTopic(): {m.Partition()},
 		}
 		c.cg.Pause(partitions)
-		fmt.Println("开始sleep ", expTime.Sub(now).Seconds())
+		fmt.Printf("bizCODE: %s, TOPIC:%s,  PARTITION:%s, 开始pause: %v, 持续%v \n", m.BizCode(), m.RetryTopic(), m.Partition(), time.Now(), time.Now().Sub(expTime))
 		time.Sleep(time.Now().Sub(expTime))
 		c.cg.Resume(partitions)
+		fmt.Printf("bizCODE: %s, TOPIC:%s,  PARTITION:%s, resume: %v, \n", m.BizCode(), m.RetryTopic(), m.Partition(), time.Now())
 	}
 	// 清空死信topic和重投topic
 	// 让消息发送到原始topic里
 	m.SetDeadTopic("")
 	m.SetRetryTopic("")
-
+	fmt.Printf("bizCODE: %s发送消息到topic:%s", m.BizCode(), m.EventName())
 	err := c.sub.pub.Publish(ctx, m)
 	if err != nil {
 		return err

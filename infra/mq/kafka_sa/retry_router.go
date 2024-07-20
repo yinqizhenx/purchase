@@ -2,6 +2,7 @@ package kafka_sa
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -45,7 +46,7 @@ func (r *retryRouter) run() {
 		case msg := <-r.messageCh:
 			rtyTopic := genRetryTopic(msg.DelayTime())
 			msg.SetRetryTopic(rtyTopic)
-
+			fmt.Printf("bizCODE: %s重试队列接受到消息到topic:%s", msg.BizCode(), rtyTopic)
 			err := r.pub.Publish(context.Background(), msg.Message)
 			if err != nil {
 				logx.Error(nil, "message send to retry queue fail", slog.Any("message", msg), slog.Any("error", err))
