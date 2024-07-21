@@ -35,7 +35,7 @@ func (s *kafkaPublisher) Publish(ctx context.Context, msg *mq.Message) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("发送消息bizCode:%s到topic：%s", msg.BizCode(), kmsg.Topic)
+	fmt.Println(fmt.Sprintf("发送消息bizCode:%s到topic：%s", msg.BizCode(), kmsg.Topic))
 	_, _, err = s.writer.SendMessage(kmsg)
 	return err
 }

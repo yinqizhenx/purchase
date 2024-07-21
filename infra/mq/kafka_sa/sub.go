@@ -280,7 +280,7 @@ func (c *Consumer) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.C
 
 	for msg := range claim.Messages() {
 		m, err := c.buildMessage(msg)
-		fmt.Printf("topic=%s, partition=%d, offset=%d\n", msg.Topic, msg.Partition, msg.Offset)
+		fmt.Println(fmt.Sprintf("收到消息topic=%s, partition=%d, offset=%d", msg.Topic, msg.Partition, msg.Offset))
 		if err != nil {
 			logx.Error(c.ctx, "buildMessage fail", slog.Any("error", err))
 			continue
@@ -313,16 +313,16 @@ func (c *Consumer) redelivery(ctx context.Context, m *mq.Message) error {
 			m.RetryTopic(): {m.Partition()},
 		}
 		c.cg.Pause(partitions)
-		fmt.Printf("bizCODE: %s, TOPIC:%s,  PARTITION:%s, 开始pause: %v, 持续%v \n", m.BizCode(), m.RetryTopic(), m.Partition(), time.Now(), time.Now().Sub(expTime))
-		time.Sleep(time.Now().Sub(expTime))
+		fmt.Println(fmt.Sprintf("bizCODE: %s, TOPIC:%s,  PARTITION:%d, 开始pause: %v, 持续%v ", m.BizCode(), m.RetryTopic(), m.Partition(), time.Now(), expTime.Sub(now)))
+		time.Sleep(expTime.Sub(now))
 		c.cg.Resume(partitions)
-		fmt.Printf("bizCODE: %s, TOPIC:%s,  PARTITION:%s, resume: %v, \n", m.BizCode(), m.RetryTopic(), m.Partition(), time.Now())
+		fmt.Println(fmt.Sprintf("bizCODE: %s, TOPIC:%s,  PARTITION:%d, resume: %v", m.BizCode(), m.RetryTopic(), m.Partition(), time.Now()))
 	}
 	// 清空死信topic和重投topic
 	// 让消息发送到原始topic里
 	m.SetDeadTopic("")
 	m.SetRetryTopic("")
-	fmt.Printf("bizCODE: %s发送消息到topic:%s", m.BizCode(), m.EventName())
+	fmt.Println(fmt.Sprintf("bizCODE: %s发送消息到topic:%s", m.BizCode(), m.EventName()))
 	err := c.sub.pub.Publish(ctx, m)
 	if err != nil {
 		return err
