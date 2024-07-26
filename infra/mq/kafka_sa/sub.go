@@ -64,7 +64,7 @@ func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg
 	conf.Consumer.Return.Errors = true                  // 消费时错误信息将写到 Errors 通道
 	conf.Consumer.Fetch.Default = 3 * 1024 * 1024       // 默认请求的字节数
 	conf.Consumer.Offsets.Initial = sarama.OffsetNewest // 从最新的 offset 读取，如果设置为 OffsetOldest 则从最旧的 offset 读取
-	conf.Consumer.Offsets.AutoCommit.Enable = true      // 将已消费的 offset 发送给 broker，默认为 true
+	conf.Consumer.Offsets.AutoCommit.Enable = false     // 将已消费的 offset 发送给 broker，默认为 true
 
 	s := &kafkaSubscriber{
 		handlers: handlerAgg.Build(),
