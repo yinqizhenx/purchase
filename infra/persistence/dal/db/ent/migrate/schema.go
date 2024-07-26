@@ -15,6 +15,7 @@ var (
 		{Name: "task_id", Type: field.TypeString},
 		{Name: "task_type", Type: field.TypeString},
 		{Name: "task_name", Type: field.TypeString},
+		{Name: "biz_id", Type: field.TypeString},
 		{Name: "task_data", Type: field.TypeString},
 		{Name: "task_state", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},

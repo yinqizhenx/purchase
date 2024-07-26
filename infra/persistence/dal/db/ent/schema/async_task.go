@@ -29,6 +29,7 @@ func (AsyncTask) Fields() []ent.Field {
 		field.String("task_id"),
 		field.String("task_type"),
 		field.String("task_name"),
+		field.String("biz_id"),
 		field.String("task_data"),
 		field.String("state").StorageKey("task_state"),
 		field.Time("created_at").

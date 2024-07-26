@@ -49,6 +49,7 @@ func (dal *AsyncTaskDal) BatchAddTask(ctx context.Context, taskList ...*async_ta
 			SetTaskID(task.TaskID).
 			SetTaskName(task.TaskName).
 			SetState(string(vo.AsyncTaskStatePending)).
+			SetBizID(task.EntityID).
 			SetTaskType(string(task.TaskType)).
 			SetTaskData(task.TaskData)
 		taskAddList = append(taskAddList, c)

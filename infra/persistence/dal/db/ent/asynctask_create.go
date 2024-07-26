@@ -9,6 +9,7 @@ import (
 	"purchase/infra/persistence/dal/db/ent/asynctask"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 )
@@ -18,6 +19,7 @@ type AsyncTaskCreate struct {
 	config
 	mutation *AsyncTaskMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetTaskID sets the "task_id" field.
@@ -35,6 +37,12 @@ func (atc *AsyncTaskCreate) SetTaskType(s string) *AsyncTaskCreate {
 // SetTaskName sets the "task_name" field.
 func (atc *AsyncTaskCreate) SetTaskName(s string) *AsyncTaskCreate {
 	atc.mutation.SetTaskName(s)
+	return atc
+}
+
+// SetBizID sets the "biz_id" field.
+func (atc *AsyncTaskCreate) SetBizID(s string) *AsyncTaskCreate {
+	atc.mutation.SetBizID(s)
 	return atc
 }
 
@@ -140,6 +148,9 @@ func (atc *AsyncTaskCreate) check() error {
 	if _, ok := atc.mutation.TaskName(); !ok {
 		return &ValidationError{Name: "task_name", err: errors.New(`ent: missing required field "AsyncTask.task_name"`)}
 	}
+	if _, ok := atc.mutation.BizID(); !ok {
+		return &ValidationError{Name: "biz_id", err: errors.New(`ent: missing required field "AsyncTask.biz_id"`)}
+	}
 	if _, ok := atc.mutation.TaskData(); !ok {
 		return &ValidationError{Name: "task_data", err: errors.New(`ent: missing required field "AsyncTask.task_data"`)}
 	}
@@ -180,6 +191,7 @@ func (atc *AsyncTaskCreate) createSpec() (*AsyncTask, *sqlgraph.CreateSpec) {
 		_node = &AsyncTask{config: atc.config}
 		_spec = sqlgraph.NewCreateSpec(asynctask.Table, sqlgraph.NewFieldSpec(asynctask.FieldID, field.TypeInt64))
 	)
+	_spec.OnConflict = atc.conflict
 	if id, ok := atc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
@@ -195,6 +207,10 @@ func (atc *AsyncTaskCreate) createSpec() (*AsyncTask, *sqlgraph.CreateSpec) {
 	if value, ok := atc.mutation.TaskName(); ok {
 		_spec.SetField(asynctask.FieldTaskName, field.TypeString, value)
 		_node.TaskName = value
+	}
+	if value, ok := atc.mutation.BizID(); ok {
+		_spec.SetField(asynctask.FieldBizID, field.TypeString, value)
+		_node.BizID = value
 	}
 	if value, ok := atc.mutation.TaskData(); ok {
 		_spec.SetField(asynctask.FieldTaskData, field.TypeString, value)
@@ -215,11 +231,350 @@ func (atc *AsyncTaskCreate) createSpec() (*AsyncTask, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.AsyncTask.Create().
+//		SetTaskID(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.AsyncTaskUpsert) {
+//			SetTaskID(v+v).
+//		}).
+//		Exec(ctx)
+func (atc *AsyncTaskCreate) OnConflict(opts ...sql.ConflictOption) *AsyncTaskUpsertOne {
+	atc.conflict = opts
+	return &AsyncTaskUpsertOne{
+		create: atc,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.AsyncTask.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (atc *AsyncTaskCreate) OnConflictColumns(columns ...string) *AsyncTaskUpsertOne {
+	atc.conflict = append(atc.conflict, sql.ConflictColumns(columns...))
+	return &AsyncTaskUpsertOne{
+		create: atc,
+	}
+}
+
+type (
+	// AsyncTaskUpsertOne is the builder for "upsert"-ing
+	//  one AsyncTask node.
+	AsyncTaskUpsertOne struct {
+		create *AsyncTaskCreate
+	}
+
+	// AsyncTaskUpsert is the "OnConflict" setter.
+	AsyncTaskUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetTaskID sets the "task_id" field.
+func (u *AsyncTaskUpsert) SetTaskID(v string) *AsyncTaskUpsert {
+	u.Set(asynctask.FieldTaskID, v)
+	return u
+}
+
+// UpdateTaskID sets the "task_id" field to the value that was provided on create.
+func (u *AsyncTaskUpsert) UpdateTaskID() *AsyncTaskUpsert {
+	u.SetExcluded(asynctask.FieldTaskID)
+	return u
+}
+
+// SetTaskType sets the "task_type" field.
+func (u *AsyncTaskUpsert) SetTaskType(v string) *AsyncTaskUpsert {
+	u.Set(asynctask.FieldTaskType, v)
+	return u
+}
+
+// UpdateTaskType sets the "task_type" field to the value that was provided on create.
+func (u *AsyncTaskUpsert) UpdateTaskType() *AsyncTaskUpsert {
+	u.SetExcluded(asynctask.FieldTaskType)
+	return u
+}
+
+// SetTaskName sets the "task_name" field.
+func (u *AsyncTaskUpsert) SetTaskName(v string) *AsyncTaskUpsert {
+	u.Set(asynctask.FieldTaskName, v)
+	return u
+}
+
+// UpdateTaskName sets the "task_name" field to the value that was provided on create.
+func (u *AsyncTaskUpsert) UpdateTaskName() *AsyncTaskUpsert {
+	u.SetExcluded(asynctask.FieldTaskName)
+	return u
+}
+
+// SetBizID sets the "biz_id" field.
+func (u *AsyncTaskUpsert) SetBizID(v string) *AsyncTaskUpsert {
+	u.Set(asynctask.FieldBizID, v)
+	return u
+}
+
+// UpdateBizID sets the "biz_id" field to the value that was provided on create.
+func (u *AsyncTaskUpsert) UpdateBizID() *AsyncTaskUpsert {
+	u.SetExcluded(asynctask.FieldBizID)
+	return u
+}
+
+// SetTaskData sets the "task_data" field.
+func (u *AsyncTaskUpsert) SetTaskData(v string) *AsyncTaskUpsert {
+	u.Set(asynctask.FieldTaskData, v)
+	return u
+}
+
+// UpdateTaskData sets the "task_data" field to the value that was provided on create.
+func (u *AsyncTaskUpsert) UpdateTaskData() *AsyncTaskUpsert {
+	u.SetExcluded(asynctask.FieldTaskData)
+	return u
+}
+
+// SetState sets the "state" field.
+func (u *AsyncTaskUpsert) SetState(v string) *AsyncTaskUpsert {
+	u.Set(asynctask.FieldState, v)
+	return u
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *AsyncTaskUpsert) UpdateState() *AsyncTaskUpsert {
+	u.SetExcluded(asynctask.FieldState)
+	return u
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (u *AsyncTaskUpsert) SetCreatedAt(v time.Time) *AsyncTaskUpsert {
+	u.Set(asynctask.FieldCreatedAt, v)
+	return u
+}
+
+// UpdateCreatedAt sets the "created_at" field to the value that was provided on create.
+func (u *AsyncTaskUpsert) UpdateCreatedAt() *AsyncTaskUpsert {
+	u.SetExcluded(asynctask.FieldCreatedAt)
+	return u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *AsyncTaskUpsert) SetUpdatedAt(v time.Time) *AsyncTaskUpsert {
+	u.Set(asynctask.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *AsyncTaskUpsert) UpdateUpdatedAt() *AsyncTaskUpsert {
+	u.SetExcluded(asynctask.FieldUpdatedAt)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.AsyncTask.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(asynctask.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *AsyncTaskUpsertOne) UpdateNewValues() *AsyncTaskUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(asynctask.FieldID)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.AsyncTask.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *AsyncTaskUpsertOne) Ignore() *AsyncTaskUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *AsyncTaskUpsertOne) DoNothing() *AsyncTaskUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the AsyncTaskCreate.OnConflict
+// documentation for more info.
+func (u *AsyncTaskUpsertOne) Update(set func(*AsyncTaskUpsert)) *AsyncTaskUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&AsyncTaskUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetTaskID sets the "task_id" field.
+func (u *AsyncTaskUpsertOne) SetTaskID(v string) *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetTaskID(v)
+	})
+}
+
+// UpdateTaskID sets the "task_id" field to the value that was provided on create.
+func (u *AsyncTaskUpsertOne) UpdateTaskID() *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateTaskID()
+	})
+}
+
+// SetTaskType sets the "task_type" field.
+func (u *AsyncTaskUpsertOne) SetTaskType(v string) *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetTaskType(v)
+	})
+}
+
+// UpdateTaskType sets the "task_type" field to the value that was provided on create.
+func (u *AsyncTaskUpsertOne) UpdateTaskType() *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateTaskType()
+	})
+}
+
+// SetTaskName sets the "task_name" field.
+func (u *AsyncTaskUpsertOne) SetTaskName(v string) *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetTaskName(v)
+	})
+}
+
+// UpdateTaskName sets the "task_name" field to the value that was provided on create.
+func (u *AsyncTaskUpsertOne) UpdateTaskName() *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateTaskName()
+	})
+}
+
+// SetBizID sets the "biz_id" field.
+func (u *AsyncTaskUpsertOne) SetBizID(v string) *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetBizID(v)
+	})
+}
+
+// UpdateBizID sets the "biz_id" field to the value that was provided on create.
+func (u *AsyncTaskUpsertOne) UpdateBizID() *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateBizID()
+	})
+}
+
+// SetTaskData sets the "task_data" field.
+func (u *AsyncTaskUpsertOne) SetTaskData(v string) *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetTaskData(v)
+	})
+}
+
+// UpdateTaskData sets the "task_data" field to the value that was provided on create.
+func (u *AsyncTaskUpsertOne) UpdateTaskData() *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateTaskData()
+	})
+}
+
+// SetState sets the "state" field.
+func (u *AsyncTaskUpsertOne) SetState(v string) *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetState(v)
+	})
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *AsyncTaskUpsertOne) UpdateState() *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateState()
+	})
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (u *AsyncTaskUpsertOne) SetCreatedAt(v time.Time) *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetCreatedAt(v)
+	})
+}
+
+// UpdateCreatedAt sets the "created_at" field to the value that was provided on create.
+func (u *AsyncTaskUpsertOne) UpdateCreatedAt() *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateCreatedAt()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *AsyncTaskUpsertOne) SetUpdatedAt(v time.Time) *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *AsyncTaskUpsertOne) UpdateUpdatedAt() *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
+// Exec executes the query.
+func (u *AsyncTaskUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for AsyncTaskCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *AsyncTaskUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *AsyncTaskUpsertOne) ID(ctx context.Context) (id int64, err error) {
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *AsyncTaskUpsertOne) IDX(ctx context.Context) int64 {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // AsyncTaskCreateBulk is the builder for creating many AsyncTask entities in bulk.
 type AsyncTaskCreateBulk struct {
 	config
 	err      error
 	builders []*AsyncTaskCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the AsyncTask entities in the database.
@@ -249,6 +604,7 @@ func (atcb *AsyncTaskCreateBulk) Save(ctx context.Context) ([]*AsyncTask, error)
 					_, err = mutators[i+1].Mutate(root, atcb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = atcb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, atcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -299,6 +655,232 @@ func (atcb *AsyncTaskCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (atcb *AsyncTaskCreateBulk) ExecX(ctx context.Context) {
 	if err := atcb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.AsyncTask.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.AsyncTaskUpsert) {
+//			SetTaskID(v+v).
+//		}).
+//		Exec(ctx)
+func (atcb *AsyncTaskCreateBulk) OnConflict(opts ...sql.ConflictOption) *AsyncTaskUpsertBulk {
+	atcb.conflict = opts
+	return &AsyncTaskUpsertBulk{
+		create: atcb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.AsyncTask.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (atcb *AsyncTaskCreateBulk) OnConflictColumns(columns ...string) *AsyncTaskUpsertBulk {
+	atcb.conflict = append(atcb.conflict, sql.ConflictColumns(columns...))
+	return &AsyncTaskUpsertBulk{
+		create: atcb,
+	}
+}
+
+// AsyncTaskUpsertBulk is the builder for "upsert"-ing
+// a bulk of AsyncTask nodes.
+type AsyncTaskUpsertBulk struct {
+	create *AsyncTaskCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.AsyncTask.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(asynctask.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *AsyncTaskUpsertBulk) UpdateNewValues() *AsyncTaskUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(asynctask.FieldID)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.AsyncTask.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *AsyncTaskUpsertBulk) Ignore() *AsyncTaskUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *AsyncTaskUpsertBulk) DoNothing() *AsyncTaskUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the AsyncTaskCreateBulk.OnConflict
+// documentation for more info.
+func (u *AsyncTaskUpsertBulk) Update(set func(*AsyncTaskUpsert)) *AsyncTaskUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&AsyncTaskUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetTaskID sets the "task_id" field.
+func (u *AsyncTaskUpsertBulk) SetTaskID(v string) *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetTaskID(v)
+	})
+}
+
+// UpdateTaskID sets the "task_id" field to the value that was provided on create.
+func (u *AsyncTaskUpsertBulk) UpdateTaskID() *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateTaskID()
+	})
+}
+
+// SetTaskType sets the "task_type" field.
+func (u *AsyncTaskUpsertBulk) SetTaskType(v string) *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetTaskType(v)
+	})
+}
+
+// UpdateTaskType sets the "task_type" field to the value that was provided on create.
+func (u *AsyncTaskUpsertBulk) UpdateTaskType() *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateTaskType()
+	})
+}
+
+// SetTaskName sets the "task_name" field.
+func (u *AsyncTaskUpsertBulk) SetTaskName(v string) *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetTaskName(v)
+	})
+}
+
+// UpdateTaskName sets the "task_name" field to the value that was provided on create.
+func (u *AsyncTaskUpsertBulk) UpdateTaskName() *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateTaskName()
+	})
+}
+
+// SetBizID sets the "biz_id" field.
+func (u *AsyncTaskUpsertBulk) SetBizID(v string) *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetBizID(v)
+	})
+}
+
+// UpdateBizID sets the "biz_id" field to the value that was provided on create.
+func (u *AsyncTaskUpsertBulk) UpdateBizID() *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateBizID()
+	})
+}
+
+// SetTaskData sets the "task_data" field.
+func (u *AsyncTaskUpsertBulk) SetTaskData(v string) *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetTaskData(v)
+	})
+}
+
+// UpdateTaskData sets the "task_data" field to the value that was provided on create.
+func (u *AsyncTaskUpsertBulk) UpdateTaskData() *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateTaskData()
+	})
+}
+
+// SetState sets the "state" field.
+func (u *AsyncTaskUpsertBulk) SetState(v string) *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetState(v)
+	})
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *AsyncTaskUpsertBulk) UpdateState() *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateState()
+	})
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (u *AsyncTaskUpsertBulk) SetCreatedAt(v time.Time) *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetCreatedAt(v)
+	})
+}
+
+// UpdateCreatedAt sets the "created_at" field to the value that was provided on create.
+func (u *AsyncTaskUpsertBulk) UpdateCreatedAt() *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateCreatedAt()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *AsyncTaskUpsertBulk) SetUpdatedAt(v time.Time) *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *AsyncTaskUpsertBulk) UpdateUpdatedAt() *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
+// Exec executes the query.
+func (u *AsyncTaskUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the AsyncTaskCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for AsyncTaskCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *AsyncTaskUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

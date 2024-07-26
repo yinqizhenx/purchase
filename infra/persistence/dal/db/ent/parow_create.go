@@ -9,6 +9,7 @@ import (
 	"purchase/infra/persistence/dal/db/ent/parow"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 )
@@ -18,6 +19,7 @@ type PARowCreate struct {
 	config
 	mutation *PARowMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetHeadCode sets the "head_code" field.
@@ -189,6 +191,7 @@ func (prc *PARowCreate) createSpec() (*PARow, *sqlgraph.CreateSpec) {
 		_node = &PARow{config: prc.config}
 		_spec = sqlgraph.NewCreateSpec(parow.Table, sqlgraph.NewFieldSpec(parow.FieldID, field.TypeInt64))
 	)
+	_spec.OnConflict = prc.conflict
 	if id, ok := prc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
@@ -228,11 +231,363 @@ func (prc *PARowCreate) createSpec() (*PARow, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.PARow.Create().
+//		SetHeadCode(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.PARowUpsert) {
+//			SetHeadCode(v+v).
+//		}).
+//		Exec(ctx)
+func (prc *PARowCreate) OnConflict(opts ...sql.ConflictOption) *PARowUpsertOne {
+	prc.conflict = opts
+	return &PARowUpsertOne{
+		create: prc,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.PARow.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (prc *PARowCreate) OnConflictColumns(columns ...string) *PARowUpsertOne {
+	prc.conflict = append(prc.conflict, sql.ConflictColumns(columns...))
+	return &PARowUpsertOne{
+		create: prc,
+	}
+}
+
+type (
+	// PARowUpsertOne is the builder for "upsert"-ing
+	//  one PARow node.
+	PARowUpsertOne struct {
+		create *PARowCreate
+	}
+
+	// PARowUpsert is the "OnConflict" setter.
+	PARowUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetHeadCode sets the "head_code" field.
+func (u *PARowUpsert) SetHeadCode(v string) *PARowUpsert {
+	u.Set(parow.FieldHeadCode, v)
+	return u
+}
+
+// UpdateHeadCode sets the "head_code" field to the value that was provided on create.
+func (u *PARowUpsert) UpdateHeadCode() *PARowUpsert {
+	u.SetExcluded(parow.FieldHeadCode)
+	return u
+}
+
+// SetRowCode sets the "row_code" field.
+func (u *PARowUpsert) SetRowCode(v string) *PARowUpsert {
+	u.Set(parow.FieldRowCode, v)
+	return u
+}
+
+// UpdateRowCode sets the "row_code" field to the value that was provided on create.
+func (u *PARowUpsert) UpdateRowCode() *PARowUpsert {
+	u.SetExcluded(parow.FieldRowCode)
+	return u
+}
+
+// SetGrnCount sets the "grn_count" field.
+func (u *PARowUpsert) SetGrnCount(v int32) *PARowUpsert {
+	u.Set(parow.FieldGrnCount, v)
+	return u
+}
+
+// UpdateGrnCount sets the "grn_count" field to the value that was provided on create.
+func (u *PARowUpsert) UpdateGrnCount() *PARowUpsert {
+	u.SetExcluded(parow.FieldGrnCount)
+	return u
+}
+
+// AddGrnCount adds v to the "grn_count" field.
+func (u *PARowUpsert) AddGrnCount(v int32) *PARowUpsert {
+	u.Add(parow.FieldGrnCount, v)
+	return u
+}
+
+// SetGrnAmount sets the "grn_amount" field.
+func (u *PARowUpsert) SetGrnAmount(v string) *PARowUpsert {
+	u.Set(parow.FieldGrnAmount, v)
+	return u
+}
+
+// UpdateGrnAmount sets the "grn_amount" field to the value that was provided on create.
+func (u *PARowUpsert) UpdateGrnAmount() *PARowUpsert {
+	u.SetExcluded(parow.FieldGrnAmount)
+	return u
+}
+
+// SetPayAmount sets the "pay_amount" field.
+func (u *PARowUpsert) SetPayAmount(v string) *PARowUpsert {
+	u.Set(parow.FieldPayAmount, v)
+	return u
+}
+
+// UpdatePayAmount sets the "pay_amount" field to the value that was provided on create.
+func (u *PARowUpsert) UpdatePayAmount() *PARowUpsert {
+	u.SetExcluded(parow.FieldPayAmount)
+	return u
+}
+
+// SetDescription sets the "description" field.
+func (u *PARowUpsert) SetDescription(v string) *PARowUpsert {
+	u.Set(parow.FieldDescription, v)
+	return u
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *PARowUpsert) UpdateDescription() *PARowUpsert {
+	u.SetExcluded(parow.FieldDescription)
+	return u
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (u *PARowUpsert) SetCreatedAt(v time.Time) *PARowUpsert {
+	u.Set(parow.FieldCreatedAt, v)
+	return u
+}
+
+// UpdateCreatedAt sets the "created_at" field to the value that was provided on create.
+func (u *PARowUpsert) UpdateCreatedAt() *PARowUpsert {
+	u.SetExcluded(parow.FieldCreatedAt)
+	return u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *PARowUpsert) SetUpdatedAt(v time.Time) *PARowUpsert {
+	u.Set(parow.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *PARowUpsert) UpdateUpdatedAt() *PARowUpsert {
+	u.SetExcluded(parow.FieldUpdatedAt)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.PARow.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(parow.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *PARowUpsertOne) UpdateNewValues() *PARowUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(parow.FieldID)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.PARow.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *PARowUpsertOne) Ignore() *PARowUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *PARowUpsertOne) DoNothing() *PARowUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the PARowCreate.OnConflict
+// documentation for more info.
+func (u *PARowUpsertOne) Update(set func(*PARowUpsert)) *PARowUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&PARowUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetHeadCode sets the "head_code" field.
+func (u *PARowUpsertOne) SetHeadCode(v string) *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetHeadCode(v)
+	})
+}
+
+// UpdateHeadCode sets the "head_code" field to the value that was provided on create.
+func (u *PARowUpsertOne) UpdateHeadCode() *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateHeadCode()
+	})
+}
+
+// SetRowCode sets the "row_code" field.
+func (u *PARowUpsertOne) SetRowCode(v string) *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetRowCode(v)
+	})
+}
+
+// UpdateRowCode sets the "row_code" field to the value that was provided on create.
+func (u *PARowUpsertOne) UpdateRowCode() *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateRowCode()
+	})
+}
+
+// SetGrnCount sets the "grn_count" field.
+func (u *PARowUpsertOne) SetGrnCount(v int32) *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetGrnCount(v)
+	})
+}
+
+// AddGrnCount adds v to the "grn_count" field.
+func (u *PARowUpsertOne) AddGrnCount(v int32) *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.AddGrnCount(v)
+	})
+}
+
+// UpdateGrnCount sets the "grn_count" field to the value that was provided on create.
+func (u *PARowUpsertOne) UpdateGrnCount() *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateGrnCount()
+	})
+}
+
+// SetGrnAmount sets the "grn_amount" field.
+func (u *PARowUpsertOne) SetGrnAmount(v string) *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetGrnAmount(v)
+	})
+}
+
+// UpdateGrnAmount sets the "grn_amount" field to the value that was provided on create.
+func (u *PARowUpsertOne) UpdateGrnAmount() *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateGrnAmount()
+	})
+}
+
+// SetPayAmount sets the "pay_amount" field.
+func (u *PARowUpsertOne) SetPayAmount(v string) *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetPayAmount(v)
+	})
+}
+
+// UpdatePayAmount sets the "pay_amount" field to the value that was provided on create.
+func (u *PARowUpsertOne) UpdatePayAmount() *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdatePayAmount()
+	})
+}
+
+// SetDescription sets the "description" field.
+func (u *PARowUpsertOne) SetDescription(v string) *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *PARowUpsertOne) UpdateDescription() *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (u *PARowUpsertOne) SetCreatedAt(v time.Time) *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetCreatedAt(v)
+	})
+}
+
+// UpdateCreatedAt sets the "created_at" field to the value that was provided on create.
+func (u *PARowUpsertOne) UpdateCreatedAt() *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateCreatedAt()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *PARowUpsertOne) SetUpdatedAt(v time.Time) *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *PARowUpsertOne) UpdateUpdatedAt() *PARowUpsertOne {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
+// Exec executes the query.
+func (u *PARowUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for PARowCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *PARowUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *PARowUpsertOne) ID(ctx context.Context) (id int64, err error) {
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *PARowUpsertOne) IDX(ctx context.Context) int64 {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // PARowCreateBulk is the builder for creating many PARow entities in bulk.
 type PARowCreateBulk struct {
 	config
 	err      error
 	builders []*PARowCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the PARow entities in the database.
@@ -262,6 +617,7 @@ func (prcb *PARowCreateBulk) Save(ctx context.Context) ([]*PARow, error) {
 					_, err = mutators[i+1].Mutate(root, prcb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = prcb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, prcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -312,6 +668,239 @@ func (prcb *PARowCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (prcb *PARowCreateBulk) ExecX(ctx context.Context) {
 	if err := prcb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.PARow.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.PARowUpsert) {
+//			SetHeadCode(v+v).
+//		}).
+//		Exec(ctx)
+func (prcb *PARowCreateBulk) OnConflict(opts ...sql.ConflictOption) *PARowUpsertBulk {
+	prcb.conflict = opts
+	return &PARowUpsertBulk{
+		create: prcb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.PARow.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (prcb *PARowCreateBulk) OnConflictColumns(columns ...string) *PARowUpsertBulk {
+	prcb.conflict = append(prcb.conflict, sql.ConflictColumns(columns...))
+	return &PARowUpsertBulk{
+		create: prcb,
+	}
+}
+
+// PARowUpsertBulk is the builder for "upsert"-ing
+// a bulk of PARow nodes.
+type PARowUpsertBulk struct {
+	create *PARowCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.PARow.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(parow.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *PARowUpsertBulk) UpdateNewValues() *PARowUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(parow.FieldID)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.PARow.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *PARowUpsertBulk) Ignore() *PARowUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *PARowUpsertBulk) DoNothing() *PARowUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the PARowCreateBulk.OnConflict
+// documentation for more info.
+func (u *PARowUpsertBulk) Update(set func(*PARowUpsert)) *PARowUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&PARowUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetHeadCode sets the "head_code" field.
+func (u *PARowUpsertBulk) SetHeadCode(v string) *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetHeadCode(v)
+	})
+}
+
+// UpdateHeadCode sets the "head_code" field to the value that was provided on create.
+func (u *PARowUpsertBulk) UpdateHeadCode() *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateHeadCode()
+	})
+}
+
+// SetRowCode sets the "row_code" field.
+func (u *PARowUpsertBulk) SetRowCode(v string) *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetRowCode(v)
+	})
+}
+
+// UpdateRowCode sets the "row_code" field to the value that was provided on create.
+func (u *PARowUpsertBulk) UpdateRowCode() *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateRowCode()
+	})
+}
+
+// SetGrnCount sets the "grn_count" field.
+func (u *PARowUpsertBulk) SetGrnCount(v int32) *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetGrnCount(v)
+	})
+}
+
+// AddGrnCount adds v to the "grn_count" field.
+func (u *PARowUpsertBulk) AddGrnCount(v int32) *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.AddGrnCount(v)
+	})
+}
+
+// UpdateGrnCount sets the "grn_count" field to the value that was provided on create.
+func (u *PARowUpsertBulk) UpdateGrnCount() *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateGrnCount()
+	})
+}
+
+// SetGrnAmount sets the "grn_amount" field.
+func (u *PARowUpsertBulk) SetGrnAmount(v string) *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetGrnAmount(v)
+	})
+}
+
+// UpdateGrnAmount sets the "grn_amount" field to the value that was provided on create.
+func (u *PARowUpsertBulk) UpdateGrnAmount() *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateGrnAmount()
+	})
+}
+
+// SetPayAmount sets the "pay_amount" field.
+func (u *PARowUpsertBulk) SetPayAmount(v string) *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetPayAmount(v)
+	})
+}
+
+// UpdatePayAmount sets the "pay_amount" field to the value that was provided on create.
+func (u *PARowUpsertBulk) UpdatePayAmount() *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdatePayAmount()
+	})
+}
+
+// SetDescription sets the "description" field.
+func (u *PARowUpsertBulk) SetDescription(v string) *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *PARowUpsertBulk) UpdateDescription() *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (u *PARowUpsertBulk) SetCreatedAt(v time.Time) *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetCreatedAt(v)
+	})
+}
+
+// UpdateCreatedAt sets the "created_at" field to the value that was provided on create.
+func (u *PARowUpsertBulk) UpdateCreatedAt() *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateCreatedAt()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *PARowUpsertBulk) SetUpdatedAt(v time.Time) *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *PARowUpsertBulk) UpdateUpdatedAt() *PARowUpsertBulk {
+	return u.Update(func(s *PARowUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
+// Exec executes the query.
+func (u *PARowUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the PARowCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for PARowCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *PARowUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

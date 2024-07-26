@@ -12,7 +12,7 @@ func (c *Convertor) ConvertAsyncTaskPoToDo(m *ent.AsyncTask) *async_task.AsyncTa
 		TaskID:    m.TaskID,
 		TaskType:  vo.AsyncTaskType(m.TaskType),
 		TaskName:  m.TaskName,
-		EntityID:  "111",
+		EntityID:  m.BizID,
 		TaskData:  m.TaskData,
 		State:     vo.AsyncTaskState(m.State),
 		CreatedAt: m.CreatedAt,

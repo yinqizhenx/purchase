@@ -61,6 +61,7 @@ func (e *PACreated) ToAsyncTask() (*async_task.AsyncTask, error) {
 		TaskID:   uuid.New().String(),
 		TaskType: "event",
 		TaskName: e.EventName(),
+		EntityID: e.PACode,
 		TaskData: string(c),
 		State:    "pending",
 	}, nil

@@ -69,6 +69,11 @@ func TaskName(v string) predicate.AsyncTask {
 	return predicate.AsyncTask(sql.FieldEQ(FieldTaskName, v))
 }
 
+// BizID applies equality check predicate on the "biz_id" field. It's identical to BizIDEQ.
+func BizID(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldEQ(FieldBizID, v))
+}
+
 // TaskData applies equality check predicate on the "task_data" field. It's identical to TaskDataEQ.
 func TaskData(v string) predicate.AsyncTask {
 	return predicate.AsyncTask(sql.FieldEQ(FieldTaskData, v))
@@ -282,6 +287,71 @@ func TaskNameEqualFold(v string) predicate.AsyncTask {
 // TaskNameContainsFold applies the ContainsFold predicate on the "task_name" field.
 func TaskNameContainsFold(v string) predicate.AsyncTask {
 	return predicate.AsyncTask(sql.FieldContainsFold(FieldTaskName, v))
+}
+
+// BizIDEQ applies the EQ predicate on the "biz_id" field.
+func BizIDEQ(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldEQ(FieldBizID, v))
+}
+
+// BizIDNEQ applies the NEQ predicate on the "biz_id" field.
+func BizIDNEQ(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldNEQ(FieldBizID, v))
+}
+
+// BizIDIn applies the In predicate on the "biz_id" field.
+func BizIDIn(vs ...string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldIn(FieldBizID, vs...))
+}
+
+// BizIDNotIn applies the NotIn predicate on the "biz_id" field.
+func BizIDNotIn(vs ...string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldNotIn(FieldBizID, vs...))
+}
+
+// BizIDGT applies the GT predicate on the "biz_id" field.
+func BizIDGT(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldGT(FieldBizID, v))
+}
+
+// BizIDGTE applies the GTE predicate on the "biz_id" field.
+func BizIDGTE(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldGTE(FieldBizID, v))
+}
+
+// BizIDLT applies the LT predicate on the "biz_id" field.
+func BizIDLT(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldLT(FieldBizID, v))
+}
+
+// BizIDLTE applies the LTE predicate on the "biz_id" field.
+func BizIDLTE(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldLTE(FieldBizID, v))
+}
+
+// BizIDContains applies the Contains predicate on the "biz_id" field.
+func BizIDContains(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldContains(FieldBizID, v))
+}
+
+// BizIDHasPrefix applies the HasPrefix predicate on the "biz_id" field.
+func BizIDHasPrefix(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldHasPrefix(FieldBizID, v))
+}
+
+// BizIDHasSuffix applies the HasSuffix predicate on the "biz_id" field.
+func BizIDHasSuffix(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldHasSuffix(FieldBizID, v))
+}
+
+// BizIDEqualFold applies the EqualFold predicate on the "biz_id" field.
+func BizIDEqualFold(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldEqualFold(FieldBizID, v))
+}
+
+// BizIDContainsFold applies the ContainsFold predicate on the "biz_id" field.
+func BizIDContainsFold(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldContainsFold(FieldBizID, v))
 }
 
 // TaskDataEQ applies the EQ predicate on the "task_data" field.

@@ -40,6 +40,7 @@ type AsyncTaskMutation struct {
 	task_id       *string
 	task_type     *string
 	task_name     *string
+	biz_id        *string
 	task_data     *string
 	state         *string
 	created_at    *time.Time
@@ -262,6 +263,42 @@ func (m *AsyncTaskMutation) ResetTaskName() {
 	m.task_name = nil
 }
 
+// SetBizID sets the "biz_id" field.
+func (m *AsyncTaskMutation) SetBizID(s string) {
+	m.biz_id = &s
+}
+
+// BizID returns the value of the "biz_id" field in the mutation.
+func (m *AsyncTaskMutation) BizID() (r string, exists bool) {
+	v := m.biz_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBizID returns the old "biz_id" field's value of the AsyncTask entity.
+// If the AsyncTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AsyncTaskMutation) OldBizID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBizID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBizID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBizID: %w", err)
+	}
+	return oldValue.BizID, nil
+}
+
+// ResetBizID resets all changes to the "biz_id" field.
+func (m *AsyncTaskMutation) ResetBizID() {
+	m.biz_id = nil
+}
+
 // SetTaskData sets the "task_data" field.
 func (m *AsyncTaskMutation) SetTaskData(s string) {
 	m.task_data = &s
@@ -440,7 +477,7 @@ func (m *AsyncTaskMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AsyncTaskMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.task_id != nil {
 		fields = append(fields, asynctask.FieldTaskID)
 	}
@@ -449,6 +486,9 @@ func (m *AsyncTaskMutation) Fields() []string {
 	}
 	if m.task_name != nil {
 		fields = append(fields, asynctask.FieldTaskName)
+	}
+	if m.biz_id != nil {
+		fields = append(fields, asynctask.FieldBizID)
 	}
 	if m.task_data != nil {
 		fields = append(fields, asynctask.FieldTaskData)
@@ -476,6 +516,8 @@ func (m *AsyncTaskMutation) Field(name string) (ent.Value, bool) {
 		return m.TaskType()
 	case asynctask.FieldTaskName:
 		return m.TaskName()
+	case asynctask.FieldBizID:
+		return m.BizID()
 	case asynctask.FieldTaskData:
 		return m.TaskData()
 	case asynctask.FieldState:
@@ -499,6 +541,8 @@ func (m *AsyncTaskMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldTaskType(ctx)
 	case asynctask.FieldTaskName:
 		return m.OldTaskName(ctx)
+	case asynctask.FieldBizID:
+		return m.OldBizID(ctx)
 	case asynctask.FieldTaskData:
 		return m.OldTaskData(ctx)
 	case asynctask.FieldState:
@@ -536,6 +580,13 @@ func (m *AsyncTaskMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTaskName(v)
+		return nil
+	case asynctask.FieldBizID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBizID(v)
 		return nil
 	case asynctask.FieldTaskData:
 		v, ok := value.(string)
@@ -622,6 +673,9 @@ func (m *AsyncTaskMutation) ResetField(name string) error {
 		return nil
 	case asynctask.FieldTaskName:
 		m.ResetTaskName()
+		return nil
+	case asynctask.FieldBizID:
+		m.ResetBizID()
 		return nil
 	case asynctask.FieldTaskData:
 		m.ResetTaskData()
