@@ -2,6 +2,8 @@ package dtx
 
 import (
 	"context"
+	"purchase/pkg/retry"
+	"sync"
 	"sync/atomic"
 
 	"purchase/infra/logx"
@@ -23,6 +25,7 @@ func (s *Saga) Exec(ctx context.Context) error {
 func (s *Saga) AsyncExec(ctx context.Context) {
 	for _, step := range s.steps {
 		go step.runAction(ctx)
+		go step.runCompensate(ctx)
 	}
 	s.head.actionCh <- struct{}{}
 }
@@ -41,25 +44,35 @@ func (s *Saga) AsyncExec(ctx context.Context) {
 // }
 
 type Step struct {
-	*Saga
-	action       Caller
-	compensate   Caller
-	status       StepStatus
-	name         string
-	previous     []*Step
-	next         []*Step
-	actionCh     chan struct{}
-	compensateCh chan struct{}
-	closed       chan struct{}
+	saga               *Saga
+	action             Caller
+	compensate         Caller
+	state              StepStatus
+	name               string
+	previous           []*Step
+	concurrent         []*Step
+	next               []*Step
+	compensatePrevious []*Step // 回滚依赖
+	compensateNext     []*Step // 回滚下一step
+	actionCh           chan struct{}
+	compensateCh       chan struct{}
+	closed             chan struct{}
+	mu                 sync.Mutex
 }
 
-type StepStatus string
+type StepStatus int
 
 const (
-	StepStatusRunning           = "running"
-	StepStatusReadyToCompensate = "ready_to_compensate"
-	StepStatusDone              = "done"
+	StepPending      StepStatus = 0
+	StepInAction     StepStatus = 1
+	StepInCompensate StepStatus = 2
+	StepSuccess      StepStatus = 3
+	StepFailed       StepStatus = 4
 )
+
+func (s *Step) isSuccess() bool {
+	return s.state == StepSuccess
+}
 
 func (s *Step) runAction(ctx context.Context) {
 	for {
@@ -70,6 +83,12 @@ func (s *Step) runAction(ctx context.Context) {
 		case <-s.closed:
 			return
 		case <-s.actionCh:
+			// 等待所有依赖step执行成功
+			for _, stp := range s.previous {
+				if !stp.isSuccess() {
+					continue
+				}
+			}
 			err := s.action.run(ctx)
 			if err != nil {
 				logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
@@ -90,17 +109,20 @@ func (s *Step) onActionSuccess(ctx context.Context) {
 
 func (s *Step) onActionFail(ctx context.Context) {
 	// 控制多个同时fail
-	if !s.state.CompareAndSwap(0, 1) {
+	if !s.saga.state.CompareAndSwap(0, 1) {
 		return
 	}
+	// 当前step回滚，previous next concurrent 都需要回滚
 	s.runCompensate(ctx)
 	for _, stp := range s.previous {
 		stp.compensateCh <- struct{}{}
 	}
-	// 未执行的step退出
-	for _, stp := range s.next {
-		close(stp.closed)
+	for _, stp := range s.concurrent {
+		stp.compensateCh <- struct{}{}
 	}
+	//for _, stp := range s.next {
+	//	stp.compensateCh <- struct{}{}
+	//}
 }
 
 func (s *Step) runCompensate(ctx context.Context) {
@@ -112,25 +134,47 @@ func (s *Step) runCompensate(ctx context.Context) {
 		case <-s.closed:
 			return
 		case <-s.compensateCh:
-			err := s.compensate.run(ctx)
-			if err != nil {
-				logx.Errorf(ctx, "step[%s] run compensate fail: %v", s.name, err)
-				s.onCompensateFail(ctx)
-				return
+			s.mu.Lock()
+			// 只有正在执行的和执行成功的需要回滚
+			if s.state != StepInAction && s.state != StepSuccess {
+				s.mu.Unlock()
+				continue
 			}
-			s.onCompensateSuccess(ctx)
-			return
+			// 前序依赖step需要全部回滚完成或待执行
+			if s.state == StepSuccess {
+				for _, stp := range s.compensatePrevious {
+					if stp.state != StepFailed && s.state != StepPending {
+						s.mu.Unlock()
+						continue
+					}
+				}
+			}
+			s.state = StepInCompensate
+			s.mu.Unlock()
+			err := retry.Run(func() error {
+				return s.compensate.run(ctx)
+			}, 2)
+			if err != nil {
+				logx.Errorf(ctx, "step[%s] run compensate fail after retry 2 times: %v", s.name, err)
+				s.onCompensateFail(ctx)
+				continue
+			}
+			s.onCompensateSuccess()
 		}
 	}
 }
 
-func (s *Step) onCompensateSuccess(ctx context.Context) {
+func (s *Step) onCompensateSuccess() {
+	s.mu.Lock()
+	s.state = StepFailed
+	s.mu.Unlock()
 	for _, stp := range s.previous {
 		stp.compensateCh <- struct{}{}
 	}
 }
 
 func (s *Step) onCompensateFail(ctx context.Context) {
+	// todo 更新db任务状态，人工介入
 	return
 }
 
