@@ -112,14 +112,15 @@ func (s *Step) onActionFail(ctx context.Context) {
 	if !s.saga.state.CompareAndSwap(0, 1) {
 		return
 	}
-	// 当前step回滚，previous next concurrent 都需要回滚
-	s.runCompensate(ctx)
-	for _, stp := range s.previous {
-		stp.compensateCh <- struct{}{}
-	}
-	for _, stp := range s.concurrent {
-		stp.compensateCh <- struct{}{}
-	}
+	// 当前step回滚，previous concurrent 都需要回滚
+	//s.runCompensate(ctx)
+	s.compensateCh <- struct{}{}
+	//for _, stp := range s.previous {
+	//	stp.compensateCh <- struct{}{}
+	//}
+	//for _, stp := range s.concurrent {
+	//	stp.compensateCh <- struct{}{}
+	//}
 	//for _, stp := range s.next {
 	//	stp.compensateCh <- struct{}{}
 	//}
@@ -169,6 +170,12 @@ func (s *Step) onCompensateSuccess() {
 	s.state = StepFailed
 	s.mu.Unlock()
 	for _, stp := range s.previous {
+		stp.compensateCh <- struct{}{}
+	}
+	for _, stp := range s.concurrent {
+		stp.compensateCh <- struct{}{}
+	}
+	for _, stp := range s.next {
 		stp.compensateCh <- struct{}{}
 	}
 }
