@@ -2,9 +2,10 @@ package dtx
 
 import (
 	"context"
-	"purchase/pkg/retry"
 	"sync"
 	"sync/atomic"
+
+	"purchase/pkg/retry"
 
 	"purchase/infra/logx"
 )
@@ -63,15 +64,19 @@ type Step struct {
 type StepStatus int
 
 const (
-	StepPending      StepStatus = 0
-	StepInAction     StepStatus = 1
-	StepInCompensate StepStatus = 2
-	StepSuccess      StepStatus = 3
-	StepFailed       StepStatus = 4
+	StepPending           StepStatus = 0
+	StepInAction          StepStatus = 1
+	StepActionFail        StepStatus = 2
+	StepActionSuccess     StepStatus = 3
+	StepInCompensate      StepStatus = 4
+	StepCompensateSuccess StepStatus = 5
+	StepCompensateFail    StepStatus = 6
+	// StepSuccess           StepStatus = 7
+	// StepFailed            StepStatus = 8
 )
 
 func (s *Step) isSuccess() bool {
-	return s.state == StepSuccess
+	return s.state == StepActionSuccess
 }
 
 func (s *Step) runAction(ctx context.Context) {
@@ -113,17 +118,21 @@ func (s *Step) onActionFail(ctx context.Context) {
 		return
 	}
 	// 当前step回滚，previous concurrent 都需要回滚
-	//s.runCompensate(ctx)
+	// s.runCompensate(ctx)
 	s.compensateCh <- struct{}{}
-	//for _, stp := range s.previous {
+	// for _, stp := range s.previous {
 	//	stp.compensateCh <- struct{}{}
-	//}
-	//for _, stp := range s.concurrent {
+	// }
+	// for _, stp := range s.concurrent {
 	//	stp.compensateCh <- struct{}{}
-	//}
-	//for _, stp := range s.next {
+	// }
+	// for _, stp := range s.next {
 	//	stp.compensateCh <- struct{}{}
-	//}
+	// }
+}
+
+func (s *Step) needCompensate() bool {
+	return s.state == StepActionSuccess || s.state == StepInAction || s.state == StepActionFail
 }
 
 func (s *Step) runCompensate(ctx context.Context) {
@@ -137,14 +146,14 @@ func (s *Step) runCompensate(ctx context.Context) {
 		case <-s.compensateCh:
 			s.mu.Lock()
 			// 只有正在执行的和执行成功的需要回滚
-			if s.state != StepInAction && s.state != StepSuccess {
+			if s.state != StepInAction && s.state != StepActionSuccess {
 				s.mu.Unlock()
 				continue
 			}
 			// 前序依赖step需要全部回滚完成或待执行
-			if s.state == StepSuccess {
+			if s.state == StepActionSuccess {
 				for _, stp := range s.compensatePrevious {
-					if stp.state != StepFailed && s.state != StepPending {
+					if stp.needCompensate() {
 						s.mu.Unlock()
 						continue
 					}
@@ -167,7 +176,7 @@ func (s *Step) runCompensate(ctx context.Context) {
 
 func (s *Step) onCompensateSuccess() {
 	s.mu.Lock()
-	s.state = StepFailed
+	s.state = StepCompensateSuccess
 	s.mu.Unlock()
 	for _, stp := range s.previous {
 		stp.compensateCh <- struct{}{}
