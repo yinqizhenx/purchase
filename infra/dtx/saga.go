@@ -117,18 +117,7 @@ func (s *Step) onActionFail(ctx context.Context) {
 	if !s.saga.state.CompareAndSwap(0, 1) {
 		return
 	}
-	// 当前step回滚，previous concurrent 都需要回滚
-	// s.runCompensate(ctx)
 	s.compensateCh <- struct{}{}
-	// for _, stp := range s.previous {
-	//	stp.compensateCh <- struct{}{}
-	// }
-	// for _, stp := range s.concurrent {
-	//	stp.compensateCh <- struct{}{}
-	// }
-	// for _, stp := range s.next {
-	//	stp.compensateCh <- struct{}{}
-	// }
 }
 
 func (s *Step) needCompensate() bool {
@@ -144,21 +133,20 @@ func (s *Step) runCompensate(ctx context.Context) {
 		case <-s.closed:
 			return
 		case <-s.compensateCh:
+			// 前序依赖step需要全部回滚完成或待执行
+			for _, stp := range s.compensatePrevious {
+				if stp.needCompensate() {
+					stp.compensateCh <- struct{}{}
+					continue
+				}
+			}
 			s.mu.Lock()
 			// 只有正在执行的和执行成功的需要回滚
-			if s.state != StepInAction && s.state != StepActionSuccess {
+			if !s.needCompensate() {
 				s.mu.Unlock()
 				continue
 			}
-			// 前序依赖step需要全部回滚完成或待执行
-			if s.state == StepActionSuccess {
-				for _, stp := range s.compensatePrevious {
-					if stp.needCompensate() {
-						s.mu.Unlock()
-						continue
-					}
-				}
-			}
+
 			s.state = StepInCompensate
 			s.mu.Unlock()
 			err := retry.Run(func() error {
@@ -178,13 +166,10 @@ func (s *Step) onCompensateSuccess() {
 	s.mu.Lock()
 	s.state = StepCompensateSuccess
 	s.mu.Unlock()
-	for _, stp := range s.previous {
-		stp.compensateCh <- struct{}{}
-	}
 	for _, stp := range s.concurrent {
 		stp.compensateCh <- struct{}{}
 	}
-	for _, stp := range s.next {
+	for _, stp := range s.compensateNext {
 		stp.compensateCh <- struct{}{}
 	}
 }
