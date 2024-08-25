@@ -54,6 +54,18 @@ func (s *Saga) sync(ctx context.Context) error {
 	return nil
 }
 
+func (s *Saga) tryUpdateSuccess(ctx context.Context) {
+	for _, stp := range s.steps {
+		if !stp.isSuccess() {
+			return
+		}
+	}
+	if err := s.storage.UpdateTransState(ctx, NewTrans(), "tx_success"); err != nil {
+		logx.Errorf(ctx, "update branch state fail: %v", err)
+	}
+	close(s.errCh)
+}
+
 func (s *Saga) close() {
 	for _, stp := range s.steps {
 		close(stp.closed)
@@ -160,6 +172,7 @@ func (s *Step) onActionSuccess(ctx context.Context) {
 		logx.Errorf(ctx, "update branch state fail: %v", err)
 		//s.saga.errCh <- err
 	}
+	s.saga.tryUpdateSuccess(ctx)
 	for _, stp := range s.next {
 		stp.actionCh <- struct{}{}
 	}
