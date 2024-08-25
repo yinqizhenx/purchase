@@ -11,11 +11,12 @@ import (
 )
 
 type Saga struct {
-	head  *Step
-	steps []*Step
-	order map[string][]string
-	state atomic.Int32 // 0 - 执行中， 1 - 失败， 3 - 成功
-	errCh chan error
+	head    *Step
+	steps   []*Step
+	order   map[string][]string
+	state   atomic.Int32 // 0 - 执行中， 1 - 失败， 2 - 成功
+	errCh   chan error   // 正向执行的错误channel，容量为1
+	storage TransStorage
 }
 
 func (s *Saga) Exec(ctx context.Context) error {
@@ -24,11 +25,33 @@ func (s *Saga) Exec(ctx context.Context) error {
 }
 
 func (s *Saga) AsyncExec(ctx context.Context) {
+	err := s.sync(ctx)
+	if err != nil {
+		s.errCh <- err
+	}
 	for _, step := range s.steps {
 		go step.runAction(ctx)
 		go step.runCompensate(ctx)
 	}
 	s.head.actionCh <- struct{}{}
+}
+
+func (s *Saga) sync(ctx context.Context) error {
+	tx := NewTrans()
+	branchList := make([]*Branch, 0)
+	for _, s := range s.steps {
+		branch := NewBranch(s.name)
+		branchList = append(branchList, branch)
+	}
+	err := s.storage.SaveTrans(ctx, tx)
+	if err != nil {
+		return err
+	}
+	err = s.storage.SaveBranch(ctx, branchList)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //
@@ -94,10 +117,19 @@ func (s *Step) runAction(ctx context.Context) {
 					continue
 				}
 			}
+
+			s.mu.Lock()
+			if !s.shouldRunAction() {
+				s.mu.Unlock()
+				continue
+			}
+			s.state = StepInAction
+			s.mu.Unlock()
+
 			err := s.action.run(ctx)
 			if err != nil {
 				logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
-				s.onActionFail(ctx)
+				s.onActionFail(ctx, err)
 				return
 			}
 			s.onActionSuccess(ctx)
@@ -106,18 +138,40 @@ func (s *Step) runAction(ctx context.Context) {
 	}
 }
 
+func (s *Step) shouldRunAction() bool {
+	return s.state == StepPending
+}
+
 func (s *Step) onActionSuccess(ctx context.Context) {
+	err := s.saga.storage.UpdateBranchState(ctx, nil, "action_success")
+	if err != nil {
+		logx.Errorf(ctx, "update branch state fail: %v", err)
+		//s.saga.errCh <- err
+	}
 	for _, stp := range s.next {
 		stp.actionCh <- struct{}{}
 	}
 }
 
-func (s *Step) onActionFail(ctx context.Context) {
-	// 控制多个同时fail
+func (s *Step) onActionFail(ctx context.Context, err error) {
+	// 修改全局事务失败，控制多个同时fail
 	if !s.saga.state.CompareAndSwap(0, 1) {
 		return
 	}
-	s.compensateCh <- struct{}{}
+	go func() {
+		s.saga.errCh <- err // 返回第一个失败的错误
+		if err := s.saga.storage.UpdateBranchState(ctx, NewBranch(s.name), "action_fail"); err != nil {
+			// todo 这里错误的处理，
+			// todo 要放在事务里吗
+			logx.Errorf(ctx, "update branch state fail: %v", err)
+		}
+		s.compensateCh <- struct{}{} // 开始回滚
+	}()
+}
+
+// isRunActionFinished 正向执行是否结束（成功或失败）
+func (s *Step) isRunActionFinished() bool {
+	return s.state == StepActionSuccess || s.state == StepActionFail
 }
 
 func (s *Step) needCompensate() bool {
