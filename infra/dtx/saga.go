@@ -54,6 +54,12 @@ func (s *Saga) sync(ctx context.Context) error {
 	return nil
 }
 
+func (s *Saga) close() {
+	for _, stp := range s.steps {
+		close(stp.closed)
+	}
+}
+
 //
 // func (s *Saga) Rollback(ctx context.Context) error {
 // 	for _, step := range s.steps {
@@ -139,10 +145,16 @@ func (s *Step) runAction(ctx context.Context) {
 }
 
 func (s *Step) shouldRunAction() bool {
+	if s.saga.state.Load() != 0 {
+		return false
+	}
 	return s.state == StepPending
 }
 
 func (s *Step) onActionSuccess(ctx context.Context) {
+	s.mu.Lock()
+	s.state = StepActionSuccess
+	s.mu.Unlock()
 	err := s.saga.storage.UpdateBranchState(ctx, nil, "action_success")
 	if err != nil {
 		logx.Errorf(ctx, "update branch state fail: %v", err)
@@ -154,19 +166,26 @@ func (s *Step) onActionSuccess(ctx context.Context) {
 }
 
 func (s *Step) onActionFail(ctx context.Context, err error) {
+	s.mu.Lock()
+	s.state = StepActionFail
+	s.mu.Unlock()
 	// 修改全局事务失败，控制多个同时fail
 	if !s.saga.state.CompareAndSwap(0, 1) {
 		return
 	}
-	go func() {
-		s.saga.errCh <- err // 返回第一个失败的错误
-		if err := s.saga.storage.UpdateBranchState(ctx, NewBranch(s.name), "action_fail"); err != nil {
-			// todo 这里错误的处理，
-			// todo 要放在事务里吗
-			logx.Errorf(ctx, "update branch state fail: %v", err)
-		}
-		s.compensateCh <- struct{}{} // 开始回滚
-	}()
+	s.saga.errCh <- err // 返回第一个失败的错误, 容量为1，不阻塞
+
+	if err := s.saga.storage.UpdateBranchState(ctx, NewBranch(s.name), "action_fail"); err != nil {
+		// todo 这里错误的处理，
+		// todo 要放在事务里吗
+		logx.Errorf(ctx, "update branch state fail: %v", err)
+	}
+	if err := s.saga.storage.UpdateTransState(ctx, NewTrans(), "tx_fail"); err != nil {
+		// todo 这里错误的处理，
+		// todo 要放在事务里吗
+		logx.Errorf(ctx, "update branch state fail: %v", err)
+	}
+	s.compensateCh <- struct{}{} // 开始回滚
 }
 
 // isRunActionFinished 正向执行是否结束（成功或失败）
@@ -194,15 +213,19 @@ func (s *Step) runCompensate(ctx context.Context) {
 					continue
 				}
 			}
-			s.mu.Lock()
-			// 只有正在执行的和执行成功的需要回滚
+
 			if !s.needCompensate() {
-				s.mu.Unlock()
 				continue
 			}
 
+			// 阻塞，直到当前action执行结束
+			for !s.isRunActionFinished() {
+			}
+
+			s.mu.Lock()
 			s.state = StepInCompensate
 			s.mu.Unlock()
+
 			err := retry.Run(func() error {
 				return s.compensate.run(ctx)
 			}, 2)
@@ -211,15 +234,20 @@ func (s *Step) runCompensate(ctx context.Context) {
 				s.onCompensateFail(ctx)
 				continue
 			}
-			s.onCompensateSuccess()
+			s.onCompensateSuccess(ctx)
 		}
 	}
 }
 
-func (s *Step) onCompensateSuccess() {
+func (s *Step) onCompensateSuccess(ctx context.Context) {
 	s.mu.Lock()
 	s.state = StepCompensateSuccess
 	s.mu.Unlock()
+	if err := s.saga.storage.UpdateBranchState(ctx, NewBranch(s.name), "compensate_success"); err != nil {
+		// todo 这里错误的处理，
+		// todo 要放在事务里吗
+		logx.Errorf(ctx, "update branch state fail: %v", err)
+	}
 	for _, stp := range s.concurrent {
 		stp.compensateCh <- struct{}{}
 	}
@@ -229,7 +257,15 @@ func (s *Step) onCompensateSuccess() {
 }
 
 func (s *Step) onCompensateFail(ctx context.Context) {
-	// todo 更新db任务状态，人工介入
+	s.mu.Lock()
+	s.state = StepCompensateFail
+	s.mu.Unlock()
+	if err := s.saga.storage.UpdateBranchState(ctx, NewBranch(s.name), "compensate_fail"); err != nil {
+		// todo 这里错误的处理，
+		// todo 要放在事务里吗
+		logx.Errorf(ctx, "update branch state fail: %v", err)
+	}
+	// todo 更新db任务状态，人工介入, 其他回滚是否要继续执行
 	return
 }
 
