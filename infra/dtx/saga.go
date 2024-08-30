@@ -10,10 +10,15 @@ import (
 	"purchase/infra/logx"
 )
 
+func NewSaga() *Saga {
+	s := &Saga{}
+	return s
+}
+
 type Saga struct {
-	head    *Step
-	steps   []*Step
-	order   map[string][]string
+	head  *Step
+	steps []*Step
+	//order   map[string][]string
 	state   atomic.Int32 // 0 - 执行中， 1 - 失败， 2 - 成功
 	errCh   chan error   // 正向执行的错误channel，容量为1
 	storage TransStorage
