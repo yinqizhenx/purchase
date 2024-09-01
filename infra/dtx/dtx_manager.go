@@ -2,6 +2,7 @@ package dtx
 
 import (
 	"context"
+	"purchase/infra/logx"
 )
 
 func NewDistributeTxManager() *DistributeTxManager {
@@ -51,7 +52,7 @@ func (d *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) 
 	}
 	for i := 0; i < len(steps); i++ {
 		if steps[i].Action.isNoDepend() {
-			stepMap[steps[j].Name].previous = append(stepMap[steps[j].Name].previous, trans.head)
+			stepMap[steps[i].Name].previous = append(stepMap[steps[i].Name].previous, trans.head)
 		}
 		for j := 0; j != i && j < len(steps); j++ {
 			if steps[j].Action.isDependOn(steps[i].Action) {
@@ -65,11 +66,11 @@ func (d *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) 
 		}
 	}
 
-	for i := 0; i < len(steps); i++ {
-		for j := 0; j != i && j < len(steps); j++ {
-			if
-		}
-	}
+	//for i := 0; i < len(steps); i++ {
+	//	for j := 0; j != i && j < len(steps); j++ {
+	//		if
+	//	}
+	//}
 	return trans
 }
 
@@ -110,12 +111,15 @@ type SagaStep struct {
 	Compensate TransHandler
 }
 
-func (s *SagaStep) isCircleDepend(i int, list []*SagaStep) bool {
-	start := list[i]
-	if !start.Action.isNoDepend() {
-		for _, d := range start.Action.depend {
-			return false
+func isActionCircleDepend(ctx context.Context, s string, exist map[string]struct{}, m map[string]*SagaStep) bool {
+	start := m[s]
+	for _, d := range start.Action.depend {
+		if _, ok := exist[d]; ok {
+			logx.Error(ctx, "存在循环依赖")
+			return true
 		}
+		exist[d] = struct{}{}
+		return isActionCircleDepend(ctx, d, exist, m)
 	}
 	return false
 }
