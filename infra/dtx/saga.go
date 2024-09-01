@@ -175,7 +175,7 @@ func (s *Step) onActionSuccess(ctx context.Context) {
 	err := s.saga.storage.UpdateBranchState(ctx, nil, "action_success")
 	if err != nil {
 		logx.Errorf(ctx, "update branch state fail: %v", err)
-		//s.saga.errCh <- err
+		// s.saga.errCh <- err
 	}
 	s.saga.tryUpdateSuccess(ctx)
 	for _, stp := range s.next {
