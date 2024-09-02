@@ -123,3 +123,24 @@ func isActionCircleDepend(ctx context.Context, s string, exist map[string]struct
 	}
 	return false
 }
+
+func (s *Step) isCircleDepend() bool {
+	exist := make(map[string]struct{})
+
+	var isCircle func(p *Step) bool
+	isCircle = func(p *Step) bool {
+		if _, ok := exist[p.name]; ok {
+			return true
+		}
+		exist[p.name] = struct{}{}
+		for _, stp := range p.next {
+			if isCircle(stp) {
+				return true
+			}
+		}
+		delete(exist, p.name)
+		return false
+	}
+
+	return isCircle(s)
+}
