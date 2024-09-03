@@ -3,6 +3,7 @@ package dtx
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"purchase/infra/logx"
 )
@@ -52,6 +53,15 @@ func (d *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) 
 		}
 		stepMap[s.Name] = stp
 	}
+
+	for _, stp := range steps {
+		for _, dp := range stp.Action.depend {
+			if _, ok := stepMap[dp]; !ok {
+				return nil, errors.New(fmt.Sprintf("depend not exist: %s", dp))
+			}
+		}
+	}
+
 	for i := 0; i < len(steps); i++ {
 		if steps[i].Action.isNoDepend() {
 			stepMap[steps[i].Name].previous = append(stepMap[steps[i].Name].previous, trans.head)
