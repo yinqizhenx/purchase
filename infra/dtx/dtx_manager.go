@@ -2,6 +2,7 @@ package dtx
 
 import (
 	"context"
+
 	"purchase/infra/logx"
 )
 
@@ -66,11 +67,6 @@ func (d *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) 
 		}
 	}
 
-	//for i := 0; i < len(steps); i++ {
-	//	for j := 0; j != i && j < len(steps); j++ {
-	//		if
-	//	}
-	//}
 	return trans
 }
 
