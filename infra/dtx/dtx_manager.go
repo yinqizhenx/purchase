@@ -2,6 +2,7 @@ package dtx
 
 import (
 	"context"
+	"errors"
 
 	"purchase/infra/logx"
 )
@@ -24,7 +25,7 @@ func (d *DistributeTxManager) NewTx(ctx context.Context) *Saga {
 	return nil
 }
 
-func (d *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) *Saga {
+func (d *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) (*Saga, error) {
 	trans := &Saga{}
 	head := &Step{
 		saga:         trans,
@@ -67,7 +68,10 @@ func (d *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) 
 		}
 	}
 
-	return trans
+	if trans.head.isCircleDepend() {
+		return nil, errors.New("exist circle depend")
+	}
+	return trans, nil
 }
 
 func (d *DistributeTxManager) RegisterHandler(ctx context.Context) error {
