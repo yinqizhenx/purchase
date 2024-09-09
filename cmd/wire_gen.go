@@ -19,6 +19,7 @@ import (
 	"purchase/infra/async_task"
 	"purchase/infra/config"
 	"purchase/infra/dlock"
+	"purchase/infra/dtx"
 	"purchase/infra/idempotent"
 	"purchase/infra/logx"
 	"purchase/infra/mq"
@@ -87,7 +88,9 @@ func initApp() (*App, func(), error) {
 		return nil, nil, err
 	}
 	eventConsumer := server.NewEventConsumerServer(subscriber)
-	mainApp := newApp(logger, grpcServer, httpServer, asyncTaskMux, eventConsumer)
+	transStorage := dtx.NewTransStorage(client)
+	distributeTxManager := dtx.NewDistributeTxManager(transStorage)
+	mainApp := newApp(logger, grpcServer, httpServer, asyncTaskMux, eventConsumer, distributeTxManager)
 	return mainApp, func() {
 		cleanup2()
 		cleanup()

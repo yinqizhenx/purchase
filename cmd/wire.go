@@ -19,6 +19,7 @@ import (
 	"purchase/infra/async_task"
 	"purchase/infra/config"
 	"purchase/infra/dlock"
+	"purchase/infra/dtx"
 	"purchase/infra/idempotent"
 	"purchase/infra/logx"
 	"purchase/infra/mq"
@@ -57,6 +58,7 @@ func initApp() (*App, func(), error) {
 		factory.ProviderSet,
 		convertor.ProviderSet,
 		event_handler.ProviderSet,
+		dtx.ProviderSet,
 		newApp,
 	))
 }

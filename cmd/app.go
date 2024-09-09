@@ -8,6 +8,7 @@ import (
 
 	"purchase/adapter/consumer"
 	"purchase/infra/async_task"
+	"purchase/infra/dtx"
 )
 
 // go build -ldflags "-X main.Version=x.y.z"
@@ -26,7 +27,7 @@ type App struct {
 	// eventApp *event.DomainEventApp
 }
 
-func newApp(logger log.Logger, gs *kgrpc.Server, hs *khttp.Server, ams *async_task.AsyncTaskMux, ec *consumer.EventConsumer) *App {
+func newApp(logger log.Logger, gs *kgrpc.Server, hs *khttp.Server, ams *async_task.AsyncTaskMux, ec *consumer.EventConsumer, dtm *dtx.DistributeTxManager) *App {
 	a := &App{
 		// asyncq:   aq,
 		// eventApp: eventApp,
@@ -41,6 +42,7 @@ func newApp(logger log.Logger, gs *kgrpc.Server, hs *khttp.Server, ams *async_ta
 			hs,
 			ams,
 			ec,
+			dtm,
 		),
 	}
 	// if a.asyncq != nil {
