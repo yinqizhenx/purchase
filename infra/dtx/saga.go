@@ -77,19 +77,6 @@ func (s *Saga) close() {
 	}
 }
 
-//
-// func (s *Saga) Rollback(ctx context.Context) error {
-// 	for _, step := range s.steps {
-// 		err := retry.Run(func() error {
-// 			return step.runCompensate(ctx)
-// 		}, 2)
-// 		if err != nil {
-// 			logx.Errorf(ctx, "saga tx rollback fail: %v", err)
-// 		}
-// 	}
-// 	return nil
-// }
-
 type Step struct {
 	saga               *Saga
 	action             Caller
@@ -97,7 +84,6 @@ type Step struct {
 	state              StepStatus
 	name               string
 	previous           []*Step
-	concurrent         []*Step
 	next               []*Step
 	compensatePrevious []*Step // 回滚依赖
 	compensateNext     []*Step // 回滚下一step
@@ -265,9 +251,6 @@ func (s *Step) onCompensateSuccess(ctx context.Context) {
 		// todo 这里错误的处理，
 		// todo 要放在事务里吗
 		logx.Errorf(ctx, "update branch state fail: %v", err)
-	}
-	for _, stp := range s.concurrent {
-		stp.compensateCh <- struct{}{}
 	}
 	for _, stp := range s.compensateNext {
 		stp.compensateCh <- struct{}{}
