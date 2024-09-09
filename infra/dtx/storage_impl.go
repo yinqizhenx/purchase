@@ -3,11 +3,15 @@ package dtx
 import (
 	"context"
 
+	"github.com/google/wire"
+
 	"purchase/infra/persistence/dal/db/ent"
 	"purchase/infra/persistence/dal/db/ent/branch"
 	"purchase/infra/persistence/dal/db/ent/trans"
 	"purchase/infra/persistence/tx"
 )
+
+var ProviderSet = wire.NewSet(NewTransStorage)
 
 func NewTransStorage(db *ent.Client) TransStorage {
 	return &StorageImpl{

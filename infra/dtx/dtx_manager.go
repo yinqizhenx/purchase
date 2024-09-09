@@ -6,27 +6,34 @@ import (
 	"fmt"
 )
 
-func NewDistributeTxManager() *DistributeTxManager {
-	return &DistributeTxManager{}
+func NewDistributeTxManager(s TransStorage) *DistributeTxManager {
+	return &DistributeTxManager{storage: s}
 }
 
 type DistributeTxManager struct {
-	steps    []Step
+	trans    []*Saga
 	storage  TransStorage
 	handlers map[string]func(context.Context, []byte) error
 }
 
-func (t *DistributeTxManager) Start(ctx context.Context) error {
+func (txm *DistributeTxManager) Start(ctx context.Context) error {
 	return nil
 }
 
-func (t *DistributeTxManager) NewTx(ctx context.Context) *Saga {
+func (txm *DistributeTxManager) Stop(ctx context.Context) error {
+	for _, t := range txm.trans {
+		t.close()
+	}
 	return nil
 }
 
-func (t *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) (*Saga, error) {
+func (txm *DistributeTxManager) NewTx(ctx context.Context) *Saga {
+	return nil
+}
+
+func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) (*Saga, error) {
 	trans := &Saga{
-		storage: t.storage,
+		storage: txm.storage,
 	}
 	head := &Step{
 		saga:         trans,
@@ -40,11 +47,11 @@ func (t *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) 
 			saga: trans,
 			name: s.Name,
 			action: Caller{
-				fn:      t.handlers[s.Action],
+				fn:      txm.handlers[s.Action],
 				payload: s.Payload,
 			},
 			compensate: Caller{
-				fn:      t.handlers[s.Compensate],
+				fn:      txm.handlers[s.Compensate],
 				payload: s.Payload,
 			},
 			actionCh:     make(chan struct{}),
@@ -81,11 +88,11 @@ func (t *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) 
 	return trans, nil
 }
 
-func (t *DistributeTxManager) RegisterHandler(name string, handler func(context.Context, []byte) error) {
-	if _, ok := t.handlers[name]; ok {
+func (txm *DistributeTxManager) RegisterHandler(name string, handler func(context.Context, []byte) error) {
+	if _, ok := txm.handlers[name]; ok {
 		panic(fmt.Sprintf("duplicated handler: %s", name))
 	}
-	t.handlers[name] = handler
+	txm.handlers[name] = handler
 }
 
 func (h *SagaStep) hasNoDepend() bool {
