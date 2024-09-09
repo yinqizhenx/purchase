@@ -18,7 +18,7 @@ func NewSaga() *Saga {
 type Saga struct {
 	head  *Step
 	steps []*Step
-	//order   map[string][]string
+	// order   map[string][]string
 	state   atomic.Int32 // 0 - 执行中， 1 - 失败， 2 - 成功
 	errCh   chan error   // 正向执行的错误channel，容量为1
 	storage TransStorage
@@ -285,6 +285,27 @@ func (s *Step) onCompensateFail(ctx context.Context) {
 	}
 	// todo 更新db任务状态，人工介入, 其他回滚是否要继续执行
 	return
+}
+
+func (s *Step) isCircleDepend() bool {
+	exist := make(map[string]struct{})
+
+	var isCircle func(p *Step) bool
+	isCircle = func(p *Step) bool {
+		if _, ok := exist[p.name]; ok {
+			return true
+		}
+		exist[p.name] = struct{}{}
+		for _, stp := range p.next {
+			if isCircle(stp) {
+				return true
+			}
+		}
+		delete(exist, p.name)
+		return false
+	}
+
+	return isCircle(s)
 }
 
 type Caller struct {
