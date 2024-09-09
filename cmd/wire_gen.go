@@ -59,7 +59,9 @@ func initApp() (*App, func(), error) {
 	paDomainService := service.NewPADomainService(paymentCenterRepo, mdmService, eventService, pcFactory, eventFactory)
 	assemblerAssembler := assembler.NewAssembler()
 	transactionManager := tx.NewTransactionManager(client)
-	paymentCenterAppService := app.NewPaymentCenterAppService(paDomainService, paymentCenterRepo, assemblerAssembler, transactionManager, pcFactory)
+	transStorage := dtx.NewTransStorage(client)
+	distributeTxManager := dtx.NewDistributeTxManager(transStorage)
+	paymentCenterAppService := app.NewPaymentCenterAppService(paDomainService, paymentCenterRepo, assemblerAssembler, transactionManager, pcFactory, distributeTxManager)
 	paymentCenterHandler := rpc.NewPaymentCenterHandler(paymentCenterAppService)
 	rpcServer := rpc.NewPurchaseServer(paymentCenterHandler)
 	grpcServer := server.NewGRPCServer(configConfig, rpcServer)
@@ -88,8 +90,6 @@ func initApp() (*App, func(), error) {
 		return nil, nil, err
 	}
 	eventConsumer := server.NewEventConsumerServer(subscriber)
-	transStorage := dtx.NewTransStorage(client)
-	distributeTxManager := dtx.NewDistributeTxManager(transStorage)
 	mainApp := newApp(logger, grpcServer, httpServer, asyncTaskMux, eventConsumer, distributeTxManager)
 	return mainApp, func() {
 		cleanup2()

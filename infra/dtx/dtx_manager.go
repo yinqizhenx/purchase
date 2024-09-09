@@ -7,7 +7,12 @@ import (
 )
 
 func NewDistributeTxManager(s TransStorage) *DistributeTxManager {
-	return &DistributeTxManager{storage: s}
+	txm := &DistributeTxManager{
+		storage:  s,
+		handlers: make(map[string]func(context.Context, []byte) error),
+	}
+	registerForTest(txm)
+	return txm
 }
 
 type DistributeTxManager struct {
@@ -34,9 +39,17 @@ func (txm *DistributeTxManager) NewTx(ctx context.Context) *Saga {
 func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) (*Saga, error) {
 	trans := &Saga{
 		storage: txm.storage,
+		errCh:   make(chan error, 1),
 	}
 	head := &Step{
-		saga:         trans,
+		saga: trans,
+		name: "head",
+		action: Caller{
+			fn: func(context.Context, []byte) error { return nil },
+		},
+		compensate: Caller{
+			fn: func(context.Context, []byte) error { return nil },
+		},
 		actionCh:     make(chan struct{}),
 		compensateCh: make(chan struct{}),
 	}
@@ -47,10 +60,12 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 			saga: trans,
 			name: s.Name,
 			action: Caller{
+				name:    s.Action,
 				fn:      txm.handlers[s.Action],
 				payload: s.Payload,
 			},
 			compensate: Caller{
+				name:    s.Compensate,
 				fn:      txm.handlers[s.Compensate],
 				payload: s.Payload,
 			},
@@ -85,6 +100,9 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 	if trans.head.isCircleDepend() {
 		return nil, errors.New("exist circle depend")
 	}
+	for _, stp := range stepMap {
+		trans.steps = append(trans.steps, stp)
+	}
 	return trans, nil
 }
 
@@ -105,4 +123,66 @@ type SagaStep struct {
 	Compensate string
 	Payload    []byte
 	Depend     []string
+}
+
+var StepTest = []*SagaStep{
+	{
+		Name:       "step1",
+		Action:     "step1_action",
+		Compensate: "step1_rollback",
+		Payload:    nil,
+	},
+	{
+		Name:       "step2",
+		Action:     "step2_action",
+		Compensate: "step2_rollback",
+		Payload:    nil,
+	},
+	{
+		Name:       "step3",
+		Action:     "step3_action",
+		Compensate: "step3_rollback",
+		Payload:    nil,
+	},
+	{
+		Name:       "step4",
+		Action:     "step4_action",
+		Compensate: "step4_rollback",
+		Payload:    nil,
+	},
+}
+
+func registerForTest(txm *DistributeTxManager) {
+	txm.RegisterHandler("step1_action", func(ctx context.Context, payload []byte) error {
+		fmt.Println("run step1_action")
+		return nil
+	})
+	txm.RegisterHandler("step1_rollback", func(ctx context.Context, payload []byte) error {
+		fmt.Println("run step1_rollback")
+		return nil
+	})
+	txm.RegisterHandler("step2_action", func(ctx context.Context, payload []byte) error {
+		fmt.Println("run step2_action")
+		return nil
+	})
+	txm.RegisterHandler("step2_rollback", func(ctx context.Context, payload []byte) error {
+		fmt.Println("run step2_rollback")
+		return nil
+	})
+	txm.RegisterHandler("step3_action", func(ctx context.Context, payload []byte) error {
+		fmt.Println("run step3_action")
+		return nil
+	})
+	txm.RegisterHandler("step3_rollback", func(ctx context.Context, payload []byte) error {
+		fmt.Println("run step3_rollback")
+		return nil
+	})
+	txm.RegisterHandler("step4_action", func(ctx context.Context, payload []byte) error {
+		fmt.Println("run step4_action")
+		return nil
+	})
+	txm.RegisterHandler("step4_rollback", func(ctx context.Context, payload []byte) error {
+		fmt.Println("run step4_rollback")
+		return nil
+	})
 }

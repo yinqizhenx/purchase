@@ -8,6 +8,7 @@ import (
 	"purchase/domain/repo"
 	"purchase/domain/service"
 	pb "purchase/idl/payment_center"
+	"purchase/infra/dtx"
 	"purchase/infra/persistence/tx"
 )
 
@@ -17,15 +18,17 @@ type PaymentCenterAppService struct {
 	assembler *assembler.Assembler
 	txm       *tx.TransactionManager
 	pcFactory *factory.PCFactory
+	dtm       *dtx.DistributeTxManager
 }
 
-func NewPaymentCenterAppService(paSrv *service.PADomainService, paRepo repo.PaymentCenterRepo, asb *assembler.Assembler, txm *tx.TransactionManager, pcFactory *factory.PCFactory) *PaymentCenterAppService {
+func NewPaymentCenterAppService(paSrv *service.PADomainService, paRepo repo.PaymentCenterRepo, asb *assembler.Assembler, txm *tx.TransactionManager, pcFactory *factory.PCFactory, dtm *dtx.DistributeTxManager) *PaymentCenterAppService {
 	return &PaymentCenterAppService{
 		paSrv:     paSrv,
 		paRepo:    paRepo,
 		assembler: asb,
 		txm:       txm,
 		pcFactory: pcFactory,
+		dtm:       dtm,
 	}
 }
 
@@ -37,6 +40,14 @@ func (s *PaymentCenterAppService) AddPaymentApply(ctx context.Context, req *pb.A
 	err = s.txm.Transaction(ctx, func(ctx context.Context) error {
 		return s.paSrv.SavePA(ctx, pa)
 	})
+	if err != nil {
+		return nil, err
+	}
+	sg, err := s.dtm.NewSagaTx(ctx, dtx.StepTest)
+	if err != nil {
+		return nil, err
+	}
+	err = sg.Exec(ctx)
 	if err != nil {
 		return nil, err
 	}

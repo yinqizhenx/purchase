@@ -48,6 +48,8 @@ func (s *StorageImpl) SaveTrans(ctx context.Context, t *Trans) error {
 		SetFinishedAt(t.FinishedAt).
 		SetCreatedAt(t.CreatedAt).
 		SetCreatedBy(t.CreatedBy).
+		SetUpdatedBy(t.UpdatedBy).
+		SetUpdatedAt(t.UpdatedAt).
 		Exec(ctx)
 	return err
 }
@@ -63,6 +65,7 @@ func (s *StorageImpl) SaveBranch(ctx context.Context, branchList []*Branch) erro
 			SetTransID(b.TransID).
 			SetType(b.Type).
 			SetState(b.State).
+			SetName(b.Name).
 			SetExecutor(b.Executor).
 			SetPayload(b.Payload).
 			SetActionDepend(b.ActionDepend).
@@ -70,6 +73,8 @@ func (s *StorageImpl) SaveBranch(ctx context.Context, branchList []*Branch) erro
 			SetFinishedAt(b.FinishedAt).
 			SetCreatedAt(b.CreatedAt).
 			SetCreatedBy(b.CreatedBy).
+			SetUpdatedBy(b.UpdatedBy).
+			SetUpdatedAt(b.UpdatedAt).
 			SetIsDead(b.IsDead)
 		buildCreate = append(buildCreate, create)
 

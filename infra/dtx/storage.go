@@ -20,6 +20,8 @@ type Trans struct {
 	FinishedAt time.Time
 	CreatedAt  time.Time
 	CreatedBy  string
+	UpdatedAt  time.Time
+	UpdatedBy  string
 }
 
 type Branch struct {
@@ -36,6 +38,8 @@ type Branch struct {
 	IsDead           bool
 	CreatedAt        time.Time
 	CreatedBy        string
+	UpdatedAt        time.Time
+	UpdatedBy        string
 }
 
 type BranchType string

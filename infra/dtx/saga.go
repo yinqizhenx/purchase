@@ -2,9 +2,12 @@ package dtx
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
+	"purchase/infra/utils"
 	"purchase/pkg/retry"
 
 	"purchase/infra/logx"
@@ -34,20 +37,70 @@ func (s *Saga) AsyncExec(ctx context.Context) {
 	err := s.sync(ctx)
 	if err != nil {
 		s.errCh <- err
+		return
 	}
+	utils.SafeGo(ctx, func() {
+		s.head.runAction(ctx)
+	})
 	for _, step := range s.steps {
-		go step.runAction(ctx)
-		go step.runCompensate(ctx)
+		utils.SafeGo(ctx, func() {
+			step.runAction(ctx)
+		})
+		utils.SafeGo(ctx, func() {
+			step.runCompensate(ctx)
+		})
 	}
 	s.head.actionCh <- struct{}{}
 }
 
 func (s *Saga) sync(ctx context.Context) error {
-	tx := NewTrans()
+	tx := &Trans{
+		TransID:    s.id,
+		Name:       "test",
+		State:      "pending",
+		FinishedAt: time.Now(),
+		CreatedAt:  time.Now(),
+		CreatedBy:  "yinqizhen",
+		UpdatedBy:  "dd",
+		UpdatedAt:  time.Now(),
+	}
 	branchList := make([]*Branch, 0)
-	for _, s := range s.steps {
-		branch := NewBranch(s.name)
-		branchList = append(branchList, branch)
+	for _, stp := range s.steps {
+		branchAction := &Branch{
+			BranchID:         stp.getActionID(),
+			TransID:          stp.saga.id,
+			Type:             "action",
+			State:            "pending",
+			Name:             stp.name,
+			Executor:         "stp.action.name",
+			Payload:          "stp.action.payload",
+			ActionDepend:     "1",
+			CompensateDepend: "1",
+			FinishedAt:       time.Now(),
+			IsDead:           false,
+			CreatedAt:        time.Now(),
+			CreatedBy:        "uy",
+			UpdatedBy:        "dd",
+			UpdatedAt:        time.Now(),
+		}
+		branchCompensate := &Branch{
+			BranchID:         stp.getCompensateID(),
+			TransID:          stp.saga.id,
+			Type:             "compensate",
+			State:            "pending",
+			Name:             stp.name,
+			Executor:         "stp.compensate.name",
+			Payload:          "stp.action.payload",
+			ActionDepend:     "1",
+			CompensateDepend: "1",
+			FinishedAt:       time.Now(),
+			IsDead:           false,
+			CreatedAt:        time.Now(),
+			CreatedBy:        "uy",
+			UpdatedBy:        "dd",
+			UpdatedAt:        time.Now(),
+		}
+		branchList = append(branchList, branchAction, branchCompensate)
 	}
 	err := s.storage.SaveTrans(ctx, tx)
 	if err != nil {
@@ -122,6 +175,7 @@ func (s *Step) runAction(ctx context.Context) {
 		case <-s.closed:
 			return
 		case <-s.actionCh:
+			fmt.Printf(fmt.Sprintf("收到action: %s", s.name))
 			// 等待所有依赖step执行成功
 			for _, stp := range s.previous {
 				if !stp.isSuccess() {
