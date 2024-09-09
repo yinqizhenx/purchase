@@ -43,11 +43,12 @@ func (s *Saga) AsyncExec(ctx context.Context) {
 		s.head.runAction(ctx)
 	})
 	for _, step := range s.steps {
+		stp := step // 重新赋值，防止step引用变化
 		utils.SafeGo(ctx, func() {
-			step.runAction(ctx)
+			stp.runAction(ctx)
 		})
 		utils.SafeGo(ctx, func() {
-			step.runCompensate(ctx)
+			stp.runCompensate(ctx)
 		})
 	}
 	s.head.actionCh <- struct{}{}
