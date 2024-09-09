@@ -27,6 +27,31 @@ var (
 		Columns:    TAsyncTaskColumns,
 		PrimaryKey: []*schema.Column{TAsyncTaskColumns[0]},
 	}
+	// BranchesColumns holds the columns for the "branches" table.
+	BranchesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "branch_id", Type: field.TypeString},
+		{Name: "trans_id", Type: field.TypeString},
+		{Name: "type", Type: field.TypeString},
+		{Name: "state", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "executor", Type: field.TypeString},
+		{Name: "payload", Type: field.TypeString},
+		{Name: "action_depend", Type: field.TypeString},
+		{Name: "compensate_depend", Type: field.TypeString},
+		{Name: "finished_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "is_dead", Type: field.TypeBool},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "updated_by", Type: field.TypeString},
+		{Name: "created_by", Type: field.TypeString},
+	}
+	// BranchesTable holds the schema information for the "branches" table.
+	BranchesTable = &schema.Table{
+		Name:       "branches",
+		Columns:    BranchesColumns,
+		PrimaryKey: []*schema.Column{BranchesColumns[0]},
+	}
 	// PaHeadsColumns holds the columns for the "pa_heads" table.
 	PaHeadsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -66,11 +91,31 @@ var (
 		Columns:    PaRowsColumns,
 		PrimaryKey: []*schema.Column{PaRowsColumns[0]},
 	}
+	// TransColumns holds the columns for the "trans" table.
+	TransColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "trans_id", Type: field.TypeString},
+		{Name: "state", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "finished_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "updated_by", Type: field.TypeString},
+		{Name: "created_by", Type: field.TypeString},
+	}
+	// TransTable holds the schema information for the "trans" table.
+	TransTable = &schema.Table{
+		Name:       "trans",
+		Columns:    TransColumns,
+		PrimaryKey: []*schema.Column{TransColumns[0]},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		TAsyncTaskTable,
+		BranchesTable,
 		PaHeadsTable,
 		PaRowsTable,
+		TransTable,
 	}
 )
 

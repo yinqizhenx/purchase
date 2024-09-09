@@ -16,6 +16,7 @@ func NewSaga() *Saga {
 }
 
 type Saga struct {
+	id    string
 	head  *Step
 	steps []*Step
 	// order   map[string][]string
@@ -65,7 +66,7 @@ func (s *Saga) tryUpdateSuccess(ctx context.Context) {
 			return
 		}
 	}
-	if err := s.storage.UpdateTransState(ctx, NewTrans(), "tx_success"); err != nil {
+	if err := s.storage.UpdateTransState(ctx, s.id, "tx_success"); err != nil {
 		logx.Errorf(ctx, "update branch state fail: %v", err)
 	}
 	close(s.errCh)
@@ -78,6 +79,7 @@ func (s *Saga) close() {
 }
 
 type Step struct {
+	id                 string
 	saga               *Saga
 	action             Caller
 	compensate         Caller
@@ -158,7 +160,7 @@ func (s *Step) onActionSuccess(ctx context.Context) {
 	s.mu.Lock()
 	s.state = StepActionSuccess
 	s.mu.Unlock()
-	err := s.saga.storage.UpdateBranchState(ctx, nil, "action_success")
+	err := s.saga.storage.UpdateBranchState(ctx, s.getActionID(), "action_success")
 	if err != nil {
 		logx.Errorf(ctx, "update branch state fail: %v", err)
 		// s.saga.errCh <- err
@@ -167,6 +169,14 @@ func (s *Step) onActionSuccess(ctx context.Context) {
 	for _, stp := range s.next {
 		stp.actionCh <- struct{}{}
 	}
+}
+
+func (s *Step) getActionID() string {
+	return s.id + "_1"
+}
+
+func (s *Step) getCompensateID() string {
+	return s.id + "_2"
 }
 
 func (s *Step) onActionFail(ctx context.Context, err error) {
@@ -179,12 +189,12 @@ func (s *Step) onActionFail(ctx context.Context, err error) {
 	}
 	s.saga.errCh <- err // 返回第一个失败的错误, 容量为1，不阻塞
 
-	if err := s.saga.storage.UpdateBranchState(ctx, NewBranch(s.name), "action_fail"); err != nil {
+	if err := s.saga.storage.UpdateBranchState(ctx, s.getActionID(), "action_fail"); err != nil {
 		// todo 这里错误的处理，
 		// todo 要放在事务里吗
 		logx.Errorf(ctx, "update branch state fail: %v", err)
 	}
-	if err := s.saga.storage.UpdateTransState(ctx, NewTrans(), "tx_fail"); err != nil {
+	if err := s.saga.storage.UpdateTransState(ctx, s.saga.id, "tx_fail"); err != nil {
 		// todo 这里错误的处理，
 		// todo 要放在事务里吗
 		logx.Errorf(ctx, "update branch state fail: %v", err)
@@ -247,7 +257,7 @@ func (s *Step) onCompensateSuccess(ctx context.Context) {
 	s.mu.Lock()
 	s.state = StepCompensateSuccess
 	s.mu.Unlock()
-	if err := s.saga.storage.UpdateBranchState(ctx, NewBranch(s.name), "compensate_success"); err != nil {
+	if err := s.saga.storage.UpdateBranchState(ctx, s.getCompensateID(), "compensate_success"); err != nil {
 		// todo 这里错误的处理，
 		// todo 要放在事务里吗
 		logx.Errorf(ctx, "update branch state fail: %v", err)
@@ -261,7 +271,7 @@ func (s *Step) onCompensateFail(ctx context.Context) {
 	s.mu.Lock()
 	s.state = StepCompensateFail
 	s.mu.Unlock()
-	if err := s.saga.storage.UpdateBranchState(ctx, NewBranch(s.name), "compensate_fail"); err != nil {
+	if err := s.saga.storage.UpdateBranchState(ctx, s.getCompensateID(), "compensate_fail"); err != nil {
 		// todo 这里错误的处理，
 		// todo 要放在事务里吗
 		logx.Errorf(ctx, "update branch state fail: %v", err)

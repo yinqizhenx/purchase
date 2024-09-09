@@ -20,6 +20,18 @@ func (f AsyncTaskFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AsyncTaskMutation", m)
 }
 
+// The BranchFunc type is an adapter to allow the use of ordinary
+// function as Branch mutator.
+type BranchFunc func(context.Context, *ent.BranchMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BranchFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BranchMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BranchMutation", m)
+}
+
 // The PAHeadFunc type is an adapter to allow the use of ordinary
 // function as PAHead mutator.
 type PAHeadFunc func(context.Context, *ent.PAHeadMutation) (ent.Value, error)
@@ -42,6 +54,18 @@ func (f PARowFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PARowMutation", m)
+}
+
+// The TransFunc type is an adapter to allow the use of ordinary
+// function as Trans mutator.
+type TransFunc func(context.Context, *ent.TransMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TransFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TransMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TransMutation", m)
 }
 
 // Condition is a hook condition function.

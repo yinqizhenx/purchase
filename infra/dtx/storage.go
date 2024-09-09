@@ -14,7 +14,7 @@ func NewBranch(name string) *Branch {
 }
 
 type Trans struct {
-	TxID       string
+	TransID    string
 	Name       string
 	State      string
 	FinishedAt time.Time
@@ -23,13 +23,13 @@ type Trans struct {
 }
 
 type Branch struct {
-	ID               string
-	TxID             string
+	BranchID         string
+	TransID          string
 	Type             string
 	State            string
 	Name             string
 	Executor         string
-	Payload          []byte
+	Payload          string
 	ActionDepend     string
 	CompensateDepend string
 	FinishedAt       time.Time
@@ -38,9 +38,16 @@ type Branch struct {
 	CreatedBy        string
 }
 
+type BranchType string
+
+const (
+	SagaAction     BranchType = "saga_action"
+	SagaCompensate BranchType = "saga_compensate"
+)
+
 type TransStorage interface {
 	SaveTrans(ctx context.Context, tx *Trans) error
 	SaveBranch(ctx context.Context, branchList []*Branch) error
-	UpdateTransState(ctx context.Context, tx *Trans, newState string) error
-	UpdateBranchState(ctx context.Context, branch *Branch, newState string) error
+	UpdateTransState(ctx context.Context, transID, newState string) error
+	UpdateBranchState(ctx context.Context, branchID, newState string) error
 }

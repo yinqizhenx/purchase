@@ -9,8 +9,14 @@ import (
 // AsyncTask is the predicate function for asynctask builders.
 type AsyncTask func(*sql.Selector)
 
+// Branch is the predicate function for branch builders.
+type Branch func(*sql.Selector)
+
 // PAHead is the predicate function for pahead builders.
 type PAHead func(*sql.Selector)
 
 // PARow is the predicate function for parow builders.
 type PARow func(*sql.Selector)
+
+// Trans is the predicate function for trans builders.
+type Trans func(*sql.Selector)

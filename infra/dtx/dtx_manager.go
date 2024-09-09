@@ -25,7 +25,9 @@ func (t *DistributeTxManager) NewTx(ctx context.Context) *Saga {
 }
 
 func (t *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) (*Saga, error) {
-	trans := &Saga{}
+	trans := &Saga{
+		storage: t.storage,
+	}
 	head := &Step{
 		saga:         trans,
 		actionCh:     make(chan struct{}),
@@ -79,8 +81,11 @@ func (t *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) 
 	return trans, nil
 }
 
-func (t *DistributeTxManager) RegisterHandler(ctx context.Context) error {
-	return nil
+func (t *DistributeTxManager) RegisterHandler(name string, handler func(context.Context, []byte) error) {
+	if _, ok := t.handlers[name]; ok {
+		panic(fmt.Sprintf("duplicated handler: %s", name))
+	}
+	t.handlers[name] = handler
 }
 
 func (h *SagaStep) hasNoDepend() bool {

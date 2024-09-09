@@ -12,8 +12,10 @@ import (
 	"purchase/infra/persistence/dal/db/ent/migrate"
 
 	"purchase/infra/persistence/dal/db/ent/asynctask"
+	"purchase/infra/persistence/dal/db/ent/branch"
 	"purchase/infra/persistence/dal/db/ent/pahead"
 	"purchase/infra/persistence/dal/db/ent/parow"
+	"purchase/infra/persistence/dal/db/ent/trans"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
@@ -29,10 +31,14 @@ type Client struct {
 	Schema *migrate.Schema
 	// AsyncTask is the client for interacting with the AsyncTask builders.
 	AsyncTask *AsyncTaskClient
+	// Branch is the client for interacting with the Branch builders.
+	Branch *BranchClient
 	// PAHead is the client for interacting with the PAHead builders.
 	PAHead *PAHeadClient
 	// PARow is the client for interacting with the PARow builders.
 	PARow *PARowClient
+	// Trans is the client for interacting with the Trans builders.
+	Trans *TransClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -45,8 +51,10 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.AsyncTask = NewAsyncTaskClient(c.config)
+	c.Branch = NewBranchClient(c.config)
 	c.PAHead = NewPAHeadClient(c.config)
 	c.PARow = NewPARowClient(c.config)
+	c.Trans = NewTransClient(c.config)
 }
 
 type (
@@ -140,8 +148,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:       ctx,
 		config:    cfg,
 		AsyncTask: NewAsyncTaskClient(cfg),
+		Branch:    NewBranchClient(cfg),
 		PAHead:    NewPAHeadClient(cfg),
 		PARow:     NewPARowClient(cfg),
+		Trans:     NewTransClient(cfg),
 	}, nil
 }
 
@@ -162,8 +172,10 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:       ctx,
 		config:    cfg,
 		AsyncTask: NewAsyncTaskClient(cfg),
+		Branch:    NewBranchClient(cfg),
 		PAHead:    NewPAHeadClient(cfg),
 		PARow:     NewPARowClient(cfg),
+		Trans:     NewTransClient(cfg),
 	}, nil
 }
 
@@ -193,16 +205,20 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.AsyncTask.Use(hooks...)
+	c.Branch.Use(hooks...)
 	c.PAHead.Use(hooks...)
 	c.PARow.Use(hooks...)
+	c.Trans.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.AsyncTask.Intercept(interceptors...)
+	c.Branch.Intercept(interceptors...)
 	c.PAHead.Intercept(interceptors...)
 	c.PARow.Intercept(interceptors...)
+	c.Trans.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -210,10 +226,14 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *AsyncTaskMutation:
 		return c.AsyncTask.mutate(ctx, m)
+	case *BranchMutation:
+		return c.Branch.mutate(ctx, m)
 	case *PAHeadMutation:
 		return c.PAHead.mutate(ctx, m)
 	case *PARowMutation:
 		return c.PARow.mutate(ctx, m)
+	case *TransMutation:
+		return c.Trans.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
@@ -349,6 +369,139 @@ func (c *AsyncTaskClient) mutate(ctx context.Context, m *AsyncTaskMutation) (Val
 		return (&AsyncTaskDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown AsyncTask mutation op: %q", m.Op())
+	}
+}
+
+// BranchClient is a client for the Branch schema.
+type BranchClient struct {
+	config
+}
+
+// NewBranchClient returns a client for the Branch from the given config.
+func NewBranchClient(c config) *BranchClient {
+	return &BranchClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `branch.Hooks(f(g(h())))`.
+func (c *BranchClient) Use(hooks ...Hook) {
+	c.hooks.Branch = append(c.hooks.Branch, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `branch.Intercept(f(g(h())))`.
+func (c *BranchClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Branch = append(c.inters.Branch, interceptors...)
+}
+
+// Create returns a builder for creating a Branch entity.
+func (c *BranchClient) Create() *BranchCreate {
+	mutation := newBranchMutation(c.config, OpCreate)
+	return &BranchCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Branch entities.
+func (c *BranchClient) CreateBulk(builders ...*BranchCreate) *BranchCreateBulk {
+	return &BranchCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BranchClient) MapCreateBulk(slice any, setFunc func(*BranchCreate, int)) *BranchCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BranchCreateBulk{err: fmt.Errorf("calling to BranchClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BranchCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BranchCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Branch.
+func (c *BranchClient) Update() *BranchUpdate {
+	mutation := newBranchMutation(c.config, OpUpdate)
+	return &BranchUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BranchClient) UpdateOne(b *Branch) *BranchUpdateOne {
+	mutation := newBranchMutation(c.config, OpUpdateOne, withBranch(b))
+	return &BranchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BranchClient) UpdateOneID(id int) *BranchUpdateOne {
+	mutation := newBranchMutation(c.config, OpUpdateOne, withBranchID(id))
+	return &BranchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Branch.
+func (c *BranchClient) Delete() *BranchDelete {
+	mutation := newBranchMutation(c.config, OpDelete)
+	return &BranchDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BranchClient) DeleteOne(b *Branch) *BranchDeleteOne {
+	return c.DeleteOneID(b.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BranchClient) DeleteOneID(id int) *BranchDeleteOne {
+	builder := c.Delete().Where(branch.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BranchDeleteOne{builder}
+}
+
+// Query returns a query builder for Branch.
+func (c *BranchClient) Query() *BranchQuery {
+	return &BranchQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBranch},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Branch entity by its id.
+func (c *BranchClient) Get(ctx context.Context, id int) (*Branch, error) {
+	return c.Query().Where(branch.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BranchClient) GetX(ctx context.Context, id int) *Branch {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *BranchClient) Hooks() []Hook {
+	return c.hooks.Branch
+}
+
+// Interceptors returns the client interceptors.
+func (c *BranchClient) Interceptors() []Interceptor {
+	return c.inters.Branch
+}
+
+func (c *BranchClient) mutate(ctx context.Context, m *BranchMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BranchCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BranchUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BranchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BranchDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Branch mutation op: %q", m.Op())
 	}
 }
 
@@ -618,13 +771,146 @@ func (c *PARowClient) mutate(ctx context.Context, m *PARowMutation) (Value, erro
 	}
 }
 
+// TransClient is a client for the Trans schema.
+type TransClient struct {
+	config
+}
+
+// NewTransClient returns a client for the Trans from the given config.
+func NewTransClient(c config) *TransClient {
+	return &TransClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `trans.Hooks(f(g(h())))`.
+func (c *TransClient) Use(hooks ...Hook) {
+	c.hooks.Trans = append(c.hooks.Trans, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `trans.Intercept(f(g(h())))`.
+func (c *TransClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Trans = append(c.inters.Trans, interceptors...)
+}
+
+// Create returns a builder for creating a Trans entity.
+func (c *TransClient) Create() *TransCreate {
+	mutation := newTransMutation(c.config, OpCreate)
+	return &TransCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Trans entities.
+func (c *TransClient) CreateBulk(builders ...*TransCreate) *TransCreateBulk {
+	return &TransCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TransClient) MapCreateBulk(slice any, setFunc func(*TransCreate, int)) *TransCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TransCreateBulk{err: fmt.Errorf("calling to TransClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TransCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TransCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Trans.
+func (c *TransClient) Update() *TransUpdate {
+	mutation := newTransMutation(c.config, OpUpdate)
+	return &TransUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TransClient) UpdateOne(t *Trans) *TransUpdateOne {
+	mutation := newTransMutation(c.config, OpUpdateOne, withTrans(t))
+	return &TransUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TransClient) UpdateOneID(id int) *TransUpdateOne {
+	mutation := newTransMutation(c.config, OpUpdateOne, withTransID(id))
+	return &TransUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Trans.
+func (c *TransClient) Delete() *TransDelete {
+	mutation := newTransMutation(c.config, OpDelete)
+	return &TransDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TransClient) DeleteOne(t *Trans) *TransDeleteOne {
+	return c.DeleteOneID(t.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TransClient) DeleteOneID(id int) *TransDeleteOne {
+	builder := c.Delete().Where(trans.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TransDeleteOne{builder}
+}
+
+// Query returns a query builder for Trans.
+func (c *TransClient) Query() *TransQuery {
+	return &TransQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTrans},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Trans entity by its id.
+func (c *TransClient) Get(ctx context.Context, id int) (*Trans, error) {
+	return c.Query().Where(trans.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TransClient) GetX(ctx context.Context, id int) *Trans {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TransClient) Hooks() []Hook {
+	return c.hooks.Trans
+}
+
+// Interceptors returns the client interceptors.
+func (c *TransClient) Interceptors() []Interceptor {
+	return c.inters.Trans
+}
+
+func (c *TransClient) mutate(ctx context.Context, m *TransMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TransCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TransUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TransUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TransDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Trans mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		AsyncTask, PAHead, PARow []ent.Hook
+		AsyncTask, Branch, PAHead, PARow, Trans []ent.Hook
 	}
 	inters struct {
-		AsyncTask, PAHead, PARow []ent.Interceptor
+		AsyncTask, Branch, PAHead, PARow, Trans []ent.Interceptor
 	}
 )
 

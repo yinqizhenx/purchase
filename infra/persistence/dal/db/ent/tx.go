@@ -16,10 +16,14 @@ type Tx struct {
 	config
 	// AsyncTask is the client for interacting with the AsyncTask builders.
 	AsyncTask *AsyncTaskClient
+	// Branch is the client for interacting with the Branch builders.
+	Branch *BranchClient
 	// PAHead is the client for interacting with the PAHead builders.
 	PAHead *PAHeadClient
 	// PARow is the client for interacting with the PARow builders.
 	PARow *PARowClient
+	// Trans is the client for interacting with the Trans builders.
+	Trans *TransClient
 
 	// lazily loaded.
 	client     *Client
@@ -152,8 +156,10 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.AsyncTask = NewAsyncTaskClient(tx.config)
+	tx.Branch = NewBranchClient(tx.config)
 	tx.PAHead = NewPAHeadClient(tx.config)
 	tx.PARow = NewPARowClient(tx.config)
+	tx.Trans = NewTransClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.
