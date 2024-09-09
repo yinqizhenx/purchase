@@ -3,11 +3,11 @@ package dtx
 import (
 	"context"
 	"fmt"
+	"purchase/infra/utils"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"purchase/infra/utils"
 	"purchase/pkg/retry"
 
 	"purchase/infra/logx"
@@ -118,6 +118,10 @@ func (s *Saga) tryUpdateSuccess(ctx context.Context) {
 		if !stp.isSuccess() {
 			return
 		}
+	}
+	// 修改全局事务成功，防止并发同时close(s.errCh)
+	if !s.state.CompareAndSwap(0, 2) {
+		return
 	}
 	if err := s.storage.UpdateTransState(ctx, s.id, "tx_success"); err != nil {
 		logx.Errorf(ctx, "update branch state fail: %v", err)

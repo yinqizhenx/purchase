@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 )
 
 func NewDistributeTxManager(s TransStorage) *DistributeTxManager {
@@ -38,10 +39,12 @@ func (txm *DistributeTxManager) NewTx(ctx context.Context) *Saga {
 
 func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) (*Saga, error) {
 	trans := &Saga{
+		id:      uuid.NewString(),
 		storage: txm.storage,
 		errCh:   make(chan error, 1),
 	}
 	head := &Step{
+		id:   uuid.NewString(),
 		saga: trans,
 		name: "head",
 		action: Caller{
@@ -57,6 +60,7 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 	stepMap := make(map[string]*Step)
 	for _, s := range steps {
 		stp := &Step{
+			id:   uuid.NewString(),
 			saga: trans,
 			name: s.Name,
 			action: Caller{
