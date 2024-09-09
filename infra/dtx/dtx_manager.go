@@ -40,12 +40,12 @@ func (d *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) 
 			saga: trans,
 			name: s.Name,
 			action: Caller{
-				fn:      d.handlers[s.Action.Name],
-				payload: s.Action.Payload,
+				fn:      d.handlers[s.Action],
+				payload: s.Payload,
 			},
 			compensate: Caller{
-				fn:      d.handlers[s.Compensate.Name],
-				payload: s.Compensate.Payload,
+				fn:      d.handlers[s.Compensate],
+				payload: s.Payload,
 			},
 			actionCh:     make(chan struct{}),
 			compensateCh: make(chan struct{}),
@@ -55,7 +55,7 @@ func (d *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) 
 	}
 
 	for _, stp := range steps {
-		for _, dp := range stp.Action.depend {
+		for _, dp := range stp.Depend {
 			if _, ok := stepMap[dp]; !ok {
 				return nil, errors.New(fmt.Sprintf("depend not exist: %s", dp))
 			}
@@ -63,15 +63,16 @@ func (d *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep) 
 	}
 
 	for i := 0; i < len(steps); i++ {
-		if steps[i].Action.isNoDepend() {
+		if steps[i].isNoDepend() {
+			trans.head.next = append(trans.head.next, stepMap[steps[i].Name])
 			stepMap[steps[i].Name].previous = append(stepMap[steps[i].Name].previous, trans.head)
 		}
 		for j := 0; j != i && j < len(steps); j++ {
-			if steps[j].Action.isDependOn(steps[i].Action) {
+			if steps[j].isDependOn(steps[i]) {
 				stepMap[steps[j].Name].previous = append(stepMap[steps[j].Name].previous, stepMap[steps[i].Name])
 				stepMap[steps[i].Name].next = append(stepMap[steps[i].Name].next, stepMap[steps[j].Name])
 			}
-			if steps[j].Compensate.isDependOn(steps[i].Compensate) {
+			if steps[j].isDependOn(steps[i]) {
 				stepMap[steps[j].Name].compensatePrevious = append(stepMap[steps[j].Name].compensatePrevious, stepMap[steps[i].Name])
 				stepMap[steps[i].Name].compensateNext = append(stepMap[steps[i].Name].compensateNext, stepMap[steps[j].Name])
 			}
@@ -88,8 +89,8 @@ func (d *DistributeTxManager) RegisterHandler(ctx context.Context) error {
 	return nil
 }
 
-func (h *TransHandler) isDependOn(t TransHandler) bool {
-	for _, d := range h.depend {
+func (h *SagaStep) isDependOn(t *SagaStep) bool {
+	for _, d := range h.Depend {
 		if d == t.Name {
 			return true
 		}
@@ -97,8 +98,8 @@ func (h *TransHandler) isDependOn(t TransHandler) bool {
 	return false
 }
 
-func (h *TransHandler) isNoDepend() bool {
-	return len(h.depend) == 0
+func (h *SagaStep) isNoDepend() bool {
+	return len(h.Depend) == 0
 }
 
 type TransHandler struct {
@@ -117,13 +118,15 @@ func NewTransHandler(name string, payload []byte, depends ...string) TransHandle
 
 type SagaStep struct {
 	Name       string
-	Action     TransHandler
-	Compensate TransHandler
+	Action     string
+	Compensate string
+	Payload    []byte
+	Depend     []string
 }
 
 func isActionCircleDepend(ctx context.Context, s string, exist map[string]struct{}, m map[string]*SagaStep) bool {
 	start := m[s]
-	for _, d := range start.Action.depend {
+	for _, d := range start.Depend {
 		if _, ok := exist[d]; ok {
 			logx.Error(ctx, "存在循环依赖")
 			return true
