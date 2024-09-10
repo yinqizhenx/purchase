@@ -147,6 +147,10 @@ func (s *Saga) syncStateChange(ctx context.Context) error {
 	return s.storage.UpdateTransState(ctx, s.id, newState)
 }
 
+func (s *Saga) isFailed() bool {
+	return s.state.Load() == 1
+}
+
 func (s *Saga) close() {
 	for _, stp := range s.steps {
 		close(stp.closed)
@@ -198,6 +202,10 @@ func (s *Step) runAction(ctx context.Context) {
 		case <-s.closed:
 			return
 		case <-s.actionCh:
+			// 已经失败了则不执行
+			if s.saga.isFailed() {
+				return
+			}
 			fmt.Printf(fmt.Sprintf("收到action: %s", s.name))
 			// 等待所有依赖step执行成功
 			for _, stp := range s.previous {
@@ -321,11 +329,17 @@ func (s *Step) runCompensate(ctx context.Context) {
 			return
 		case <-s.compensateCh:
 			// 前序依赖step需要全部回滚完成或待执行
+			isPreviousCompensateDone := true
 			for _, stp := range s.compensatePrevious {
 				if stp.needCompensate() {
+					isPreviousCompensateDone = false
 					stp.compensateCh <- struct{}{}
-					continue
 				}
+			}
+
+			// 前序的补偿完成了，才能往下走
+			if !isPreviousCompensateDone {
+				continue
 			}
 
 			if !s.needCompensate() {
