@@ -2,6 +2,7 @@ package dtx
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -125,10 +126,24 @@ func (s *Saga) tryUpdateSuccess(ctx context.Context) {
 	if !s.state.CompareAndSwap(0, 2) {
 		return
 	}
-	if err := s.storage.UpdateTransState(ctx, s.id, "tx_success"); err != nil {
-		logx.Errorf(ctx, "update branch state fail: %v", err)
+	if err := s.syncStateChange(ctx); err != nil {
+		logx.Errorf(ctx, "update branch state success: %v", err)
 	}
 	s.close()
+}
+func (s *Saga) syncStateChange(ctx context.Context) error {
+	var newState string
+	switch s.state.Load() {
+	case 0:
+		newState = "pending"
+	case 1:
+		newState = "fail"
+	case 2:
+		newState = "success"
+	default:
+		return errors.New(fmt.Sprintf("unknown saga state : %d", s.state.Load()))
+	}
+	return s.storage.UpdateTransState(ctx, s.id, newState)
 }
 
 func (s *Saga) close() {
@@ -221,7 +236,7 @@ func (s *Step) onActionSuccess(ctx context.Context) {
 	s.mu.Lock()
 	s.state = StepActionSuccess
 	s.mu.Unlock()
-	err := s.saga.storage.UpdateBranchState(ctx, s.getActionID(), "action_success")
+	err := s.syncStateChange(ctx)
 	if err != nil {
 		logx.Errorf(ctx, "update branch state fail: %v", err)
 		// s.saga.errCh <- err
@@ -244,23 +259,46 @@ func (s *Step) onActionFail(ctx context.Context, err error) {
 	s.mu.Lock()
 	s.state = StepActionFail
 	s.mu.Unlock()
+	if err := s.syncStateChange(ctx); err != nil {
+		// todo 这里错误的处理，
+		// todo 要放在事务里吗
+		logx.Errorf(ctx, "update branch state fail: %v", err)
+	}
+
 	// 修改全局事务失败，控制多个同时fail
 	if !s.saga.state.CompareAndSwap(0, 1) {
 		return
 	}
 	s.saga.errCh <- err // 返回第一个失败的错误, 容量为1，不阻塞
-
-	if err := s.saga.storage.UpdateBranchState(ctx, s.getActionID(), "action_fail"); err != nil {
-		// todo 这里错误的处理，
-		// todo 要放在事务里吗
-		logx.Errorf(ctx, "update branch state fail: %v", err)
-	}
-	if err := s.saga.storage.UpdateTransState(ctx, s.saga.id, "tx_fail"); err != nil {
+	if err := s.saga.syncStateChange(ctx); err != nil {
 		// todo 这里错误的处理，
 		// todo 要放在事务里吗
 		logx.Errorf(ctx, "update branch state fail: %v", err)
 	}
 	s.compensateCh <- struct{}{} // 开始回滚
+}
+
+func (s *Step) syncStateChange(ctx context.Context) error {
+	var newState string
+	switch s.state {
+	case 0:
+		newState = "pending"
+	case 1:
+		newState = "in action"
+	case 2:
+		newState = "action fail"
+	case 3:
+		newState = "action success"
+	case 4:
+		newState = "in compensate"
+	case 5:
+		newState = "compensate fail"
+	case 6:
+		newState = "compensate success"
+	default:
+		return errors.New(fmt.Sprintf("unknown saga state : %d", s.state))
+	}
+	return s.saga.storage.UpdateBranchState(ctx, s.getActionID(), newState)
 }
 
 // isRunActionFinished 正向执行是否结束（成功或失败）
@@ -318,7 +356,7 @@ func (s *Step) onCompensateSuccess(ctx context.Context) {
 	s.mu.Lock()
 	s.state = StepCompensateSuccess
 	s.mu.Unlock()
-	if err := s.saga.storage.UpdateBranchState(ctx, s.getCompensateID(), "compensate_success"); err != nil {
+	if err := s.syncStateChange(ctx); err != nil {
 		// todo 这里错误的处理，
 		// todo 要放在事务里吗
 		logx.Errorf(ctx, "update branch state fail: %v", err)
@@ -332,7 +370,7 @@ func (s *Step) onCompensateFail(ctx context.Context) {
 	s.mu.Lock()
 	s.state = StepCompensateFail
 	s.mu.Unlock()
-	if err := s.saga.storage.UpdateBranchState(ctx, s.getCompensateID(), "compensate_fail"); err != nil {
+	if err := s.syncStateChange(ctx); err != nil {
 		// todo 这里错误的处理，
 		// todo 要放在事务里吗
 		logx.Errorf(ctx, "update branch state fail: %v", err)
