@@ -220,10 +220,11 @@ func (s *Step) runAction(ctx context.Context) {
 				continue
 			}
 
+			s.mu.Lock()
 			if !s.shouldRunAction() {
+				s.mu.Unlock()
 				continue
 			}
-			s.mu.Lock()
 			s.state = StepInAction
 			s.mu.Unlock()
 
@@ -324,6 +325,8 @@ func (s *Step) isRunActionFinished() bool {
 }
 
 func (s *Step) needCompensate() bool {
+	s.mu.Unlock()
+	defer s.mu.Unlock()
 	return s.state == StepActionSuccess || s.state == StepInAction || s.state == StepActionFail
 }
 
