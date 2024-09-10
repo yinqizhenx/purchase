@@ -208,17 +208,22 @@ func (s *Step) runAction(ctx context.Context) {
 			}
 			fmt.Printf(fmt.Sprintf("收到action: %s", s.name))
 			// 等待所有依赖step执行成功
+			isAllPreviousSuccess := true
 			for _, stp := range s.previous {
 				if !stp.isSuccess() {
+					isAllPreviousSuccess = false
 					continue
 				}
 			}
 
-			s.mu.Lock()
-			if !s.shouldRunAction() {
-				s.mu.Unlock()
+			if !isAllPreviousSuccess {
 				continue
 			}
+
+			if !s.shouldRunAction() {
+				continue
+			}
+			s.mu.Lock()
 			s.state = StepInAction
 			s.mu.Unlock()
 
@@ -268,17 +273,20 @@ func (s *Step) onActionFail(ctx context.Context, err error) {
 	s.mu.Lock()
 	s.state = StepActionFail
 	s.mu.Unlock()
+
+	// 修改全局事务失败，控制多个同时fail
+	if !s.saga.state.CompareAndSwap(0, 1) {
+		return
+	}
+
+	s.saga.errCh <- err // 返回第一个失败的错误, 容量为1，不阻塞
+
 	if err := s.syncStateChange(ctx); err != nil {
 		// todo 这里错误的处理，
 		// todo 要放在事务里吗
 		logx.Errorf(ctx, "update branch state fail: %v", err)
 	}
 
-	// 修改全局事务失败，控制多个同时fail
-	if !s.saga.state.CompareAndSwap(0, 1) {
-		return
-	}
-	s.saga.errCh <- err // 返回第一个失败的错误, 容量为1，不阻塞
 	if err := s.saga.syncStateChange(ctx); err != nil {
 		// todo 这里错误的处理，
 		// todo 要放在事务里吗
@@ -331,6 +339,7 @@ func (s *Step) runCompensate(ctx context.Context) {
 			// 前序依赖step需要全部回滚完成或待执行
 			isPreviousCompensateDone := true
 			for _, stp := range s.compensatePrevious {
+				// 此刻处于pending状态的step, 后续一定不会继续往下流转，不需要回滚
 				if stp.needCompensate() {
 					isPreviousCompensateDone = false
 					stp.compensateCh <- struct{}{}
@@ -342,7 +351,11 @@ func (s *Step) runCompensate(ctx context.Context) {
 				continue
 			}
 
+			// 当前节点无需补偿，直接通知下游补偿
 			if !s.needCompensate() {
+				for _, stp := range s.compensateNext {
+					stp.compensateCh <- struct{}{}
+				}
 				continue
 			}
 
