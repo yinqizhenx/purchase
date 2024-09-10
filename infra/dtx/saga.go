@@ -131,6 +131,7 @@ func (s *Saga) tryUpdateSuccess(ctx context.Context) {
 	}
 	s.close()
 }
+
 func (s *Saga) syncStateChange(ctx context.Context) error {
 	var newState string
 	switch s.state.Load() {
