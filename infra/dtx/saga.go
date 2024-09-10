@@ -3,10 +3,11 @@ package dtx
 import (
 	"context"
 	"fmt"
-	"purchase/infra/utils"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"purchase/infra/utils"
 
 	"purchase/pkg/retry"
 
@@ -127,13 +128,14 @@ func (s *Saga) tryUpdateSuccess(ctx context.Context) {
 	if err := s.storage.UpdateTransState(ctx, s.id, "tx_success"); err != nil {
 		logx.Errorf(ctx, "update branch state fail: %v", err)
 	}
-	close(s.errCh)
+	s.close()
 }
 
 func (s *Saga) close() {
 	for _, stp := range s.steps {
 		close(stp.closed)
 	}
+	close(s.errCh)
 }
 
 type Step struct {
