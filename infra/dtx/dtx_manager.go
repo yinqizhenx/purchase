@@ -150,24 +150,28 @@ var StepTest = []*SagaStep{
 		Name:       "step1",
 		Action:     "step1_action",
 		Compensate: "step1_rollback",
+		Depend:     []string{"step2"},
 		Payload:    nil,
 	},
 	{
 		Name:       "step2",
 		Action:     "step2_action",
 		Compensate: "step2_rollback",
+		Depend:     []string{"step1"},
 		Payload:    nil,
 	},
 	{
 		Name:       "step3",
 		Action:     "step3_action",
 		Compensate: "step3_rollback",
+		Depend:     []string{"step1"},
 		Payload:    nil,
 	},
 	{
 		Name:       "step4",
 		Action:     "step4_action",
 		Compensate: "step4_rollback",
+		Depend:     []string{"step1"},
 		Payload:    nil,
 	},
 }

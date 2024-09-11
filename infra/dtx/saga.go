@@ -310,10 +310,14 @@ func (s *Step) isRunActionFinished() bool {
 	return s.state == StepActionSuccess || s.state == StepActionFail
 }
 
-func (s *Step) needCompensate() bool {
+func (s *Step) shouldCompensate() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.state == StepActionSuccess || s.state == StepInAction || s.state == StepActionFail
+}
+
+func (s *Step) alreadyCompensated() bool {
+	return s.state == StepCompensateSuccess || s.state == StepInCompensate || s.state == StepCompensateFail
 }
 
 func (s *Step) runCompensate(ctx context.Context) {
@@ -330,7 +334,7 @@ func (s *Step) runCompensate(ctx context.Context) {
 			isPreviousCompensateDone := true
 			for _, stp := range s.compensatePrevious {
 				// 此刻处于pending状态的step, 后续一定不会继续往下流转，不需要回滚
-				if stp.needCompensate() {
+				if stp.shouldCompensate() {
 					isPreviousCompensateDone = false
 					stp.compensateCh <- struct{}{}
 				}
@@ -341,8 +345,13 @@ func (s *Step) runCompensate(ctx context.Context) {
 				continue
 			}
 
-			// 当前节点无需补偿，直接通知下游补偿
-			if !s.needCompensate() {
+			// 当前节点不应该补偿，
+			if !s.shouldCompensate() {
+				// 已经补偿过了（某个step同时以来多个step时，依赖step补偿完成都会通知该step, 避免补偿多次）
+				if s.alreadyCompensated() {
+					continue
+				}
+				// 无需补偿，直接通知下游补偿
 				for _, stp := range s.compensateNext {
 					stp.compensateCh <- struct{}{}
 				}
