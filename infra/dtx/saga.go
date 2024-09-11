@@ -91,8 +91,8 @@ func (s *Saga) sync(ctx context.Context) error {
 	}
 	branchList := make([]*Branch, 0)
 	for _, stp := range s.steps {
-		branchAction := &Branch{
-			BranchID:         stp.getActionID(),
+		branch := &Branch{
+			BranchID:         stp.id,
 			TransID:          stp.saga.id,
 			Type:             "action",
 			State:            "pending",
@@ -108,24 +108,7 @@ func (s *Saga) sync(ctx context.Context) error {
 			UpdatedBy:        "dd",
 			UpdatedAt:        time.Now(),
 		}
-		branchCompensate := &Branch{
-			BranchID:         stp.getCompensateID(),
-			TransID:          stp.saga.id,
-			Type:             "compensate",
-			State:            "pending",
-			Name:             stp.name,
-			Executor:         "stp.compensate.name",
-			Payload:          "stp.action.payload",
-			ActionDepend:     "1",
-			CompensateDepend: "1",
-			FinishedAt:       time.Now(),
-			IsDead:           false,
-			CreatedAt:        time.Now(),
-			CreatedBy:        "uy",
-			UpdatedBy:        "dd",
-			UpdatedAt:        time.Now(),
-		}
-		branchList = append(branchList, branchAction, branchCompensate)
+		branchList = append(branchList, branch)
 	}
 	err := s.storage.SaveTrans(ctx, tx)
 	if err != nil {
@@ -285,13 +268,13 @@ func (s *Step) onActionSuccess(ctx context.Context) {
 	}
 }
 
-func (s *Step) getActionID() string {
-	return s.id + "_1"
-}
-
-func (s *Step) getCompensateID() string {
-	return s.id + "_2"
-}
+// func (s *Step) getActionID() string {
+// 	return s.id + "_1"
+// }
+//
+// func (s *Step) getCompensateID() string {
+// 	return s.id + "_2"
+// }
 
 func (s *Step) onActionFail(ctx context.Context, err error) {
 	s.mu.Lock()
@@ -339,7 +322,7 @@ func (s *Step) syncStateChange(ctx context.Context) error {
 	default:
 		return errors.New(fmt.Sprintf("unknown saga state : %d", s.state))
 	}
-	return s.saga.storage.UpdateBranchState(ctx, s.getActionID(), newState)
+	return s.saga.storage.UpdateBranchState(ctx, s.id, newState)
 }
 
 // isRunActionFinished 正向执行是否结束（成功或失败）
