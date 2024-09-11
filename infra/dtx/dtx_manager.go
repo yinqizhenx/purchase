@@ -43,7 +43,7 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 	trans := &Saga{
 		id:      uuid.NewString(),
 		storage: txm.storage,
-		errCh:   make(chan error, 1),
+		errCh:   make(chan error),
 		done:    make(chan struct{}),
 	}
 	root := &Step{

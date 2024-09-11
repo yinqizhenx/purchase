@@ -72,9 +72,9 @@ func (s *Saga) AsyncExec() {
 
 	select {
 	case <-ctx.Done():
-		fmt.Printf("context done 退出AsyncExec")
+		fmt.Println("context done 退出AsyncExec")
 	case <-s.done:
-		fmt.Printf("执行完成 退出AsyncExec")
+		fmt.Println("执行完成 退出AsyncExec")
 	}
 }
 
@@ -233,6 +233,7 @@ func (s *Step) runAction(ctx context.Context) {
 			}
 			s.state = StepInAction
 			s.mu.Unlock()
+			s.syncStateChange(ctx)
 
 			err := s.action.run(ctx)
 			if err != nil {
@@ -254,39 +255,15 @@ func (s *Step) shouldRunAction() bool {
 }
 
 func (s *Step) onActionSuccess(ctx context.Context) {
-	s.mu.Lock()
-	s.state = StepActionSuccess
-	s.mu.Unlock()
-	err := s.syncStateChange(ctx)
-	if err != nil {
-		logx.Errorf(ctx, "update branch state fail: %v", err)
-		// s.saga.errCh <- err
-	}
+	s.changeState(ctx, StepActionSuccess)
 	s.saga.tryUpdateSuccess(ctx)
 	for _, stp := range s.next {
 		stp.actionCh <- struct{}{}
 	}
 }
 
-// func (s *Step) getActionID() string {
-// 	return s.id + "_1"
-// }
-//
-// func (s *Step) getCompensateID() string {
-// 	return s.id + "_2"
-// }
-
 func (s *Step) onActionFail(ctx context.Context, err error) {
-	s.mu.Lock()
-	s.state = StepActionFail
-	s.mu.Unlock()
-
-	if err := s.syncStateChange(ctx); err != nil {
-		// todo 这里错误的处理，
-		// todo 要放在事务里吗
-		logx.Errorf(ctx, "update branch state fail: %v", err)
-	}
-
+	s.changeState(ctx, StepActionFail)
 	// 修改全局事务失败，控制多个同时fail
 	if !s.saga.state.CompareAndSwap(0, 1) {
 		return
@@ -302,7 +279,7 @@ func (s *Step) onActionFail(ctx context.Context, err error) {
 	s.compensateCh <- struct{}{} // 开始回滚
 }
 
-func (s *Step) syncStateChange(ctx context.Context) error {
+func (s *Step) syncStateChange(ctx context.Context) {
 	var newState string
 	switch s.state {
 	case 0:
@@ -320,9 +297,12 @@ func (s *Step) syncStateChange(ctx context.Context) error {
 	case 6:
 		newState = "compensate fail"
 	default:
-		return errors.New(fmt.Sprintf("unknown saga state : %d", s.state))
+		logx.Errorf(ctx, "unknown saga state : %d", s.state)
 	}
-	return s.saga.storage.UpdateBranchState(ctx, s.id, newState)
+	err := s.saga.storage.UpdateBranchState(ctx, s.id, newState)
+	if err != nil {
+		logx.Errorf(ctx, "sync branch state change fail, err:%v", err)
+	}
 }
 
 // isRunActionFinished 正向执行是否结束（成功或失败）
@@ -374,9 +354,7 @@ func (s *Step) runCompensate(ctx context.Context) {
 			}
 
 			fmt.Println(fmt.Sprintf("执行compensate: %s", s.name))
-			s.mu.Lock()
-			s.state = StepInCompensate
-			s.mu.Unlock()
+			s.changeState(ctx, StepInCompensate)
 
 			err := retry.Run(func() error {
 				return s.compensate.run(ctx)
@@ -392,30 +370,22 @@ func (s *Step) runCompensate(ctx context.Context) {
 }
 
 func (s *Step) onCompensateSuccess(ctx context.Context) {
-	s.mu.Lock()
-	s.state = StepCompensateSuccess
-	s.mu.Unlock()
-	if err := s.syncStateChange(ctx); err != nil {
-		// todo 这里错误的处理，
-		// todo 要放在事务里吗
-		logx.Errorf(ctx, "update branch state fail: %v", err)
-	}
+	s.changeState(ctx, StepCompensateSuccess)
 	for _, stp := range s.compensateNext {
 		stp.compensateCh <- struct{}{}
 	}
 }
 
 func (s *Step) onCompensateFail(ctx context.Context) {
-	s.mu.Lock()
-	s.state = StepCompensateFail
-	s.mu.Unlock()
-	if err := s.syncStateChange(ctx); err != nil {
-		// todo 这里错误的处理，
-		// todo 要放在事务里吗
-		logx.Errorf(ctx, "update branch state fail: %v", err)
-	}
+	s.changeState(ctx, StepCompensateFail)
 	// todo 更新db任务状态，人工介入, 其他回滚是否要继续执行
-	return
+}
+
+func (s *Step) changeState(ctx context.Context, state StepStatus) {
+	s.mu.Lock()
+	s.state = state
+	s.mu.Unlock()
+	s.syncStateChange(ctx)
 }
 
 func (s *Step) isCircleDepend() bool {
