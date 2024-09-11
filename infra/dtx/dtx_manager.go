@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -94,6 +95,8 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 		if step.hasNoDepend() {
 			trans.head.next = append(trans.head.next, stepMap[step.Name])
 			stepMap[step.Name].previous = append(stepMap[step.Name].previous, trans.head)
+			trans.head.compensatePrevious = append(trans.head.compensatePrevious, stepMap[step.Name])
+			stepMap[step.Name].compensateNext = append(stepMap[step.Name].compensateNext, trans.head)
 		}
 		for _, d := range step.Depend {
 			stepMap[step.Name].previous = append(stepMap[step.Name].previous, stepMap[d])
@@ -192,8 +195,9 @@ func registerForTest(txm *DistributeTxManager) {
 		return nil
 	})
 	txm.RegisterHandler("step4_action", func(ctx context.Context, payload []byte) error {
+		time.Sleep(1 * time.Second)
 		fmt.Println("run step4_action")
-		return nil
+		return errors.New("ssccc")
 	})
 	txm.RegisterHandler("step4_rollback", func(ctx context.Context, payload []byte) error {
 		fmt.Println("run step4_rollback")

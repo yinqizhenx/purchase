@@ -56,6 +56,9 @@ func (s *Saga) AsyncExec() {
 	utils.SafeGo(ctx, func() {
 		s.head.runAction(ctx)
 	})
+	utils.SafeGo(ctx, func() {
+		s.head.runCompensate(ctx)
+	})
 	for _, step := range s.steps {
 		stp := step // 重新赋值，防止step引用变化
 		utils.SafeGo(ctx, func() {
@@ -226,7 +229,7 @@ func (s *Step) runAction(ctx context.Context) {
 			if s.saga.isFailed() {
 				return
 			}
-			fmt.Printf(fmt.Sprintf("收到action: %s", s.name))
+			fmt.Println(fmt.Sprintf("收到action: %s", s.name))
 			// 等待所有依赖step执行成功
 			isAllPreviousSuccess := true
 			for _, stp := range s.previous {
@@ -360,6 +363,7 @@ func (s *Step) runCompensate(ctx context.Context) {
 			return
 		case <-s.compensateCh:
 			// 前序依赖step需要全部回滚完成或待执行
+			fmt.Println(fmt.Sprintf("收到compensate: %s", s.name))
 			isPreviousCompensateDone := true
 			for _, stp := range s.compensatePrevious {
 				// 此刻处于pending状态的step, 后续一定不会继续往下流转，不需要回滚
@@ -386,6 +390,7 @@ func (s *Step) runCompensate(ctx context.Context) {
 			for !s.isRunActionFinished() {
 			}
 
+			fmt.Println(fmt.Sprintf("执行compensate: %s", s.name))
 			s.mu.Lock()
 			s.state = StepInCompensate
 			s.mu.Unlock()
