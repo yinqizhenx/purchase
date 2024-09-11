@@ -109,9 +109,16 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 		}
 	}
 
-	if trans.root.isCircleDepend() {
-		return nil, errors.New("exist circle depend")
+	if len(trans.root.next) == 0 {
+		return nil, errors.New("exist circle depend, root next can not be empty")
 	}
+
+	for _, stp := range stepMap {
+		if stp.isCircleDepend() {
+			return nil, errors.New("exist circle depend")
+		}
+	}
+
 	for _, stp := range stepMap {
 		trans.steps = append(trans.steps, stp)
 	}
@@ -150,28 +157,28 @@ var StepTest = []*SagaStep{
 		Name:       "step1",
 		Action:     "step1_action",
 		Compensate: "step1_rollback",
-		Depend:     []string{"step2"},
+		Depend:     nil,
 		Payload:    nil,
 	},
 	{
 		Name:       "step2",
 		Action:     "step2_action",
 		Compensate: "step2_rollback",
-		Depend:     []string{"step1"},
+		Depend:     []string{"step3"},
 		Payload:    nil,
 	},
 	{
 		Name:       "step3",
 		Action:     "step3_action",
 		Compensate: "step3_rollback",
-		Depend:     []string{"step1"},
+		Depend:     []string{"step4"},
 		Payload:    nil,
 	},
 	{
 		Name:       "step4",
 		Action:     "step4_action",
 		Compensate: "step4_rollback",
-		Depend:     []string{"step1"},
+		Depend:     nil,
 		Payload:    nil,
 	},
 }
