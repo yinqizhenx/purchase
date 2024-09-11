@@ -54,7 +54,10 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 			fn: func(context.Context, []byte) error { return nil },
 		},
 		compensate: Caller{
-			fn: func(context.Context, []byte) error { return nil },
+			fn: func(context.Context, []byte) error {
+				trans.close()
+				return nil
+			},
 		},
 		actionCh:     make(chan struct{}),
 		compensateCh: make(chan struct{}),
