@@ -15,6 +15,10 @@ import (
 	"purchase/infra/logx"
 )
 
+const (
+	defaultTimeout = 10 * time.Second
+)
+
 func NewSaga() *Saga {
 	s := &Saga{}
 	return s
@@ -28,19 +32,27 @@ type Saga struct {
 	state   atomic.Int32 // 0 - 执行中， 1 - 失败， 2 - 成功
 	errCh   chan error   // 正向执行的错误channel，容量为1
 	storage TransStorage
+	timeout time.Duration
+	done    chan struct{}
 }
 
 func (s *Saga) Exec(ctx context.Context) error {
-	s.AsyncExec(ctx)
+	utils.SafeGo(ctx, func() {
+		s.AsyncExec()
+	})
 	return <-s.errCh
 }
 
-func (s *Saga) AsyncExec(ctx context.Context) {
+func (s *Saga) AsyncExec() {
+	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
+	defer cancel()
+
 	err := s.sync(ctx)
 	if err != nil {
 		s.errCh <- err
 		return
 	}
+
 	utils.SafeGo(ctx, func() {
 		s.head.runAction(ctx)
 	})
@@ -54,6 +66,13 @@ func (s *Saga) AsyncExec(ctx context.Context) {
 		})
 	}
 	s.head.actionCh <- struct{}{}
+
+	select {
+	case <-ctx.Done():
+		fmt.Printf("context done 退出AsyncExec")
+	case <-s.done:
+		fmt.Printf("执行完成 退出AsyncExec")
+	}
 }
 
 func (s *Saga) sync(ctx context.Context) error {
@@ -156,6 +175,7 @@ func (s *Saga) close() {
 		close(stp.closed)
 	}
 	close(s.errCh)
+	close(s.done)
 }
 
 type Step struct {
@@ -325,7 +345,7 @@ func (s *Step) isRunActionFinished() bool {
 }
 
 func (s *Step) needCompensate() bool {
-	s.mu.Unlock()
+	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.state == StepActionSuccess || s.state == StepInAction || s.state == StepActionFail
 }

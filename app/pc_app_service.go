@@ -37,17 +37,19 @@ func (s *PaymentCenterAppService) AddPaymentApply(ctx context.Context, req *pb.A
 	if err != nil {
 		return nil, err
 	}
-	err = s.txm.Transaction(ctx, func(ctx context.Context) error {
-		return s.paSrv.SavePA(ctx, pa)
-	})
-	if err != nil {
-		return nil, err
-	}
+
 	sg, err := s.dtm.NewSagaTx(ctx, dtx.StepTest)
 	if err != nil {
 		return nil, err
 	}
 	err = sg.Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.txm.Transaction(ctx, func(ctx context.Context) error {
+		return s.paSrv.SavePA(ctx, pa)
+	})
 	if err != nil {
 		return nil, err
 	}
