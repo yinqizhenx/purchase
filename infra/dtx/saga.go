@@ -275,18 +275,18 @@ func (s *Step) onActionFail(ctx context.Context, err error) {
 	s.state = StepActionFail
 	s.mu.Unlock()
 
+	if err := s.syncStateChange(ctx); err != nil {
+		// todo 这里错误的处理，
+		// todo 要放在事务里吗
+		logx.Errorf(ctx, "update branch state fail: %v", err)
+	}
+
 	// 修改全局事务失败，控制多个同时fail
 	if !s.saga.state.CompareAndSwap(0, 1) {
 		return
 	}
 
 	s.saga.errCh <- err // 返回第一个失败的错误, 容量为1，不阻塞
-
-	if err := s.syncStateChange(ctx); err != nil {
-		// todo 这里错误的处理，
-		// todo 要放在事务里吗
-		logx.Errorf(ctx, "update branch state fail: %v", err)
-	}
 
 	if err := s.saga.syncStateChange(ctx); err != nil {
 		// todo 这里错误的处理，
