@@ -26,7 +26,7 @@ func NewSaga() *Saga {
 
 type Saga struct {
 	id    string
-	head  *Step
+	root  *Step
 	steps []*Step
 	// order   map[string][]string
 	state   atomic.Int32 // 0 - 执行中， 1 - 失败， 2 - 成功
@@ -54,10 +54,10 @@ func (s *Saga) AsyncExec() {
 	}
 
 	utils.SafeGo(ctx, func() {
-		s.head.runAction(ctx)
+		s.root.runAction(ctx)
 	})
 	utils.SafeGo(ctx, func() {
-		s.head.runCompensate(ctx)
+		s.root.runCompensate(ctx)
 	})
 	for _, step := range s.steps {
 		stp := step // 重新赋值，防止step引用变化
@@ -68,7 +68,7 @@ func (s *Saga) AsyncExec() {
 			stp.runCompensate(ctx)
 		})
 	}
-	s.head.actionCh <- struct{}{}
+	s.root.actionCh <- struct{}{}
 
 	select {
 	case <-ctx.Done():
@@ -333,9 +333,9 @@ func (s *Step) syncStateChange(ctx context.Context) error {
 	case 4:
 		newState = "in compensate"
 	case 5:
-		newState = "compensate fail"
-	case 6:
 		newState = "compensate success"
+	case 6:
+		newState = "compensate fail"
 	default:
 		return errors.New(fmt.Sprintf("unknown saga state : %d", s.state))
 	}

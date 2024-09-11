@@ -46,10 +46,10 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 		errCh:   make(chan error, 1),
 		done:    make(chan struct{}),
 	}
-	head := &Step{
+	root := &Step{
 		id:   uuid.NewString(),
 		saga: trans,
-		name: "head",
+		name: "root",
 		action: Caller{
 			fn: func(context.Context, []byte) error { return nil },
 		},
@@ -62,7 +62,7 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 		actionCh:     make(chan struct{}),
 		compensateCh: make(chan struct{}),
 	}
-	trans.head = head
+	trans.root = root
 	stepMap := make(map[string]*Step)
 	for _, s := range steps {
 		stp := &Step{
@@ -96,10 +96,10 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 
 	for _, step := range steps {
 		if step.hasNoDepend() {
-			trans.head.next = append(trans.head.next, stepMap[step.Name])
-			stepMap[step.Name].previous = append(stepMap[step.Name].previous, trans.head)
-			trans.head.compensatePrevious = append(trans.head.compensatePrevious, stepMap[step.Name])
-			stepMap[step.Name].compensateNext = append(stepMap[step.Name].compensateNext, trans.head)
+			trans.root.next = append(trans.root.next, stepMap[step.Name])
+			stepMap[step.Name].previous = append(stepMap[step.Name].previous, trans.root)
+			trans.root.compensatePrevious = append(trans.root.compensatePrevious, stepMap[step.Name])
+			stepMap[step.Name].compensateNext = append(stepMap[step.Name].compensateNext, trans.root)
 		}
 		for _, d := range step.Depend {
 			stepMap[step.Name].previous = append(stepMap[step.Name].previous, stepMap[d])
@@ -109,7 +109,7 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 		}
 	}
 
-	if trans.head.isCircleDepend() {
+	if trans.root.isCircleDepend() {
 		return nil, errors.New("exist circle depend")
 	}
 	for _, stp := range stepMap {
