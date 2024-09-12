@@ -37,45 +37,45 @@ type Saga struct {
 }
 
 func (s *Saga) Exec(ctx context.Context) error {
-	utils.SafeGo(ctx, func() {
-		s.AsyncExec()
-	})
+	s.AsyncExec(ctx)
 	return <-s.errCh
 }
 
-func (s *Saga) AsyncExec() {
-	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
-	defer cancel()
-
-	err := s.sync(ctx)
-	if err != nil {
-		s.errCh <- err
-		return
-	}
-
+func (s *Saga) AsyncExec(ctx context.Context) {
 	utils.SafeGo(ctx, func() {
-		s.root.runAction(ctx)
-	})
-	utils.SafeGo(ctx, func() {
-		s.root.runCompensate(ctx)
-	})
-	for _, step := range s.steps {
-		stp := step // 重新赋值，防止step引用变化
+		ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
+		defer cancel()
+
+		err := s.sync(ctx)
+		if err != nil {
+			s.errCh <- err
+			return
+		}
+
 		utils.SafeGo(ctx, func() {
-			stp.runAction(ctx)
+			s.root.runAction(ctx)
 		})
 		utils.SafeGo(ctx, func() {
-			stp.runCompensate(ctx)
+			s.root.runCompensate(ctx)
 		})
-	}
-	s.root.actionCh <- struct{}{}
+		for _, step := range s.steps {
+			stp := step // 重新赋值，防止step引用变化
+			utils.SafeGo(ctx, func() {
+				stp.runAction(ctx)
+			})
+			utils.SafeGo(ctx, func() {
+				stp.runCompensate(ctx)
+			})
+		}
+		s.root.actionCh <- struct{}{}
 
-	select {
-	case <-ctx.Done():
-		fmt.Println("context done 退出AsyncExec")
-	case <-s.done:
-		fmt.Println("执行完成 退出AsyncExec")
-	}
+		select {
+		case <-ctx.Done():
+			fmt.Println("context done 退出AsyncExec")
+		case <-s.done:
+			fmt.Println("执行完成 退出AsyncExec")
+		}
+	})
 }
 
 func (s *Saga) sync(ctx context.Context) error {
