@@ -59,8 +59,10 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 				return nil
 			},
 		},
-		actionCh:     make(chan struct{}),
-		compensateCh: make(chan struct{}),
+		actionCh:       make(chan struct{}),
+		compensateCh:   make(chan struct{}),
+		actionDone:     make(chan error),
+		compensateDone: make(chan error),
 	}
 	trans.root = root
 	stepMap := make(map[string]*Step)
@@ -79,9 +81,11 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 				fn:      txm.handlers[s.Compensate],
 				payload: s.Payload,
 			},
-			actionCh:     make(chan struct{}),
-			compensateCh: make(chan struct{}),
-			closed:       make(chan struct{}),
+			actionCh:       make(chan struct{}),
+			compensateCh:   make(chan struct{}),
+			closed:         make(chan struct{}),
+			actionDone:     make(chan error),
+			compensateDone: make(chan error),
 		}
 		stepMap[s.Name] = stp
 	}
@@ -164,21 +168,21 @@ var StepTest = []*SagaStep{
 		Name:       "step2",
 		Action:     "step2_action",
 		Compensate: "step2_rollback",
-		Depend:     []string{"step3"},
+		Depend:     nil,
 		Payload:    nil,
 	},
 	{
 		Name:       "step3",
 		Action:     "step3_action",
 		Compensate: "step3_rollback",
-		Depend:     []string{"step4"},
+		Depend:     nil,
 		Payload:    nil,
 	},
 	{
 		Name:       "step4",
 		Action:     "step4_action",
 		Compensate: "step4_rollback",
-		Depend:     nil,
+		Depend:     []string{"step1", "step2", "step3"},
 		Payload:    nil,
 	},
 }

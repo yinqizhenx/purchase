@@ -179,6 +179,8 @@ type Step struct {
 	compensateCh       chan struct{}
 	closed             chan struct{}
 	mu                 sync.Mutex
+	actionDone         chan error
+	compensateDone     chan error
 }
 
 type StepStatus int
@@ -225,25 +227,65 @@ func (s *Step) runAction(ctx context.Context) {
 			if !isAllPreviousSuccess {
 				continue
 			}
+			// 给actionDone发消息，避免阻塞，放在go routine
+			utils.SafeGo(ctx, func() {
+				s.handleActionSignal(ctx)
+			})
 
-			s.mu.Lock()
-			if !s.shouldRunAction() {
-				s.mu.Unlock()
-				continue
-			}
-			s.state = StepInAction
-			s.mu.Unlock()
-			s.syncStateChange(ctx)
-
-			err := s.action.run(ctx)
+		case err := <-s.actionDone:
 			if err != nil {
 				logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
 				s.onActionFail(ctx, err)
 				return
 			}
 			s.onActionSuccess(ctx)
-			return
 		}
+	}
+}
+
+func (s *Step) handleActionSignal(ctx context.Context) {
+	switch s.state {
+	case StepPending:
+		s.changeState(ctx, StepInAction)
+		s.actionDone <- s.action.run(ctx)
+	case StepInAction:
+		s.actionDone <- s.action.run(ctx)
+	case StepActionSuccess:
+		s.actionDone <- nil
+	case StepActionFail:
+		s.actionDone <- errors.New("unknown error")
+	case StepInCompensate:
+		s.compensateDone <- retry.Run(func() error {
+			return s.compensate.run(ctx)
+		}, 2)
+	case StepCompensateSuccess:
+		s.compensateDone <- nil
+	case StepCompensateFail:
+		s.compensateDone <- errors.New("unknown error")
+	}
+}
+
+func (s *Step) handleCompensateSignal(ctx context.Context) {
+	switch s.state {
+	// case StepPending:
+	// 	s.changeState(ctx, StepInAction)
+	// 	s.actionDone <- s.action.run(ctx)
+	// case StepInAction:
+	// 	s.actionDone <- s.action.run(ctx)
+	case StepActionSuccess:
+		s.changeState(ctx, StepInCompensate)
+		s.compensateDone <- nil
+	case StepActionFail:
+		s.changeState(ctx, StepInCompensate)
+		s.compensateDone <- errors.New("unknown error")
+	case StepInCompensate:
+		s.compensateDone <- retry.Run(func() error {
+			return s.compensate.run(ctx)
+		}, 2)
+		// case StepCompensateSuccess:
+		// 	s.compensateDone <- nil
+		// case StepCompensateFail:
+		// 	s.compensateDone <- errors.New("unknown error")
 	}
 }
 
@@ -361,13 +403,10 @@ func (s *Step) runCompensate(ctx context.Context) {
 			// 阻塞，直到当前action执行结束
 			for !s.isRunActionFinished() {
 			}
-
-			fmt.Println(fmt.Sprintf("执行compensate: %s", s.name))
-			s.changeState(ctx, StepInCompensate)
-
-			err := retry.Run(func() error {
-				return s.compensate.run(ctx)
-			}, 2)
+			utils.SafeGo(ctx, func() {
+				s.handleCompensateSignal(ctx)
+			})
+		case err := <-s.compensateDone:
 			if err != nil {
 				logx.Errorf(ctx, "step[%s] run compensate fail after retry 2 times: %v", s.name, err)
 				s.onCompensateFail(ctx)
