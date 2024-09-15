@@ -30,7 +30,8 @@ type Branch struct {
 	Type             string
 	State            string
 	Name             string
-	Executor         string
+	Action           string
+	Compensate       string
 	Payload          string
 	ActionDepend     string
 	CompensateDepend string
@@ -54,4 +55,6 @@ type TransStorage interface {
 	SaveBranch(ctx context.Context, branchList []*Branch) error
 	UpdateTransState(ctx context.Context, transID, newState string) error
 	UpdateBranchState(ctx context.Context, branchID, newState string) error
+	GetPendingTrans(ctx context.Context) (map[string]*Trans, error)
+	MustGetBranchesByTransIDList(ctx context.Context, transIDList []string) (map[string][]*Branch, error)
 }

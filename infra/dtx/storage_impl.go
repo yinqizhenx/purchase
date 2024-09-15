@@ -2,6 +2,8 @@ package dtx
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/google/wire"
 
@@ -99,6 +101,35 @@ func (s *StorageImpl) UpdateBranchState(ctx context.Context, branchID string, ne
 	return err
 }
 
+func (s *StorageImpl) GetPendingTrans(ctx context.Context) (map[string]*Trans, error) {
+	transList, err := s.getTransClient(ctx).Query().Where(trans.State("pending")).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	transMap := make(map[string]*Trans)
+	for _, t := range transList {
+		transMap[t.TransID] = ConvertTrans(t)
+	}
+	return transMap, nil
+}
+
+func (s *StorageImpl) MustGetBranchesByTransIDList(ctx context.Context, transIDList []string) (map[string][]*Branch, error) {
+	branchMap := make(map[string][]*Branch)
+	branchList, err := s.getBranchClient(ctx).Query().Where(branch.TransIDIn(transIDList...)).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, b := range branchList {
+		branchMap[b.TransID] = append(branchMap[b.TransID], ConvertBranch(b))
+	}
+	for _, transID := range transIDList {
+		if _, ok := branchMap[transID]; !ok {
+			return nil, errors.New(fmt.Sprintf("branch with transID[%s] not found", transID))
+		}
+	}
+	return branchMap, nil
+}
+
 func ConvertTrans(t *ent.Trans) *Trans {
 	return &Trans{
 		TransID:    t.TransID,
@@ -107,5 +138,24 @@ func ConvertTrans(t *ent.Trans) *Trans {
 		FinishedAt: t.FinishedAt,
 		CreatedAt:  t.CreatedAt,
 		CreatedBy:  t.CreatedBy,
+	}
+}
+
+func ConvertBranch(b *ent.Branch) *Branch {
+	return &Branch{
+		BranchID:         b.BranchID,
+		TransID:          b.TransID,
+		Type:             b.Type,
+		State:            b.State,
+		Name:             b.Name,
+		Executor:         b.Executor,
+		Payload:          b.Payload,
+		ActionDepend:     b.ActionDepend,
+		CompensateDepend: b.CompensateDepend,
+		FinishedAt:       b.FinishedAt,
+		CreatedAt:        b.CreatedAt,
+		CreatedBy:        b.CreatedBy,
+		UpdatedAt:        b.UpdatedAt,
+		IsDead:           b.IsDead,
 	}
 }
