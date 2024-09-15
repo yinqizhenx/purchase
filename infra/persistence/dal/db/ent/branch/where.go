@@ -79,9 +79,14 @@ func Name(v string) predicate.Branch {
 	return predicate.Branch(sql.FieldEQ(FieldName, v))
 }
 
-// Executor applies equality check predicate on the "executor" field. It's identical to ExecutorEQ.
-func Executor(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldEQ(FieldExecutor, v))
+// Action applies equality check predicate on the "action" field. It's identical to ActionEQ.
+func Action(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldEQ(FieldAction, v))
+}
+
+// Compensate applies equality check predicate on the "compensate" field. It's identical to CompensateEQ.
+func Compensate(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldEQ(FieldCompensate, v))
 }
 
 // Payload applies equality check predicate on the "payload" field. It's identical to PayloadEQ.
@@ -454,69 +459,134 @@ func NameContainsFold(v string) predicate.Branch {
 	return predicate.Branch(sql.FieldContainsFold(FieldName, v))
 }
 
-// ExecutorEQ applies the EQ predicate on the "executor" field.
-func ExecutorEQ(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldEQ(FieldExecutor, v))
+// ActionEQ applies the EQ predicate on the "action" field.
+func ActionEQ(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldEQ(FieldAction, v))
 }
 
-// ExecutorNEQ applies the NEQ predicate on the "executor" field.
-func ExecutorNEQ(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldNEQ(FieldExecutor, v))
+// ActionNEQ applies the NEQ predicate on the "action" field.
+func ActionNEQ(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldNEQ(FieldAction, v))
 }
 
-// ExecutorIn applies the In predicate on the "executor" field.
-func ExecutorIn(vs ...string) predicate.Branch {
-	return predicate.Branch(sql.FieldIn(FieldExecutor, vs...))
+// ActionIn applies the In predicate on the "action" field.
+func ActionIn(vs ...string) predicate.Branch {
+	return predicate.Branch(sql.FieldIn(FieldAction, vs...))
 }
 
-// ExecutorNotIn applies the NotIn predicate on the "executor" field.
-func ExecutorNotIn(vs ...string) predicate.Branch {
-	return predicate.Branch(sql.FieldNotIn(FieldExecutor, vs...))
+// ActionNotIn applies the NotIn predicate on the "action" field.
+func ActionNotIn(vs ...string) predicate.Branch {
+	return predicate.Branch(sql.FieldNotIn(FieldAction, vs...))
 }
 
-// ExecutorGT applies the GT predicate on the "executor" field.
-func ExecutorGT(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldGT(FieldExecutor, v))
+// ActionGT applies the GT predicate on the "action" field.
+func ActionGT(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldGT(FieldAction, v))
 }
 
-// ExecutorGTE applies the GTE predicate on the "executor" field.
-func ExecutorGTE(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldGTE(FieldExecutor, v))
+// ActionGTE applies the GTE predicate on the "action" field.
+func ActionGTE(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldGTE(FieldAction, v))
 }
 
-// ExecutorLT applies the LT predicate on the "executor" field.
-func ExecutorLT(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldLT(FieldExecutor, v))
+// ActionLT applies the LT predicate on the "action" field.
+func ActionLT(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldLT(FieldAction, v))
 }
 
-// ExecutorLTE applies the LTE predicate on the "executor" field.
-func ExecutorLTE(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldLTE(FieldExecutor, v))
+// ActionLTE applies the LTE predicate on the "action" field.
+func ActionLTE(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldLTE(FieldAction, v))
 }
 
-// ExecutorContains applies the Contains predicate on the "executor" field.
-func ExecutorContains(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldContains(FieldExecutor, v))
+// ActionContains applies the Contains predicate on the "action" field.
+func ActionContains(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldContains(FieldAction, v))
 }
 
-// ExecutorHasPrefix applies the HasPrefix predicate on the "executor" field.
-func ExecutorHasPrefix(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldHasPrefix(FieldExecutor, v))
+// ActionHasPrefix applies the HasPrefix predicate on the "action" field.
+func ActionHasPrefix(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldHasPrefix(FieldAction, v))
 }
 
-// ExecutorHasSuffix applies the HasSuffix predicate on the "executor" field.
-func ExecutorHasSuffix(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldHasSuffix(FieldExecutor, v))
+// ActionHasSuffix applies the HasSuffix predicate on the "action" field.
+func ActionHasSuffix(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldHasSuffix(FieldAction, v))
 }
 
-// ExecutorEqualFold applies the EqualFold predicate on the "executor" field.
-func ExecutorEqualFold(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldEqualFold(FieldExecutor, v))
+// ActionEqualFold applies the EqualFold predicate on the "action" field.
+func ActionEqualFold(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldEqualFold(FieldAction, v))
 }
 
-// ExecutorContainsFold applies the ContainsFold predicate on the "executor" field.
-func ExecutorContainsFold(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldContainsFold(FieldExecutor, v))
+// ActionContainsFold applies the ContainsFold predicate on the "action" field.
+func ActionContainsFold(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldContainsFold(FieldAction, v))
+}
+
+// CompensateEQ applies the EQ predicate on the "compensate" field.
+func CompensateEQ(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldEQ(FieldCompensate, v))
+}
+
+// CompensateNEQ applies the NEQ predicate on the "compensate" field.
+func CompensateNEQ(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldNEQ(FieldCompensate, v))
+}
+
+// CompensateIn applies the In predicate on the "compensate" field.
+func CompensateIn(vs ...string) predicate.Branch {
+	return predicate.Branch(sql.FieldIn(FieldCompensate, vs...))
+}
+
+// CompensateNotIn applies the NotIn predicate on the "compensate" field.
+func CompensateNotIn(vs ...string) predicate.Branch {
+	return predicate.Branch(sql.FieldNotIn(FieldCompensate, vs...))
+}
+
+// CompensateGT applies the GT predicate on the "compensate" field.
+func CompensateGT(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldGT(FieldCompensate, v))
+}
+
+// CompensateGTE applies the GTE predicate on the "compensate" field.
+func CompensateGTE(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldGTE(FieldCompensate, v))
+}
+
+// CompensateLT applies the LT predicate on the "compensate" field.
+func CompensateLT(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldLT(FieldCompensate, v))
+}
+
+// CompensateLTE applies the LTE predicate on the "compensate" field.
+func CompensateLTE(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldLTE(FieldCompensate, v))
+}
+
+// CompensateContains applies the Contains predicate on the "compensate" field.
+func CompensateContains(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldContains(FieldCompensate, v))
+}
+
+// CompensateHasPrefix applies the HasPrefix predicate on the "compensate" field.
+func CompensateHasPrefix(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldHasPrefix(FieldCompensate, v))
+}
+
+// CompensateHasSuffix applies the HasSuffix predicate on the "compensate" field.
+func CompensateHasSuffix(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldHasSuffix(FieldCompensate, v))
+}
+
+// CompensateEqualFold applies the EqualFold predicate on the "compensate" field.
+func CompensateEqualFold(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldEqualFold(FieldCompensate, v))
+}
+
+// CompensateContainsFold applies the ContainsFold predicate on the "compensate" field.
+func CompensateContainsFold(v string) predicate.Branch {
+	return predicate.Branch(sql.FieldContainsFold(FieldCompensate, v))
 }
 
 // PayloadEQ applies the EQ predicate on the "payload" field.

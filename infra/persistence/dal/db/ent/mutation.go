@@ -756,7 +756,8 @@ type BranchMutation struct {
 	_type             *string
 	state             *string
 	name              *string
-	executor          *string
+	action            *string
+	compensate        *string
 	payload           *string
 	action_depend     *string
 	compensate_depend *string
@@ -1050,40 +1051,76 @@ func (m *BranchMutation) ResetName() {
 	m.name = nil
 }
 
-// SetExecutor sets the "executor" field.
-func (m *BranchMutation) SetExecutor(s string) {
-	m.executor = &s
+// SetAction sets the "action" field.
+func (m *BranchMutation) SetAction(s string) {
+	m.action = &s
 }
 
-// Executor returns the value of the "executor" field in the mutation.
-func (m *BranchMutation) Executor() (r string, exists bool) {
-	v := m.executor
+// Action returns the value of the "action" field in the mutation.
+func (m *BranchMutation) Action() (r string, exists bool) {
+	v := m.action
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldExecutor returns the old "executor" field's value of the Branch entity.
+// OldAction returns the old "action" field's value of the Branch entity.
 // If the Branch object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BranchMutation) OldExecutor(ctx context.Context) (v string, err error) {
+func (m *BranchMutation) OldAction(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldExecutor is only allowed on UpdateOne operations")
+		return v, errors.New("OldAction is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldExecutor requires an ID field in the mutation")
+		return v, errors.New("OldAction requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldExecutor: %w", err)
+		return v, fmt.Errorf("querying old value for OldAction: %w", err)
 	}
-	return oldValue.Executor, nil
+	return oldValue.Action, nil
 }
 
-// ResetExecutor resets all changes to the "executor" field.
-func (m *BranchMutation) ResetExecutor() {
-	m.executor = nil
+// ResetAction resets all changes to the "action" field.
+func (m *BranchMutation) ResetAction() {
+	m.action = nil
+}
+
+// SetCompensate sets the "compensate" field.
+func (m *BranchMutation) SetCompensate(s string) {
+	m.compensate = &s
+}
+
+// Compensate returns the value of the "compensate" field in the mutation.
+func (m *BranchMutation) Compensate() (r string, exists bool) {
+	v := m.compensate
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompensate returns the old "compensate" field's value of the Branch entity.
+// If the Branch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BranchMutation) OldCompensate(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompensate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompensate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompensate: %w", err)
+	}
+	return oldValue.Compensate, nil
+}
+
+// ResetCompensate resets all changes to the "compensate" field.
+func (m *BranchMutation) ResetCompensate() {
+	m.compensate = nil
 }
 
 // SetPayload sets the "payload" field.
@@ -1444,7 +1481,7 @@ func (m *BranchMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BranchMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 16)
 	if m.branch_id != nil {
 		fields = append(fields, branch.FieldBranchID)
 	}
@@ -1460,8 +1497,11 @@ func (m *BranchMutation) Fields() []string {
 	if m.name != nil {
 		fields = append(fields, branch.FieldName)
 	}
-	if m.executor != nil {
-		fields = append(fields, branch.FieldExecutor)
+	if m.action != nil {
+		fields = append(fields, branch.FieldAction)
+	}
+	if m.compensate != nil {
+		fields = append(fields, branch.FieldCompensate)
 	}
 	if m.payload != nil {
 		fields = append(fields, branch.FieldPayload)
@@ -1508,8 +1548,10 @@ func (m *BranchMutation) Field(name string) (ent.Value, bool) {
 		return m.State()
 	case branch.FieldName:
 		return m.Name()
-	case branch.FieldExecutor:
-		return m.Executor()
+	case branch.FieldAction:
+		return m.Action()
+	case branch.FieldCompensate:
+		return m.Compensate()
 	case branch.FieldPayload:
 		return m.Payload()
 	case branch.FieldActionDepend:
@@ -1547,8 +1589,10 @@ func (m *BranchMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldState(ctx)
 	case branch.FieldName:
 		return m.OldName(ctx)
-	case branch.FieldExecutor:
-		return m.OldExecutor(ctx)
+	case branch.FieldAction:
+		return m.OldAction(ctx)
+	case branch.FieldCompensate:
+		return m.OldCompensate(ctx)
 	case branch.FieldPayload:
 		return m.OldPayload(ctx)
 	case branch.FieldActionDepend:
@@ -1611,12 +1655,19 @@ func (m *BranchMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetName(v)
 		return nil
-	case branch.FieldExecutor:
+	case branch.FieldAction:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetExecutor(v)
+		m.SetAction(v)
+		return nil
+	case branch.FieldCompensate:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompensate(v)
 		return nil
 	case branch.FieldPayload:
 		v, ok := value.(string)
@@ -1745,8 +1796,11 @@ func (m *BranchMutation) ResetField(name string) error {
 	case branch.FieldName:
 		m.ResetName()
 		return nil
-	case branch.FieldExecutor:
-		m.ResetExecutor()
+	case branch.FieldAction:
+		m.ResetAction()
+		return nil
+	case branch.FieldCompensate:
+		m.ResetCompensate()
 		return nil
 	case branch.FieldPayload:
 		m.ResetPayload()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -58,6 +59,9 @@ func (s *Saga) AsyncExec(ctx context.Context) {
 		utils.SafeGo(ctx, func() {
 			s.root.runCompensate(ctx)
 		})
+		utils.SafeGo(ctx, func() {
+			s.root.handleDoneSignal(ctx)
+		})
 		for _, step := range s.steps {
 			stp := step // 重新赋值，防止step引用变化
 			utils.SafeGo(ctx, func() {
@@ -65,6 +69,9 @@ func (s *Saga) AsyncExec(ctx context.Context) {
 			})
 			utils.SafeGo(ctx, func() {
 				stp.runCompensate(ctx)
+			})
+			utils.SafeGo(ctx, func() {
+				stp.handleDoneSignal(ctx)
 			})
 		}
 		s.root.actionCh <- struct{}{}
@@ -91,6 +98,15 @@ func (s *Saga) sync(ctx context.Context) error {
 	}
 	branchList := make([]*Branch, 0)
 	for _, stp := range s.steps {
+		actionDepend := make([]string, 0)
+		compensateDepend := make([]string, 0)
+		for _, p := range stp.previous {
+			actionDepend = append(actionDepend, p.name)
+		}
+		for _, n := range stp.compensatePrevious {
+			compensateDepend = append(compensateDepend, n.name)
+		}
+
 		branch := &Branch{
 			BranchID:         stp.id,
 			TransID:          stp.saga.id,
@@ -100,8 +116,8 @@ func (s *Saga) sync(ctx context.Context) error {
 			Action:           stp.action.name,
 			Compensate:       stp.compensate.name,
 			Payload:          "stp.action.payload",
-			ActionDepend:     "1",
-			CompensateDepend: "1",
+			ActionDepend:     strings.Join(actionDepend, ","),
+			CompensateDepend: strings.Join(compensateDepend, ","),
 			FinishedAt:       time.Now(),
 			IsDead:           false,
 			CreatedAt:        time.Now(),
@@ -229,17 +245,44 @@ func (s *Step) runAction(ctx context.Context) {
 				continue
 			}
 			// 给actionDone发消息，避免阻塞，放在go routine
-			utils.SafeGo(ctx, func() {
-				s.handleActionSignal(ctx)
-			})
+			//utils.SafeGo(ctx, func() {
+			s.handleActionSignal(ctx)
+			return
+			//})
 
+			//case err := <-s.actionDone:
+			//	if err != nil {
+			//		logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
+			//		s.onActionFail(ctx, err)
+			//		return
+			//	}
+			//	s.onActionSuccess(ctx)
+		}
+	}
+}
+
+func (s *Step) handleDoneSignal(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			logx.Errorf(ctx, "saga tx context done: %v", ctx.Done())
+			return
+		case <-s.closed:
+			return
 		case err := <-s.actionDone:
 			if err != nil {
 				logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
 				s.onActionFail(ctx, err)
-				return
 			}
 			s.onActionSuccess(ctx)
+		case err := <-s.compensateDone:
+			if err != nil {
+				logx.Errorf(ctx, "step[%s] run compensate fail after retry 2 times: %v", s.name, err)
+				s.onCompensateFail(ctx)
+				continue
+			}
+			s.onCompensateSuccess(ctx)
+			return
 		}
 	}
 }
@@ -275,10 +318,14 @@ func (s *Step) handleCompensateSignal(ctx context.Context) {
 	// 	s.actionDone <- s.action.run(ctx)
 	case StepActionSuccess:
 		s.changeState(ctx, StepInCompensate)
-		s.compensateDone <- nil
+		s.compensateDone <- retry.Run(func() error {
+			return s.compensate.run(ctx)
+		}, 2)
 	case StepActionFail:
 		s.changeState(ctx, StepInCompensate)
-		s.compensateDone <- errors.New("unknown error")
+		s.compensateDone <- retry.Run(func() error {
+			return s.compensate.run(ctx)
+		}, 2)
 	case StepInCompensate:
 		s.compensateDone <- retry.Run(func() error {
 			return s.compensate.run(ctx)
@@ -404,16 +451,17 @@ func (s *Step) runCompensate(ctx context.Context) {
 			// 阻塞，直到当前action执行结束
 			for !s.isRunActionFinished() {
 			}
-			utils.SafeGo(ctx, func() {
-				s.handleCompensateSignal(ctx)
-			})
-		case err := <-s.compensateDone:
-			if err != nil {
-				logx.Errorf(ctx, "step[%s] run compensate fail after retry 2 times: %v", s.name, err)
-				s.onCompensateFail(ctx)
-				continue
-			}
-			s.onCompensateSuccess(ctx)
+			//utils.SafeGo(ctx, func() {
+			s.handleCompensateSignal(ctx)
+			return
+			//})
+			//case err := <-s.compensateDone:
+			//	if err != nil {
+			//		logx.Errorf(ctx, "step[%s] run compensate fail after retry 2 times: %v", s.name, err)
+			//		s.onCompensateFail(ctx)
+			//		continue
+			//	}
+			//	s.onCompensateSuccess(ctx)
 		}
 	}
 }

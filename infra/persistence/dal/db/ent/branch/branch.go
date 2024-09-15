@@ -23,8 +23,10 @@ const (
 	FieldState = "state"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// FieldExecutor holds the string denoting the executor field in the database.
-	FieldExecutor = "executor"
+	// FieldAction holds the string denoting the action field in the database.
+	FieldAction = "action"
+	// FieldCompensate holds the string denoting the compensate field in the database.
+	FieldCompensate = "compensate"
 	// FieldPayload holds the string denoting the payload field in the database.
 	FieldPayload = "payload"
 	// FieldActionDepend holds the string denoting the action_depend field in the database.
@@ -55,7 +57,8 @@ var Columns = []string{
 	FieldType,
 	FieldState,
 	FieldName,
-	FieldExecutor,
+	FieldAction,
+	FieldCompensate,
 	FieldPayload,
 	FieldActionDepend,
 	FieldCompensateDepend,
@@ -119,9 +122,14 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
-// ByExecutor orders the results by the executor field.
-func ByExecutor(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldExecutor, opts...).ToFunc()
+// ByAction orders the results by the action field.
+func ByAction(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAction, opts...).ToFunc()
+}
+
+// ByCompensate orders the results by the compensate field.
+func ByCompensate(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCompensate, opts...).ToFunc()
 }
 
 // ByPayload orders the results by the payload field.

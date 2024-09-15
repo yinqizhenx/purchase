@@ -52,9 +52,15 @@ func (bc *BranchCreate) SetName(s string) *BranchCreate {
 	return bc
 }
 
-// SetExecutor sets the "executor" field.
-func (bc *BranchCreate) SetExecutor(s string) *BranchCreate {
-	bc.mutation.SetExecutor(s)
+// SetAction sets the "action" field.
+func (bc *BranchCreate) SetAction(s string) *BranchCreate {
+	bc.mutation.SetAction(s)
+	return bc
+}
+
+// SetCompensate sets the "compensate" field.
+func (bc *BranchCreate) SetCompensate(s string) *BranchCreate {
+	bc.mutation.SetCompensate(s)
 	return bc
 }
 
@@ -202,8 +208,11 @@ func (bc *BranchCreate) check() error {
 	if _, ok := bc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Branch.name"`)}
 	}
-	if _, ok := bc.mutation.Executor(); !ok {
-		return &ValidationError{Name: "executor", err: errors.New(`ent: missing required field "Branch.executor"`)}
+	if _, ok := bc.mutation.Action(); !ok {
+		return &ValidationError{Name: "action", err: errors.New(`ent: missing required field "Branch.action"`)}
+	}
+	if _, ok := bc.mutation.Compensate(); !ok {
+		return &ValidationError{Name: "compensate", err: errors.New(`ent: missing required field "Branch.compensate"`)}
 	}
 	if _, ok := bc.mutation.Payload(); !ok {
 		return &ValidationError{Name: "payload", err: errors.New(`ent: missing required field "Branch.payload"`)}
@@ -279,9 +288,13 @@ func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 		_spec.SetField(branch.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := bc.mutation.Executor(); ok {
-		_spec.SetField(branch.FieldExecutor, field.TypeString, value)
-		_node.Executor = value
+	if value, ok := bc.mutation.Action(); ok {
+		_spec.SetField(branch.FieldAction, field.TypeString, value)
+		_node.Action = value
+	}
+	if value, ok := bc.mutation.Compensate(); ok {
+		_spec.SetField(branch.FieldCompensate, field.TypeString, value)
+		_node.Compensate = value
 	}
 	if value, ok := bc.mutation.Payload(); ok {
 		_spec.SetField(branch.FieldPayload, field.TypeString, value)
@@ -431,15 +444,27 @@ func (u *BranchUpsert) UpdateName() *BranchUpsert {
 	return u
 }
 
-// SetExecutor sets the "executor" field.
-func (u *BranchUpsert) SetExecutor(v string) *BranchUpsert {
-	u.Set(branch.FieldExecutor, v)
+// SetAction sets the "action" field.
+func (u *BranchUpsert) SetAction(v string) *BranchUpsert {
+	u.Set(branch.FieldAction, v)
 	return u
 }
 
-// UpdateExecutor sets the "executor" field to the value that was provided on create.
-func (u *BranchUpsert) UpdateExecutor() *BranchUpsert {
-	u.SetExcluded(branch.FieldExecutor)
+// UpdateAction sets the "action" field to the value that was provided on create.
+func (u *BranchUpsert) UpdateAction() *BranchUpsert {
+	u.SetExcluded(branch.FieldAction)
+	return u
+}
+
+// SetCompensate sets the "compensate" field.
+func (u *BranchUpsert) SetCompensate(v string) *BranchUpsert {
+	u.Set(branch.FieldCompensate, v)
+	return u
+}
+
+// UpdateCompensate sets the "compensate" field to the value that was provided on create.
+func (u *BranchUpsert) UpdateCompensate() *BranchUpsert {
+	u.SetExcluded(branch.FieldCompensate)
 	return u
 }
 
@@ -661,17 +686,31 @@ func (u *BranchUpsertOne) UpdateName() *BranchUpsertOne {
 	})
 }
 
-// SetExecutor sets the "executor" field.
-func (u *BranchUpsertOne) SetExecutor(v string) *BranchUpsertOne {
+// SetAction sets the "action" field.
+func (u *BranchUpsertOne) SetAction(v string) *BranchUpsertOne {
 	return u.Update(func(s *BranchUpsert) {
-		s.SetExecutor(v)
+		s.SetAction(v)
 	})
 }
 
-// UpdateExecutor sets the "executor" field to the value that was provided on create.
-func (u *BranchUpsertOne) UpdateExecutor() *BranchUpsertOne {
+// UpdateAction sets the "action" field to the value that was provided on create.
+func (u *BranchUpsertOne) UpdateAction() *BranchUpsertOne {
 	return u.Update(func(s *BranchUpsert) {
-		s.UpdateExecutor()
+		s.UpdateAction()
+	})
+}
+
+// SetCompensate sets the "compensate" field.
+func (u *BranchUpsertOne) SetCompensate(v string) *BranchUpsertOne {
+	return u.Update(func(s *BranchUpsert) {
+		s.SetCompensate(v)
+	})
+}
+
+// UpdateCompensate sets the "compensate" field to the value that was provided on create.
+func (u *BranchUpsertOne) UpdateCompensate() *BranchUpsertOne {
+	return u.Update(func(s *BranchUpsert) {
+		s.UpdateCompensate()
 	})
 }
 
@@ -1075,17 +1114,31 @@ func (u *BranchUpsertBulk) UpdateName() *BranchUpsertBulk {
 	})
 }
 
-// SetExecutor sets the "executor" field.
-func (u *BranchUpsertBulk) SetExecutor(v string) *BranchUpsertBulk {
+// SetAction sets the "action" field.
+func (u *BranchUpsertBulk) SetAction(v string) *BranchUpsertBulk {
 	return u.Update(func(s *BranchUpsert) {
-		s.SetExecutor(v)
+		s.SetAction(v)
 	})
 }
 
-// UpdateExecutor sets the "executor" field to the value that was provided on create.
-func (u *BranchUpsertBulk) UpdateExecutor() *BranchUpsertBulk {
+// UpdateAction sets the "action" field to the value that was provided on create.
+func (u *BranchUpsertBulk) UpdateAction() *BranchUpsertBulk {
 	return u.Update(func(s *BranchUpsert) {
-		s.UpdateExecutor()
+		s.UpdateAction()
+	})
+}
+
+// SetCompensate sets the "compensate" field.
+func (u *BranchUpsertBulk) SetCompensate(v string) *BranchUpsertBulk {
+	return u.Update(func(s *BranchUpsert) {
+		s.SetCompensate(v)
+	})
+}
+
+// UpdateCompensate sets the "compensate" field to the value that was provided on create.
+func (u *BranchUpsertBulk) UpdateCompensate() *BranchUpsertBulk {
+	return u.Update(func(s *BranchUpsert) {
+		s.UpdateCompensate()
 	})
 }
 

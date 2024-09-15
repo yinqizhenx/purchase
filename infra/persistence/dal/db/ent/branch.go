@@ -27,8 +27,10 @@ type Branch struct {
 	State string `json:"state,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
-	// Executor holds the value of the "executor" field.
-	Executor string `json:"executor,omitempty"`
+	// Action holds the value of the "action" field.
+	Action string `json:"action,omitempty"`
+	// Compensate holds the value of the "compensate" field.
+	Compensate string `json:"compensate,omitempty"`
 	// Payload holds the value of the "payload" field.
 	Payload string `json:"payload,omitempty"`
 	// ActionDepend holds the value of the "action_depend" field.
@@ -59,7 +61,7 @@ func (*Branch) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case branch.FieldID:
 			values[i] = new(sql.NullInt64)
-		case branch.FieldBranchID, branch.FieldTransID, branch.FieldType, branch.FieldState, branch.FieldName, branch.FieldExecutor, branch.FieldPayload, branch.FieldActionDepend, branch.FieldCompensateDepend, branch.FieldUpdatedBy, branch.FieldCreatedBy:
+		case branch.FieldBranchID, branch.FieldTransID, branch.FieldType, branch.FieldState, branch.FieldName, branch.FieldAction, branch.FieldCompensate, branch.FieldPayload, branch.FieldActionDepend, branch.FieldCompensateDepend, branch.FieldUpdatedBy, branch.FieldCreatedBy:
 			values[i] = new(sql.NullString)
 		case branch.FieldFinishedAt, branch.FieldCreatedAt, branch.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -114,11 +116,17 @@ func (b *Branch) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				b.Name = value.String
 			}
-		case branch.FieldExecutor:
+		case branch.FieldAction:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field executor", values[i])
+				return fmt.Errorf("unexpected type %T for field action", values[i])
 			} else if value.Valid {
-				b.Executor = value.String
+				b.Action = value.String
+			}
+		case branch.FieldCompensate:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field compensate", values[i])
+			} else if value.Valid {
+				b.Compensate = value.String
 			}
 		case branch.FieldPayload:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -225,8 +233,11 @@ func (b *Branch) String() string {
 	builder.WriteString("name=")
 	builder.WriteString(b.Name)
 	builder.WriteString(", ")
-	builder.WriteString("executor=")
-	builder.WriteString(b.Executor)
+	builder.WriteString("action=")
+	builder.WriteString(b.Action)
+	builder.WriteString(", ")
+	builder.WriteString("compensate=")
+	builder.WriteString(b.Compensate)
 	builder.WriteString(", ")
 	builder.WriteString("payload=")
 	builder.WriteString(b.Payload)

@@ -98,16 +98,30 @@ func (bu *BranchUpdate) SetNillableName(s *string) *BranchUpdate {
 	return bu
 }
 
-// SetExecutor sets the "executor" field.
-func (bu *BranchUpdate) SetExecutor(s string) *BranchUpdate {
-	bu.mutation.SetExecutor(s)
+// SetAction sets the "action" field.
+func (bu *BranchUpdate) SetAction(s string) *BranchUpdate {
+	bu.mutation.SetAction(s)
 	return bu
 }
 
-// SetNillableExecutor sets the "executor" field if the given value is not nil.
-func (bu *BranchUpdate) SetNillableExecutor(s *string) *BranchUpdate {
+// SetNillableAction sets the "action" field if the given value is not nil.
+func (bu *BranchUpdate) SetNillableAction(s *string) *BranchUpdate {
 	if s != nil {
-		bu.SetExecutor(*s)
+		bu.SetAction(*s)
+	}
+	return bu
+}
+
+// SetCompensate sets the "compensate" field.
+func (bu *BranchUpdate) SetCompensate(s string) *BranchUpdate {
+	bu.mutation.SetCompensate(s)
+	return bu
+}
+
+// SetNillableCompensate sets the "compensate" field if the given value is not nil.
+func (bu *BranchUpdate) SetNillableCompensate(s *string) *BranchUpdate {
+	if s != nil {
+		bu.SetCompensate(*s)
 	}
 	return bu
 }
@@ -294,8 +308,11 @@ func (bu *BranchUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := bu.mutation.Name(); ok {
 		_spec.SetField(branch.FieldName, field.TypeString, value)
 	}
-	if value, ok := bu.mutation.Executor(); ok {
-		_spec.SetField(branch.FieldExecutor, field.TypeString, value)
+	if value, ok := bu.mutation.Action(); ok {
+		_spec.SetField(branch.FieldAction, field.TypeString, value)
+	}
+	if value, ok := bu.mutation.Compensate(); ok {
+		_spec.SetField(branch.FieldCompensate, field.TypeString, value)
 	}
 	if value, ok := bu.mutation.Payload(); ok {
 		_spec.SetField(branch.FieldPayload, field.TypeString, value)
@@ -414,16 +431,30 @@ func (buo *BranchUpdateOne) SetNillableName(s *string) *BranchUpdateOne {
 	return buo
 }
 
-// SetExecutor sets the "executor" field.
-func (buo *BranchUpdateOne) SetExecutor(s string) *BranchUpdateOne {
-	buo.mutation.SetExecutor(s)
+// SetAction sets the "action" field.
+func (buo *BranchUpdateOne) SetAction(s string) *BranchUpdateOne {
+	buo.mutation.SetAction(s)
 	return buo
 }
 
-// SetNillableExecutor sets the "executor" field if the given value is not nil.
-func (buo *BranchUpdateOne) SetNillableExecutor(s *string) *BranchUpdateOne {
+// SetNillableAction sets the "action" field if the given value is not nil.
+func (buo *BranchUpdateOne) SetNillableAction(s *string) *BranchUpdateOne {
 	if s != nil {
-		buo.SetExecutor(*s)
+		buo.SetAction(*s)
+	}
+	return buo
+}
+
+// SetCompensate sets the "compensate" field.
+func (buo *BranchUpdateOne) SetCompensate(s string) *BranchUpdateOne {
+	buo.mutation.SetCompensate(s)
+	return buo
+}
+
+// SetNillableCompensate sets the "compensate" field if the given value is not nil.
+func (buo *BranchUpdateOne) SetNillableCompensate(s *string) *BranchUpdateOne {
+	if s != nil {
+		buo.SetCompensate(*s)
 	}
 	return buo
 }
@@ -640,8 +671,11 @@ func (buo *BranchUpdateOne) sqlSave(ctx context.Context) (_node *Branch, err err
 	if value, ok := buo.mutation.Name(); ok {
 		_spec.SetField(branch.FieldName, field.TypeString, value)
 	}
-	if value, ok := buo.mutation.Executor(); ok {
-		_spec.SetField(branch.FieldExecutor, field.TypeString, value)
+	if value, ok := buo.mutation.Action(); ok {
+		_spec.SetField(branch.FieldAction, field.TypeString, value)
+	}
+	if value, ok := buo.mutation.Compensate(); ok {
+		_spec.SetField(branch.FieldCompensate, field.TypeString, value)
 	}
 	if value, ok := buo.mutation.Payload(); ok {
 		_spec.SetField(branch.FieldPayload, field.TypeString, value)

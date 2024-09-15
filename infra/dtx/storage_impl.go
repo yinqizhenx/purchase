@@ -68,7 +68,8 @@ func (s *StorageImpl) SaveBranch(ctx context.Context, branchList []*Branch) erro
 			SetType(b.Type).
 			SetState(b.State).
 			SetName(b.Name).
-			SetExecutor(b.Executor).
+			SetAction(b.Action).
+			SetCompensate(b.Compensate).
 			SetPayload(b.Payload).
 			SetActionDepend(b.ActionDepend).
 			SetCompensateDepend(b.CompensateDepend).
@@ -148,7 +149,8 @@ func ConvertBranch(b *ent.Branch) *Branch {
 		Type:             b.Type,
 		State:            b.State,
 		Name:             b.Name,
-		Executor:         b.Executor,
+		Action:           b.Action,
+		Compensate:       b.Compensate,
 		Payload:          b.Payload,
 		ActionDepend:     b.ActionDepend,
 		CompensateDepend: b.CompensateDepend,

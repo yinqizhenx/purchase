@@ -29,15 +29,15 @@ func init() {
 	branchFields := schema.Branch{}.Fields()
 	_ = branchFields
 	// branchDescFinishedAt is the schema descriptor for finished_at field.
-	branchDescFinishedAt := branchFields[9].Descriptor()
+	branchDescFinishedAt := branchFields[10].Descriptor()
 	// branch.DefaultFinishedAt holds the default value on creation for the finished_at field.
 	branch.DefaultFinishedAt = branchDescFinishedAt.Default.(func() time.Time)
 	// branchDescCreatedAt is the schema descriptor for created_at field.
-	branchDescCreatedAt := branchFields[11].Descriptor()
+	branchDescCreatedAt := branchFields[12].Descriptor()
 	// branch.DefaultCreatedAt holds the default value on creation for the created_at field.
 	branch.DefaultCreatedAt = branchDescCreatedAt.Default.(func() time.Time)
 	// branchDescUpdatedAt is the schema descriptor for updated_at field.
-	branchDescUpdatedAt := branchFields[12].Descriptor()
+	branchDescUpdatedAt := branchFields[13].Descriptor()
 	// branch.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	branch.DefaultUpdatedAt = branchDescUpdatedAt.Default.(func() time.Time)
 	paheadFields := schema.PAHead{}.Fields()
