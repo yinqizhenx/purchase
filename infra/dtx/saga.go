@@ -54,24 +54,12 @@ func (s *Saga) AsyncExec(ctx context.Context) {
 		}
 
 		utils.SafeGo(ctx, func() {
-			s.root.runAction(ctx)
-		})
-		utils.SafeGo(ctx, func() {
-			s.root.runCompensate(ctx)
-		})
-		utils.SafeGo(ctx, func() {
-			s.root.handleDoneSignal(ctx)
+			s.root.run(ctx)
 		})
 		for _, step := range s.steps {
 			stp := step // 重新赋值，防止step引用变化
 			utils.SafeGo(ctx, func() {
-				stp.runAction(ctx)
-			})
-			utils.SafeGo(ctx, func() {
-				stp.runCompensate(ctx)
-			})
-			utils.SafeGo(ctx, func() {
-				stp.handleDoneSignal(ctx)
+				stp.run(ctx)
 			})
 		}
 		s.root.actionCh <- struct{}{}
@@ -182,22 +170,24 @@ func (s *Saga) close() {
 }
 
 type Step struct {
-	id                 string
-	saga               *Saga
-	action             Caller
-	compensate         Caller
-	state              StepStatus
-	name               string
-	previous           []*Step
-	next               []*Step
-	compensatePrevious []*Step // 回滚依赖
-	compensateNext     []*Step // 回滚下一step
-	actionCh           chan struct{}
-	compensateCh       chan struct{}
-	closed             chan struct{}
-	mu                 sync.Mutex
-	actionDone         chan error
-	compensateDone     chan error
+	id                    string
+	saga                  *Saga
+	action                Caller
+	compensate            Caller
+	state                 StepStatus
+	name                  string
+	previous              []*Step
+	next                  []*Step
+	compensatePrevious    []*Step // 回滚依赖
+	compensateNext        []*Step // 回滚下一step
+	actionCh              chan struct{}
+	compensateCh          chan struct{}
+	closed                chan struct{}
+	mu                    sync.Mutex
+	actionDone            chan error
+	compensateDone        chan error
+	alreadyExecAction     atomic.Int32
+	alreadyExecCompensate atomic.Int32
 }
 
 type StepStatus int
@@ -218,13 +208,14 @@ func (s *Step) isSuccess() bool {
 	return s.state == StepActionSuccess
 }
 
-func (s *Step) runAction(ctx context.Context) {
+func (s *Step) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			logx.Errorf(ctx, "saga tx context done: %v", ctx.Done())
 			return
 		case <-s.closed:
+			fmt.Println(fmt.Sprintf("trans closed action准备退出: %s", s.name))
 			return
 		case <-s.actionCh:
 			// 已经失败了则不执行
@@ -237,103 +228,125 @@ func (s *Step) runAction(ctx context.Context) {
 			for _, stp := range s.previous {
 				if !stp.isSuccess() {
 					isAllPreviousSuccess = false
-					continue
+					break
 				}
 			}
 
 			if !isAllPreviousSuccess {
 				continue
 			}
-			// 给actionDone发消息，避免阻塞，放在go routine
-			//utils.SafeGo(ctx, func() {
-			s.handleActionSignal(ctx)
-			return
-			//})
 
-			//case err := <-s.actionDone:
-			//	if err != nil {
-			//		logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
-			//		s.onActionFail(ctx, err)
-			//		return
-			//	}
-			//	s.onActionSuccess(ctx)
-		}
-	}
-}
-
-func (s *Step) handleDoneSignal(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			logx.Errorf(ctx, "saga tx context done: %v", ctx.Done())
-			return
-		case <-s.closed:
-			return
-		case err := <-s.actionDone:
-			if err != nil {
-				logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
-				s.onActionFail(ctx, err)
-			}
-			s.onActionSuccess(ctx)
-		case err := <-s.compensateDone:
-			if err != nil {
-				logx.Errorf(ctx, "step[%s] run compensate fail after retry 2 times: %v", s.name, err)
-				s.onCompensateFail(ctx)
+			if !s.alreadyExecAction.CompareAndSwap(0, 1) {
 				continue
 			}
-			s.onCompensateSuccess(ctx)
-			return
+			s.handleAction(ctx)
+
+		case <-s.compensateCh:
+			// 前序依赖step需要全部回滚完成或待执行
+			fmt.Println(fmt.Sprintf("收到compensate: %s", s.name))
+			isPreviousCompensateDone := true
+			for _, stp := range s.compensatePrevious {
+				// 此刻处于pending状态的step, 后续一定不会继续往下流转，不需要回滚
+				if stp.shouldCompensate() {
+					isPreviousCompensateDone = false
+					stp.compensateCh <- struct{}{}
+				}
+			}
+
+			// 前序的补偿完成了，才能往下走
+			if !isPreviousCompensateDone {
+				continue
+			}
+
+			if !s.alreadyExecCompensate.CompareAndSwap(0, 1) {
+				continue
+			}
+
+			// 无需补偿，直接通知下游补偿
+			if s.noNeedCompensate() {
+				for _, stp := range s.compensateNext {
+					stp.compensateCh <- struct{}{}
+				}
+			}
+
+			// 阻塞，直到当前action执行结束
+			for !s.isRunActionFinished() {
+			}
+
+			s.handleCompensate(ctx)
 		}
 	}
 }
 
-func (s *Step) handleActionSignal(ctx context.Context) {
+func (s *Step) handleAction(ctx context.Context) {
 	switch s.state {
 	case StepPending:
 		s.changeState(ctx, StepInAction)
-		s.actionDone <- s.action.run(ctx)
+		err := s.action.run(ctx)
+		if err != nil {
+			logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
+			s.onActionFail(ctx, err)
+		} else {
+			s.onActionSuccess(ctx)
+		}
+		fmt.Println(fmt.Sprintf("step[%s] action done", s.name))
 	case StepInAction:
-		s.actionDone <- s.action.run(ctx)
+		err := s.action.run(ctx)
+		if err != nil {
+			logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
+			s.onActionFail(ctx, err)
+		} else {
+			s.onActionSuccess(ctx)
+		}
+		fmt.Println(fmt.Sprintf("step[%s] action done", s.name))
 	case StepActionSuccess:
-		s.actionDone <- nil
+		s.onActionSuccess(ctx)
 	case StepActionFail:
-		s.actionDone <- errors.New("unknown error")
+		s.onActionFail(ctx, errors.New("unknown error"))
 	case StepInCompensate:
-		s.compensateDone <- retry.Run(func() error {
+		err := retry.Run(func() error {
 			return s.compensate.run(ctx)
 		}, 2)
+		if err != nil {
+			logx.Errorf(ctx, "step[%s] run compensate fail after retry 2 times: %v", s.name, err)
+			s.onCompensateFail(ctx)
+		} else {
+			s.onCompensateSuccess(ctx)
+		}
+		fmt.Println(fmt.Sprintf("step[%s] compensate done", s.name))
 	case StepCompensateSuccess:
-		s.compensateDone <- nil
+		s.onCompensateSuccess(ctx)
 	case StepCompensateFail:
-		s.compensateDone <- errors.New("unknown error")
+		s.onCompensateFail(ctx)
 	}
 }
 
-func (s *Step) handleCompensateSignal(ctx context.Context) {
+func (s *Step) handleCompensate(ctx context.Context) {
 	switch s.state {
-	// case StepPending:
-	// 	s.changeState(ctx, StepInAction)
-	// 	s.actionDone <- s.action.run(ctx)
-	// case StepInAction:
-	// 	s.actionDone <- s.action.run(ctx)
 	case StepActionSuccess:
 		s.changeState(ctx, StepInCompensate)
-		s.compensateDone <- retry.Run(func() error {
+		err := retry.Run(func() error {
 			return s.compensate.run(ctx)
 		}, 2)
+		if err != nil {
+			logx.Errorf(ctx, "step[%s] run compensate fail after retry 2 times: %v", s.name, err)
+			s.onCompensateFail(ctx)
+		} else {
+			s.onCompensateSuccess(ctx)
+		}
+		fmt.Println(fmt.Sprintf("step[%s] compensate done", s.name))
 	case StepActionFail:
 		s.changeState(ctx, StepInCompensate)
-		s.compensateDone <- retry.Run(func() error {
+		err := retry.Run(func() error {
 			return s.compensate.run(ctx)
 		}, 2)
-	case StepInCompensate:
-		s.compensateDone <- retry.Run(func() error {
-			return s.compensate.run(ctx)
-		}, 2)
-		// case StepCompensateSuccess:
-		// 	s.compensateDone <- nil
-		// case StepCompensateFail:
-		// 	s.compensateDone <- errors.New("unknown error")
+		if err != nil {
+			logx.Errorf(ctx, "step[%s] run compensate fail after retry 2 times: %v", s.name, err)
+			s.onCompensateFail(ctx)
+		} else {
+			s.onCompensateSuccess(ctx)
+		}
+		fmt.Println(fmt.Sprintf("step[%s] compensate done", s.name))
 	}
 }
 
@@ -362,11 +375,11 @@ func (s *Step) onActionFail(ctx context.Context, err error) {
 	s.saga.errCh <- err // 返回第一个失败的错误, 容量为1，不阻塞
 
 	if err := s.saga.syncStateChange(ctx); err != nil {
-		// todo 这里错误的处理，
-		// todo 要放在事务里吗
 		logx.Errorf(ctx, "update branch state fail: %v", err)
 	}
-	s.compensateCh <- struct{}{} // 开始回滚
+	go func() {
+		s.compensateCh <- struct{}{} // 开始回滚, 起一个协程避免阻塞
+	}()
 }
 
 func (s *Step) syncStateChange(ctx context.Context) {
@@ -406,65 +419,59 @@ func (s *Step) shouldCompensate() bool {
 	return s.state == StepActionSuccess || s.state == StepInAction || s.state == StepActionFail
 }
 
+func (s *Step) noNeedCompensate() bool {
+	return s.state == StepPending
+}
+
 func (s *Step) alreadyCompensated() bool {
 	return s.state == StepCompensateSuccess || s.state == StepInCompensate || s.state == StepCompensateFail
 }
 
-func (s *Step) runCompensate(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			logx.Errorf(ctx, "saga tx context done: %v", ctx.Done())
-			return
-		case <-s.closed:
-			return
-		case <-s.compensateCh:
-			// 前序依赖step需要全部回滚完成或待执行
-			fmt.Println(fmt.Sprintf("收到compensate: %s", s.name))
-			isPreviousCompensateDone := true
-			for _, stp := range s.compensatePrevious {
-				// 此刻处于pending状态的step, 后续一定不会继续往下流转，不需要回滚
-				if stp.shouldCompensate() {
-					isPreviousCompensateDone = false
-					stp.compensateCh <- struct{}{}
-				}
-			}
-
-			// 前序的补偿完成了，才能往下走
-			if !isPreviousCompensateDone {
-				continue
-			}
-
-			// 当前节点不应该补偿，
-			if !s.shouldCompensate() {
-				// 已经补偿过了（某个step同时以来多个step时，依赖step补偿完成都会通知该step, 避免补偿多次）
-				if s.alreadyCompensated() {
-					continue
-				}
-				// 无需补偿，直接通知下游补偿
-				for _, stp := range s.compensateNext {
-					stp.compensateCh <- struct{}{}
-				}
-				continue
-			}
-
-			// 阻塞，直到当前action执行结束
-			for !s.isRunActionFinished() {
-			}
-			//utils.SafeGo(ctx, func() {
-			s.handleCompensateSignal(ctx)
-			return
-			//})
-			//case err := <-s.compensateDone:
-			//	if err != nil {
-			//		logx.Errorf(ctx, "step[%s] run compensate fail after retry 2 times: %v", s.name, err)
-			//		s.onCompensateFail(ctx)
-			//		continue
-			//	}
-			//	s.onCompensateSuccess(ctx)
-		}
-	}
-}
+//func (s *Step) runCompensate(ctx context.Context) {
+//	for {
+//		select {
+//		case <-ctx.Done():
+//			logx.Errorf(ctx, "saga tx context done: %v", ctx.Done())
+//			return
+//		case <-s.closed:
+//			fmt.Println(fmt.Sprintf("trans closed compensate准备退出: %s", s.name))
+//			return
+//		case <-s.compensateCh:
+//			// 前序依赖step需要全部回滚完成或待执行
+//			fmt.Println(fmt.Sprintf("收到compensate: %s", s.name))
+//			isPreviousCompensateDone := true
+//			for _, stp := range s.compensatePrevious {
+//				// 此刻处于pending状态的step, 后续一定不会继续往下流转，不需要回滚
+//				if stp.shouldCompensate() {
+//					isPreviousCompensateDone = false
+//					stp.compensateCh <- struct{}{}
+//				}
+//			}
+//
+//			// 前序的补偿完成了，才能往下走
+//			if !isPreviousCompensateDone {
+//				continue
+//			}
+//
+//			if !s.alreadyExecCompensate.CompareAndSwap(0, 1) {
+//				continue
+//			}
+//
+//			// 无需补偿，直接通知下游补偿
+//			if s.noNeedCompensate() {
+//				for _, stp := range s.compensateNext {
+//					stp.compensateCh <- struct{}{}
+//				}
+//			}
+//
+//			// 阻塞，直到当前action执行结束
+//			for !s.isRunActionFinished() {
+//			}
+//			//utils.SafeGo(ctx, func() {
+//			s.handleCompensate(ctx)
+//		}
+//	}
+//}
 
 func (s *Step) onCompensateSuccess(ctx context.Context) {
 	s.changeState(ctx, StepCompensateSuccess)
