@@ -194,6 +194,8 @@ type Step struct {
 	compensateDone        chan error
 	alreadyExecAction     atomic.Int32
 	alreadyExecCompensate atomic.Int32
+	actionNotifyCount     int
+	compensateNotifyCount int
 }
 
 type StepStatus int
@@ -218,17 +220,20 @@ func (s *Step) runAction(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			logx.Errorf(ctx, "saga tx context done: %v", ctx.Done())
+			logx.Errorf(ctx, "saga tx context done: %v", s.name)
 			return
 		case <-s.closed:
 			fmt.Println(fmt.Sprintf("trans closed action准备退出: %s", s.name))
 			return
 		case <-s.actionCh:
+			fmt.Println(fmt.Sprintf("收到action: %s", s.name))
+			s.actionNotifyCount++
+
 			// 已经失败了则不执行
 			if s.saga.isFailed() {
+				fmt.Println("已经失败不执行" + s.name)
 				return
 			}
-			fmt.Println(fmt.Sprintf("收到action: %s", s.name))
 			// 等待所有依赖step执行成功
 			isAllPreviousSuccess := true
 			for _, stp := range s.previous {
@@ -239,6 +244,12 @@ func (s *Step) runAction(ctx context.Context) {
 			}
 
 			if !isAllPreviousSuccess {
+				fmt.Println("上游未全部完成" + s.name)
+				continue
+			}
+
+			if s.actionNotifyCount < len(s.previous) {
+				fmt.Println(fmt.Sprintf("当前action count %d, name %s", s.actionNotifyCount, s.name))
 				continue
 			}
 
@@ -406,6 +417,8 @@ func (s *Step) runCompensate(ctx context.Context) {
 		case <-s.compensateCh:
 			// 前序依赖step需要全部回滚完成或待执行
 			fmt.Println(fmt.Sprintf("收到compensate: %s", s.name))
+			s.compensateNotifyCount++
+
 			isPreviousCompensateDone := true
 			for _, stp := range s.compensatePrevious {
 				// 此刻处于pending状态的step, 后续一定不会继续往下流转，不需要回滚
@@ -417,6 +430,11 @@ func (s *Step) runCompensate(ctx context.Context) {
 
 			// 前序的补偿完成了，才能往下走
 			if !isPreviousCompensateDone {
+				continue
+			}
+
+			if s.compensateNotifyCount < len(s.compensatePrevious) {
+				fmt.Println(fmt.Sprintf("当前compensate count %d, name %s", s.compensateNotifyCount, s.name))
 				continue
 			}
 
