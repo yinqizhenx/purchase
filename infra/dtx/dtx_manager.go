@@ -30,13 +30,13 @@ type DistributeTxManager struct {
 }
 
 func (txm *DistributeTxManager) Start(ctx context.Context) error {
-	trans, err := txm.loadPendingTrans(ctx)
-	if err != nil {
-		return err
-	}
-	for _, t := range trans {
-		t.AsyncExec(ctx)
-	}
+	//trans, err := txm.loadPendingTrans(ctx)
+	//if err != nil {
+	//	return err
+	//}
+	//for _, t := range trans {
+	//	t.AsyncExec(ctx)
+	//}
 	return nil
 }
 

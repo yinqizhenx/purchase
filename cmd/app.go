@@ -41,7 +41,7 @@ func newApp(logger log.Logger, gs *kgrpc.Server, hs *khttp.Server, ams *async_ta
 			gs,
 			hs,
 			ams,
-			ec,
+			//ec,
 			dtm,
 		),
 	}
