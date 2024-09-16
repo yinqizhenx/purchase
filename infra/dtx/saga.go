@@ -171,6 +171,7 @@ func (s *Saga) close() {
 	for _, stp := range s.steps {
 		close(stp.closed)
 	}
+	close(s.root.closed)
 	close(s.errCh)
 	close(s.done)
 }

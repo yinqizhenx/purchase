@@ -73,6 +73,7 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 		},
 		actionCh:       make(chan struct{}),
 		compensateCh:   make(chan struct{}),
+		closed:         make(chan struct{}),
 		actionDone:     make(chan error),
 		compensateDone: make(chan error),
 	}
