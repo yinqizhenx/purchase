@@ -323,7 +323,7 @@ func (s *Step) handleCompensate(ctx context.Context) {
 func (s *Step) onActionSuccess(ctx context.Context) {
 	s.changeState(ctx, StepActionSuccess)
 	s.saga.tryUpdateSuccess(ctx)
-	fmt.Println(fmt.Sprintf("step[%s] action done success，状态变更完成， 开始通知下游", s.name))
+	//fmt.Println(fmt.Sprintf("step[%s] action done success，状态变更完成， 开始通知下游", s.name))
 	for _, stp := range s.next {
 		stp.actionCh <- struct{}{}
 	}
