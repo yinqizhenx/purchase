@@ -71,11 +71,9 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 				return nil
 			},
 		},
-		actionCh:       make(chan struct{}),
-		compensateCh:   make(chan struct{}),
-		closed:         make(chan struct{}),
-		actionDone:     make(chan error),
-		compensateDone: make(chan error),
+		actionCh:     make(chan struct{}),
+		compensateCh: make(chan struct{}),
+		closed:       make(chan struct{}),
 	}
 	trans.root = root
 	stepMap := make(map[string]*Step)
@@ -94,11 +92,9 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 				fn:      txm.handlers[s.Compensate],
 				payload: s.Payload,
 			},
-			actionCh:       make(chan struct{}),
-			compensateCh:   make(chan struct{}),
-			closed:         make(chan struct{}),
-			actionDone:     make(chan error),
-			compensateDone: make(chan error),
+			actionCh:     make(chan struct{}),
+			compensateCh: make(chan struct{}),
+			closed:       make(chan struct{}),
 		}
 		stepMap[s.Name] = stp
 	}
@@ -195,10 +191,8 @@ func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch) *Sa
 				return nil
 			},
 		},
-		actionCh:       make(chan struct{}),
-		compensateCh:   make(chan struct{}),
-		actionDone:     make(chan error),
-		compensateDone: make(chan error),
+		actionCh:     make(chan struct{}),
+		compensateCh: make(chan struct{}),
 	}
 	trans.root = root
 	stepMap := make(map[string]*Step)
@@ -218,11 +212,9 @@ func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch) *Sa
 				payload: []byte(s.Payload),
 			},
 
-			actionCh:       make(chan struct{}),
-			compensateCh:   make(chan struct{}),
-			closed:         make(chan struct{}),
-			actionDone:     make(chan error),
-			compensateDone: make(chan error),
+			actionCh:     make(chan struct{}),
+			compensateCh: make(chan struct{}),
+			closed:       make(chan struct{}),
 		}
 		stepMap[s.Name] = stp
 	}

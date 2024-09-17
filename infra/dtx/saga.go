@@ -191,10 +191,6 @@ type Step struct {
 	compensateCh          chan struct{}
 	closed                chan struct{}
 	mu                    sync.Mutex
-	actionDone            chan error
-	compensateDone        chan error
-	alreadyExecAction     atomic.Int32
-	alreadyExecCompensate atomic.Int32
 	actionNotifyCount     int
 	compensateNotifyCount int
 }
@@ -235,28 +231,12 @@ func (s *Step) runAction(ctx context.Context) {
 				fmt.Println("已经失败不执行" + s.name)
 				return
 			}
-			// 等待所有依赖step执行成功
-			isAllPreviousSuccess := true
-			for _, stp := range s.previous {
-				if !stp.isSuccess() {
-					isAllPreviousSuccess = false
-					break
-				}
-			}
-
-			if !isAllPreviousSuccess {
-				fmt.Println("上游未全部完成" + s.name)
-				continue
-			}
 
 			if s.actionNotifyCount < len(s.previous) {
 				fmt.Println(fmt.Sprintf("当前action count %d, name %s", s.actionNotifyCount, s.name))
 				continue
 			}
 
-			if !s.alreadyExecAction.CompareAndSwap(0, 1) {
-				continue
-			}
 			s.handleAction(ctx)
 		}
 	}
@@ -329,13 +309,6 @@ func (s *Step) handleCompensate(ctx context.Context) {
 	}
 }
 
-func (s *Step) shouldRunAction() bool {
-	if s.saga.state.Load() != 0 {
-		return false
-	}
-	return s.state == StepPending
-}
-
 func (s *Step) onActionSuccess(ctx context.Context) {
 	s.changeState(ctx, StepActionSuccess)
 	s.saga.tryUpdateSuccess(ctx)
@@ -402,10 +375,6 @@ func (s *Step) noNeedCompensate() bool {
 	return s.state == StepPending
 }
 
-func (s *Step) alreadyCompensated() bool {
-	return s.state == StepCompensateSuccess || s.state == StepInCompensate || s.state == StepCompensateFail
-}
-
 func (s *Step) runCompensate(ctx context.Context) {
 	for {
 		select {
@@ -436,10 +405,6 @@ func (s *Step) runCompensate(ctx context.Context) {
 
 			if s.compensateNotifyCount < len(s.compensatePrevious) {
 				fmt.Println(fmt.Sprintf("当前compensate count %d, name %s", s.compensateNotifyCount, s.name))
-				continue
-			}
-
-			if !s.alreadyExecCompensate.CompareAndSwap(0, 1) {
 				continue
 			}
 
