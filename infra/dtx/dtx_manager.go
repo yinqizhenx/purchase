@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
-
 	"github.com/google/uuid"
+	"strings"
 )
 
 const (
@@ -30,13 +28,13 @@ type DistributeTxManager struct {
 }
 
 func (txm *DistributeTxManager) Start(ctx context.Context) error {
-	//trans, err := txm.loadPendingTrans(ctx)
-	//if err != nil {
-	//	return err
-	//}
-	//for _, t := range trans {
-	//	t.AsyncExec(ctx)
-	//}
+	trans, err := txm.loadPendingTrans(ctx)
+	if err != nil {
+		return err
+	}
+	for _, t := range trans {
+		t.AsyncExec(ctx)
+	}
 	return nil
 }
 
@@ -59,9 +57,10 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 		done:    make(chan struct{}),
 	}
 	root := &Step{
-		id:   uuid.NewString(),
-		saga: trans,
-		name: rootStepName,
+		id:    uuid.NewString(),
+		saga:  trans,
+		name:  rootStepName,
+		state: StepPending,
 		action: Caller{
 			fn: func(context.Context, []byte) error { return nil },
 		},
@@ -79,9 +78,10 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 	stepMap := make(map[string]*Step)
 	for _, s := range steps {
 		stp := &Step{
-			id:   uuid.NewString(),
-			saga: trans,
-			name: s.Name,
+			id:    uuid.NewString(),
+			saga:  trans,
+			name:  s.Name,
+			state: StepPending,
 			action: Caller{
 				name:    s.Action,
 				fn:      txm.handlers[s.Action],
@@ -171,17 +171,19 @@ func (txm *DistributeTxManager) loadPendingTrans(ctx context.Context) ([]*Saga, 
 	return result, nil
 }
 
-func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch) *Saga {
+func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch, opts ...Option) *Saga {
 	trans := &Saga{
-		id:      t.TransID,
-		storage: txm.storage,
-		errCh:   make(chan error),
-		done:    make(chan struct{}),
+		id:       t.TransID,
+		storage:  txm.storage,
+		errCh:    make(chan error),
+		done:     make(chan struct{}),
+		isFromDB: true,
 	}
 	root := &Step{
-		id:   uuid.NewString(),
-		saga: trans,
-		name: rootStepName,
+		id:    uuid.NewString(),
+		saga:  trans,
+		name:  rootStepName,
+		state: StepPending,
 		action: Caller{
 			fn: func(context.Context, []byte) error { return nil },
 		},
@@ -193,14 +195,16 @@ func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch) *Sa
 		},
 		actionCh:     make(chan struct{}),
 		compensateCh: make(chan struct{}),
+		closed:       make(chan struct{}),
 	}
 	trans.root = root
 	stepMap := make(map[string]*Step)
 	for _, s := range branches {
 		stp := &Step{
-			id:   s.BranchID,
-			saga: trans,
-			name: s.Name,
+			id:    s.BranchID,
+			saga:  trans,
+			name:  s.Name,
+			state: StepStatus(s.State),
 			action: Caller{
 				name:    s.Action,
 				fn:      txm.handlers[s.Action],
@@ -221,11 +225,12 @@ func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch) *Sa
 
 	for _, step := range branches {
 		depends := strings.Split(step.ActionDepend, ",")
-		if len(depends) == 0 {
+		if depends[0] == "" {
 			trans.root.next = append(trans.root.next, stepMap[step.Name])
 			stepMap[step.Name].previous = append(stepMap[step.Name].previous, trans.root)
 			trans.root.compensatePrevious = append(trans.root.compensatePrevious, stepMap[step.Name])
 			stepMap[step.Name].compensateNext = append(stepMap[step.Name].compensateNext, trans.root)
+			continue
 		}
 		for _, d := range depends {
 			stepMap[step.Name].previous = append(stepMap[step.Name].previous, stepMap[d])
@@ -237,6 +242,14 @@ func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch) *Sa
 
 	for _, stp := range stepMap {
 		trans.steps = append(trans.steps, stp)
+	}
+
+	for _, opt := range opts {
+		opt(trans)
+	}
+
+	if trans.timeout == 0 {
+		trans.timeout = defaultTimeout
 	}
 
 	return trans
@@ -273,22 +286,29 @@ var StepTest = []*SagaStep{
 		Name:       "step2",
 		Action:     "step2_action",
 		Compensate: "step2_rollback",
-		Depend:     nil,
+		Depend:     []string{"step1"},
 		Payload:    nil,
 	},
 	{
 		Name:       "step3",
 		Action:     "step3_action",
 		Compensate: "step3_rollback",
-		Depend:     nil,
+		Depend:     []string{"step1"},
 		Payload:    nil,
 	},
 	{
 		Name:       "step4",
 		Action:     "step4_action",
 		Compensate: "step4_rollback",
-		Depend:     []string{"step1", "step2", "step3"},
+		Depend:     []string{"step2"},
 		Payload:    nil,
+	},
+	{
+		Name:       "step5",
+		Action:     "step5_action",
+		Compensate: "step5_rollback",
+		//Depend:     []string{"step5"},
+		Payload: nil,
 	},
 }
 
@@ -314,16 +334,25 @@ func registerForTest(txm *DistributeTxManager) {
 		return nil
 	})
 	txm.RegisterHandler("step3_rollback", func(ctx context.Context, payload []byte) error {
+		//time.Sleep(16 * time.Second)
 		fmt.Println("run step3_rollback")
 		return nil
 	})
 	txm.RegisterHandler("step4_action", func(ctx context.Context, payload []byte) error {
-		time.Sleep(1 * time.Second)
+		//time.Sleep(16 * time.Second)
 		fmt.Println("run step4_action")
 		return errors.New("ssccc")
 	})
 	txm.RegisterHandler("step4_rollback", func(ctx context.Context, payload []byte) error {
 		fmt.Println("run step4_rollback")
+		return nil
+	})
+	txm.RegisterHandler("step5_action", func(ctx context.Context, payload []byte) error {
+		fmt.Println("run step5_action")
+		return nil
+	})
+	txm.RegisterHandler("step5_rollback", func(ctx context.Context, payload []byte) error {
+		fmt.Println("run step5_rollback")
 		return nil
 	})
 }

@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	defaultTimeout = 10 * time.Second
+	defaultTimeout = 100 * time.Second
 )
 
 func NewSaga() *Saga {
@@ -30,11 +30,12 @@ type Saga struct {
 	root  *Step
 	steps []*Step
 	// order   map[string][]string
-	state   atomic.Int32 // 0 - 执行中， 1 - 失败， 2 - 成功
-	errCh   chan error   // 正向执行的错误channel，容量为1
-	storage TransStorage
-	timeout time.Duration
-	done    chan struct{}
+	state    atomic.Int32 // 0 - 执行中， 1 - 失败， 2 - 成功
+	errCh    chan error   // 正向执行的错误channel，容量为1
+	storage  TransStorage
+	timeout  time.Duration
+	done     chan struct{}
+	isFromDB bool
 }
 
 func (s *Saga) Exec(ctx context.Context) error {
@@ -47,10 +48,12 @@ func (s *Saga) AsyncExec(ctx context.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 		defer cancel()
 
-		err := s.sync(ctx)
-		if err != nil {
-			s.errCh <- err
-			return
+		if !s.isFromDB {
+			err := s.sync(ctx)
+			if err != nil {
+				s.errCh <- err
+				return
+			}
 		}
 
 		utils.SafeGo(ctx, func() {
@@ -95,7 +98,11 @@ func (s *Saga) sync(ctx context.Context) error {
 		actionDepend := make([]string, 0)
 		compensateDepend := make([]string, 0)
 		for _, p := range stp.previous {
-			actionDepend = append(actionDepend, p.name)
+			name := p.name
+			if p.name == rootStepName {
+				name = ""
+			}
+			actionDepend = append(actionDepend, name)
 		}
 		for _, n := range stp.compensatePrevious {
 			compensateDepend = append(compensateDepend, n.name)
@@ -195,16 +202,20 @@ type Step struct {
 	compensateNotifyCount int
 }
 
-type StepStatus int
+type StepStatus string
+
+func (s StepStatus) String() string {
+	return string(s)
+}
 
 const (
-	StepPending           StepStatus = 0
-	StepInAction          StepStatus = 1
-	StepActionFail        StepStatus = 2
-	StepActionSuccess     StepStatus = 3
-	StepInCompensate      StepStatus = 4
-	StepCompensateSuccess StepStatus = 5
-	StepCompensateFail    StepStatus = 6
+	StepPending           StepStatus = "pending"
+	StepInAction          StepStatus = "in action"
+	StepActionFail        StepStatus = "action fail"
+	StepActionSuccess     StepStatus = "action success"
+	StepInCompensate      StepStatus = "in compensate"
+	StepCompensateSuccess StepStatus = "compensate success"
+	StepCompensateFail    StepStatus = "compensate fail"
 	// StepSuccess           StepStatus = 7
 	// StepFailed            StepStatus = 8
 )
@@ -335,26 +346,7 @@ func (s *Step) onActionFail(ctx context.Context, err error) {
 }
 
 func (s *Step) syncStateChange(ctx context.Context) {
-	var newState string
-	switch s.state {
-	case 0:
-		newState = "pending"
-	case 1:
-		newState = "in action"
-	case 2:
-		newState = "action fail"
-	case 3:
-		newState = "action success"
-	case 4:
-		newState = "in compensate"
-	case 5:
-		newState = "compensate success"
-	case 6:
-		newState = "compensate fail"
-	default:
-		logx.Errorf(ctx, "unknown saga state : %d", s.state)
-	}
-	err := s.saga.storage.UpdateBranchState(ctx, s.id, newState)
+	err := s.saga.storage.UpdateBranchState(ctx, s.id, s.state.String())
 	if err != nil {
 		logx.Errorf(ctx, "sync branch state change fail, err:%v", err)
 	}
