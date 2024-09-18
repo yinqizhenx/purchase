@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"strings"
 )
 
 const (
@@ -49,101 +48,26 @@ func (txm *DistributeTxManager) NewTx(ctx context.Context) *TransSaga {
 	return nil
 }
 
-func (txm *DistributeTxManager) NewTransSaga(ctx context.Context, steps []*TransSagaStep, opts ...Option) (*TransSaga, error) {
+func (txm *DistributeTxManager) NewTransSaga(steps []*TransSagaStep, opts ...Option) (*TransSaga, error) {
 	trans := &TransSaga{
 		id:      uuid.NewString(),
 		storage: txm.storage,
 		errCh:   make(chan error, 1),
 		done:    make(chan struct{}),
 	}
-	root := &Step{
-		id:    uuid.NewString(),
-		saga:  trans,
-		name:  rootStepName,
-		state: StepPending,
-		action: Caller{
-			fn: func(context.Context, []byte) error { return nil },
-		},
-		compensate: Caller{
-			fn: func(context.Context, []byte) error {
-				trans.close()
-				return nil
-			},
-		},
-		actionCh:     make(chan struct{}),
-		compensateCh: make(chan struct{}),
-		closed:       make(chan struct{}),
-	}
-	trans.root = root
-	stepMap := make(map[string]*Step)
-	for _, s := range steps {
-		stp := &Step{
-			id:    uuid.NewString(),
-			saga:  trans,
-			name:  s.Name,
-			state: StepPending,
-			action: Caller{
-				name:    s.Action,
-				fn:      txm.handlers[s.Action],
-				payload: s.Payload,
-			},
-			compensate: Caller{
-				name:    s.Compensate,
-				fn:      txm.handlers[s.Compensate],
-				payload: s.Payload,
-			},
-			actionCh:     make(chan struct{}),
-			compensateCh: make(chan struct{}),
-			closed:       make(chan struct{}),
-		}
-		stepMap[s.Name] = stp
-	}
-
+	branches := make([]*Branch, 0, len(steps))
 	for _, stp := range steps {
-		for _, dp := range stp.Depend {
-			if _, ok := stepMap[dp]; !ok {
-				return nil, errors.New(fmt.Sprintf("depend not exist: %s", dp))
-			}
-		}
+		branches = append(branches, &Branch{
+			BranchID:     uuid.NewString(),
+			State:        StepPending,
+			Name:         stp.Name,
+			Action:       stp.Action,
+			Compensate:   stp.Compensate,
+			Payload:      string(stp.Payload),
+			ActionDepend: stp.Depend,
+		})
 	}
-
-	for _, step := range steps {
-		if step.hasNoDepend() {
-			trans.root.next = append(trans.root.next, stepMap[step.Name])
-			stepMap[step.Name].previous = append(stepMap[step.Name].previous, trans.root)
-			trans.root.compensatePrevious = append(trans.root.compensatePrevious, stepMap[step.Name])
-			stepMap[step.Name].compensateNext = append(stepMap[step.Name].compensateNext, trans.root)
-		}
-		for _, d := range step.Depend {
-			stepMap[step.Name].previous = append(stepMap[step.Name].previous, stepMap[d])
-			stepMap[d].next = append(stepMap[d].next, stepMap[step.Name])
-			stepMap[step.Name].compensateNext = append(stepMap[step.Name].compensateNext, stepMap[d])
-			stepMap[d].compensatePrevious = append(stepMap[d].compensatePrevious, stepMap[step.Name])
-		}
-	}
-
-	if len(trans.root.next) == 0 {
-		return nil, errors.New("exist circle depend, root next can not be empty")
-	}
-
-	for _, stp := range stepMap {
-		if stp.isCircleDepend() {
-			return nil, errors.New("exist circle depend")
-		}
-	}
-
-	for _, stp := range stepMap {
-		trans.steps = append(trans.steps, stp)
-	}
-
-	for _, opt := range opts {
-		opt(trans)
-	}
-
-	if trans.timeout == 0 {
-		trans.timeout = defaultTimeout
-	}
-	return trans, nil
+	return trans.build(branches, txm.handlers, opts...)
 }
 
 func (txm *DistributeTxManager) loadPendingTrans(ctx context.Context) ([]*TransSaga, error) {
@@ -165,13 +89,16 @@ func (txm *DistributeTxManager) loadPendingTrans(ctx context.Context) ([]*TransS
 	result := make([]*TransSaga, 0, len(transMap))
 	for id, t := range transMap {
 		branches := branchesMap[id]
-		saga := txm.buildTransSaga(t, branches)
+		saga, err := txm.buildTransSaga(t, branches)
+		if err != nil {
+			return nil, err
+		}
 		result = append(result, saga)
 	}
 	return result, nil
 }
 
-func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch, opts ...Option) *TransSaga {
+func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch, opts ...Option) (*TransSaga, error) {
 	trans := &TransSaga{
 		id:       t.TransID,
 		storage:  txm.storage,
@@ -179,80 +106,7 @@ func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch, opt
 		done:     make(chan struct{}),
 		isFromDB: true,
 	}
-	root := &Step{
-		id:    uuid.NewString(),
-		saga:  trans,
-		name:  rootStepName,
-		state: StepPending,
-		action: Caller{
-			fn: func(context.Context, []byte) error { return nil },
-		},
-		compensate: Caller{
-			fn: func(context.Context, []byte) error {
-				trans.close()
-				return nil
-			},
-		},
-		actionCh:     make(chan struct{}),
-		compensateCh: make(chan struct{}),
-		closed:       make(chan struct{}),
-	}
-	trans.root = root
-	stepMap := make(map[string]*Step)
-	for _, s := range branches {
-		stp := &Step{
-			id:    s.BranchID,
-			saga:  trans,
-			name:  s.Name,
-			state: StepStatus(s.State),
-			action: Caller{
-				name:    s.Action,
-				fn:      txm.handlers[s.Action],
-				payload: []byte(s.Payload),
-			},
-			compensate: Caller{
-				name:    s.Compensate,
-				fn:      txm.handlers[s.Compensate],
-				payload: []byte(s.Payload),
-			},
-
-			actionCh:     make(chan struct{}),
-			compensateCh: make(chan struct{}),
-			closed:       make(chan struct{}),
-		}
-		stepMap[s.Name] = stp
-	}
-
-	for _, step := range branches {
-		depends := strings.Split(step.ActionDepend, ",")
-		if depends[0] == "" {
-			trans.root.next = append(trans.root.next, stepMap[step.Name])
-			stepMap[step.Name].previous = append(stepMap[step.Name].previous, trans.root)
-			trans.root.compensatePrevious = append(trans.root.compensatePrevious, stepMap[step.Name])
-			stepMap[step.Name].compensateNext = append(stepMap[step.Name].compensateNext, trans.root)
-			continue
-		}
-		for _, d := range depends {
-			stepMap[step.Name].previous = append(stepMap[step.Name].previous, stepMap[d])
-			stepMap[d].next = append(stepMap[d].next, stepMap[step.Name])
-			stepMap[step.Name].compensateNext = append(stepMap[step.Name].compensateNext, stepMap[d])
-			stepMap[d].compensatePrevious = append(stepMap[d].compensatePrevious, stepMap[step.Name])
-		}
-	}
-
-	for _, stp := range stepMap {
-		trans.steps = append(trans.steps, stp)
-	}
-
-	for _, opt := range opts {
-		opt(trans)
-	}
-
-	if trans.timeout == 0 {
-		trans.timeout = defaultTimeout
-	}
-
-	return trans
+	return trans.build(branches, txm.handlers, opts...)
 }
 
 func (txm *DistributeTxManager) RegisterHandler(name string, handler func(context.Context, []byte) error) {

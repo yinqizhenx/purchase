@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/wire"
 
@@ -66,13 +67,13 @@ func (s *StorageImpl) SaveBranch(ctx context.Context, branchList []*Branch) erro
 			SetBranchID(b.BranchID).
 			SetTransID(b.TransID).
 			SetType(b.Type).
-			SetState(b.State).
+			SetState(b.State.String()).
 			SetName(b.Name).
 			SetAction(b.Action).
 			SetCompensate(b.Compensate).
 			SetPayload(b.Payload).
-			SetActionDepend(b.ActionDepend).
-			SetCompensateDepend(b.CompensateDepend).
+			SetActionDepend(strings.Join(b.ActionDepend, ",")).
+			SetCompensateDepend(strings.Join(b.CompensateDepend, ",")).
 			SetFinishedAt(b.FinishedAt).
 			SetCreatedAt(b.CreatedAt).
 			SetCreatedBy(b.CreatedBy).
@@ -147,13 +148,13 @@ func ConvertBranch(b *ent.Branch) *Branch {
 		BranchID:         b.BranchID,
 		TransID:          b.TransID,
 		Type:             b.Type,
-		State:            b.State,
+		State:            StepStatus(b.State),
 		Name:             b.Name,
 		Action:           b.Action,
 		Compensate:       b.Compensate,
 		Payload:          b.Payload,
-		ActionDepend:     b.ActionDepend,
-		CompensateDepend: b.CompensateDepend,
+		ActionDepend:     strings.Split(b.ActionDepend, ","),
+		CompensateDepend: strings.Split(b.CompensateDepend, ","),
 		FinishedAt:       b.FinishedAt,
 		CreatedAt:        b.CreatedAt,
 		CreatedBy:        b.CreatedBy,

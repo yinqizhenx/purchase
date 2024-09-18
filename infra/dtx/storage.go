@@ -28,13 +28,13 @@ type Branch struct {
 	BranchID         string
 	TransID          string
 	Type             string
-	State            string
+	State            StepStatus
 	Name             string
 	Action           string
 	Compensate       string
 	Payload          string
-	ActionDepend     string
-	CompensateDepend string
+	ActionDepend     []string
+	CompensateDepend []string
 	FinishedAt       time.Time
 	IsDead           bool
 	CreatedAt        time.Time

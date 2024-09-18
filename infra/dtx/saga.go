@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
+	"github.com/google/uuid"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -117,8 +117,8 @@ func (t *TransSaga) sync(ctx context.Context) error {
 			Action:           stp.action.name,
 			Compensate:       stp.compensate.name,
 			Payload:          "stp.action.payload",
-			ActionDepend:     strings.Join(actionDepend, ","),
-			CompensateDepend: strings.Join(compensateDepend, ","),
+			ActionDepend:     actionDepend,
+			CompensateDepend: compensateDepend,
 			FinishedAt:       time.Now(),
 			IsDead:           false,
 			CreatedAt:        time.Now(),
@@ -172,6 +172,105 @@ func (t *TransSaga) syncStateChange(ctx context.Context) error {
 
 func (t *TransSaga) isFailed() bool {
 	return t.state.Load() == 1
+}
+
+func (t *TransSaga) build(steps []*Branch, handlers map[string]func(context.Context, []byte) error, opts ...Option) (*TransSaga, error) {
+	t.root = t.buildRootStep()
+	stepMap := make(map[string]*Step)
+	for _, s := range steps {
+		stp := &Step{
+			id:    s.BranchID,
+			saga:  t,
+			name:  s.Name,
+			state: s.State,
+			action: Caller{
+				name:    s.Action,
+				fn:      handlers[s.Action],
+				payload: []byte(s.Payload),
+			},
+			compensate: Caller{
+				name:    s.Compensate,
+				fn:      handlers[s.Compensate],
+				payload: []byte(s.Payload),
+			},
+			actionCh:     make(chan struct{}),
+			compensateCh: make(chan struct{}),
+			closed:       make(chan struct{}),
+		}
+		stepMap[s.Name] = stp
+	}
+
+	for _, stp := range steps {
+		for _, dp := range stp.ActionDepend {
+			if _, ok := stepMap[dp]; !ok {
+				return nil, errors.New(fmt.Sprintf("depend not exist: %s", dp))
+			}
+		}
+	}
+
+	for _, step := range steps {
+		if len(step.ActionDepend) == 0 || step.ActionDepend[0] == "" {
+			t.root.next = append(t.root.next, stepMap[step.Name])
+			stepMap[step.Name].previous = append(stepMap[step.Name].previous, t.root)
+			t.root.compensatePrevious = append(t.root.compensatePrevious, stepMap[step.Name])
+			stepMap[step.Name].compensateNext = append(stepMap[step.Name].compensateNext, t.root)
+			continue
+		}
+		for _, d := range step.ActionDepend {
+			stepMap[step.Name].previous = append(stepMap[step.Name].previous, stepMap[d])
+			stepMap[d].next = append(stepMap[d].next, stepMap[step.Name])
+			stepMap[step.Name].compensateNext = append(stepMap[step.Name].compensateNext, stepMap[d])
+			stepMap[d].compensatePrevious = append(stepMap[d].compensatePrevious, stepMap[step.Name])
+		}
+	}
+
+	if len(t.root.next) == 0 {
+		return nil, errors.New("exist circle depend, root next can not be empty")
+	}
+
+	for _, stp := range stepMap {
+		if stp.isCircleDepend() {
+			return nil, errors.New("exist circle depend")
+		}
+	}
+
+	for _, stp := range stepMap {
+		t.steps = append(t.steps, stp)
+	}
+
+	for _, opt := range opts {
+		opt(t)
+	}
+
+	if t.timeout == 0 {
+		t.timeout = defaultTimeout
+	}
+	return t, nil
+}
+
+func (t *TransSaga) buildRootStep(opts ...StepOption) *Step {
+	root := &Step{
+		id:    uuid.NewString(),
+		saga:  t,
+		name:  rootStepName,
+		state: StepPending,
+		action: Caller{
+			fn: func(context.Context, []byte) error { return nil },
+		},
+		compensate: Caller{
+			fn: func(context.Context, []byte) error {
+				t.close()
+				return nil
+			},
+		},
+		actionCh:     make(chan struct{}),
+		compensateCh: make(chan struct{}),
+		closed:       make(chan struct{}),
+	}
+	for _, opt := range opts {
+		opt(root)
+	}
+	return root
 }
 
 func (t *TransSaga) close() {
