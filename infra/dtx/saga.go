@@ -20,12 +20,12 @@ const (
 	defaultTimeout = 100 * time.Second
 )
 
-func NewSaga() *Saga {
-	s := &Saga{}
-	return s
+func NewTransSaga() *TransSaga {
+	t := &TransSaga{}
+	return t
 }
 
-type Saga struct {
+type TransSaga struct {
 	id    string
 	root  *Step
 	steps []*Step
@@ -38,31 +38,31 @@ type Saga struct {
 	isFromDB bool
 }
 
-func (s *Saga) Exec(ctx context.Context) error {
-	s.AsyncExec(ctx)
-	return <-s.errCh
+func (t *TransSaga) Exec(ctx context.Context) error {
+	t.AsyncExec(ctx)
+	return <-t.errCh
 }
 
-func (s *Saga) AsyncExec(ctx context.Context) {
+func (t *TransSaga) AsyncExec(ctx context.Context) {
 	utils.SafeGo(ctx, func() {
-		ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
+		ctx, cancel := context.WithTimeout(context.Background(), t.timeout)
 		defer cancel()
 
-		if !s.isFromDB {
-			err := s.sync(ctx)
+		if !t.isFromDB {
+			err := t.sync(ctx)
 			if err != nil {
-				s.errCh <- err
+				t.errCh <- err
 				return
 			}
 		}
 
 		utils.SafeGo(ctx, func() {
-			s.root.runAction(ctx)
+			t.root.runAction(ctx)
 		})
 		utils.SafeGo(ctx, func() {
-			s.root.runCompensate(ctx)
+			t.root.runCompensate(ctx)
 		})
-		for _, step := range s.steps {
+		for _, step := range t.steps {
 			stp := step // 重新赋值，防止step引用变化
 			utils.SafeGo(ctx, func() {
 				stp.runAction(ctx)
@@ -71,20 +71,20 @@ func (s *Saga) AsyncExec(ctx context.Context) {
 				stp.runCompensate(ctx)
 			})
 		}
-		s.root.actionCh <- struct{}{}
+		t.root.actionCh <- struct{}{}
 
 		select {
 		case <-ctx.Done():
 			fmt.Println("context done 退出AsyncExec")
-		case <-s.done:
+		case <-t.done:
 			fmt.Println("执行完成 退出AsyncExec")
 		}
 	})
 }
 
-func (s *Saga) sync(ctx context.Context) error {
+func (t *TransSaga) sync(ctx context.Context) error {
 	tx := &Trans{
-		TransID:    s.id,
+		TransID:    t.id,
 		Name:       "test",
 		State:      "pending",
 		FinishedAt: time.Now(),
@@ -94,7 +94,7 @@ func (s *Saga) sync(ctx context.Context) error {
 		UpdatedAt:  time.Now(),
 	}
 	branchList := make([]*Branch, 0)
-	for _, stp := range s.steps {
+	for _, stp := range t.steps {
 		actionDepend := make([]string, 0)
 		compensateDepend := make([]string, 0)
 		for _, p := range stp.previous {
@@ -128,36 +128,36 @@ func (s *Saga) sync(ctx context.Context) error {
 		}
 		branchList = append(branchList, branch)
 	}
-	err := s.storage.SaveTrans(ctx, tx)
+	err := t.storage.SaveTrans(ctx, tx)
 	if err != nil {
 		return err
 	}
-	err = s.storage.SaveBranch(ctx, branchList)
+	err = t.storage.SaveBranch(ctx, branchList)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *Saga) tryUpdateSuccess(ctx context.Context) {
-	for _, stp := range s.steps {
+func (t *TransSaga) tryUpdateSuccess(ctx context.Context) {
+	for _, stp := range t.steps {
 		if !stp.isSuccess() {
 			return
 		}
 	}
 	// 修改全局事务成功，防止并发同时close(s.errCh)
-	if !s.state.CompareAndSwap(0, 2) {
+	if !t.state.CompareAndSwap(0, 2) {
 		return
 	}
-	if err := s.syncStateChange(ctx); err != nil {
+	if err := t.syncStateChange(ctx); err != nil {
 		logx.Errorf(ctx, "update branch state success: %v", err)
 	}
-	s.close()
+	t.close()
 }
 
-func (s *Saga) syncStateChange(ctx context.Context) error {
+func (t *TransSaga) syncStateChange(ctx context.Context) error {
 	var newState string
-	switch s.state.Load() {
+	switch t.state.Load() {
 	case 0:
 		newState = "pending"
 	case 1:
@@ -165,27 +165,27 @@ func (s *Saga) syncStateChange(ctx context.Context) error {
 	case 2:
 		newState = "success"
 	default:
-		return errors.New(fmt.Sprintf("unknown saga state : %d", s.state.Load()))
+		return errors.New(fmt.Sprintf("unknown saga state : %d", t.state.Load()))
 	}
-	return s.storage.UpdateTransState(ctx, s.id, newState)
+	return t.storage.UpdateTransState(ctx, t.id, newState)
 }
 
-func (s *Saga) isFailed() bool {
-	return s.state.Load() == 1
+func (t *TransSaga) isFailed() bool {
+	return t.state.Load() == 1
 }
 
-func (s *Saga) close() {
-	for _, stp := range s.steps {
+func (t *TransSaga) close() {
+	for _, stp := range t.steps {
 		close(stp.closed)
 	}
-	close(s.root.closed)
-	close(s.errCh)
-	close(s.done)
+	close(t.root.closed)
+	close(t.errCh)
+	close(t.done)
 }
 
 type Step struct {
 	id                    string
-	saga                  *Saga
+	saga                  *TransSaga
 	action                Caller
 	compensate            Caller
 	state                 StepStatus

@@ -22,7 +22,7 @@ func NewDistributeTxManager(s TransStorage) *DistributeTxManager {
 }
 
 type DistributeTxManager struct {
-	trans    []*Saga
+	trans    []*TransSaga
 	storage  TransStorage
 	handlers map[string]func(context.Context, []byte) error
 }
@@ -45,12 +45,12 @@ func (txm *DistributeTxManager) Stop(ctx context.Context) error {
 	return nil
 }
 
-func (txm *DistributeTxManager) NewTx(ctx context.Context) *Saga {
+func (txm *DistributeTxManager) NewTx(ctx context.Context) *TransSaga {
 	return nil
 }
 
-func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep, opts ...Option) (*Saga, error) {
-	trans := &Saga{
+func (txm *DistributeTxManager) NewTransSagaTx(ctx context.Context, steps []*TransSagaStep, opts ...Option) (*TransSaga, error) {
+	trans := &TransSaga{
 		id:      uuid.NewString(),
 		storage: txm.storage,
 		errCh:   make(chan error, 1),
@@ -146,7 +146,7 @@ func (txm *DistributeTxManager) NewSagaTx(ctx context.Context, steps []*SagaStep
 	return trans, nil
 }
 
-func (txm *DistributeTxManager) loadPendingTrans(ctx context.Context) ([]*Saga, error) {
+func (txm *DistributeTxManager) loadPendingTrans(ctx context.Context) ([]*TransSaga, error) {
 	transMap, err := txm.storage.GetPendingTrans(ctx)
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func (txm *DistributeTxManager) loadPendingTrans(ctx context.Context) ([]*Saga, 
 		return nil, err
 	}
 
-	result := make([]*Saga, 0, len(transMap))
+	result := make([]*TransSaga, 0, len(transMap))
 	for id, t := range transMap {
 		branches := branchesMap[id]
 		saga := txm.buildTransSaga(t, branches)
@@ -171,8 +171,8 @@ func (txm *DistributeTxManager) loadPendingTrans(ctx context.Context) ([]*Saga, 
 	return result, nil
 }
 
-func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch, opts ...Option) *Saga {
-	trans := &Saga{
+func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch, opts ...Option) *TransSaga {
+	trans := &TransSaga{
 		id:       t.TransID,
 		storage:  txm.storage,
 		errCh:    make(chan error, 1),
@@ -262,11 +262,11 @@ func (txm *DistributeTxManager) RegisterHandler(name string, handler func(contex
 	txm.handlers[name] = handler
 }
 
-func (h *SagaStep) hasNoDepend() bool {
+func (h *TransSagaStep) hasNoDepend() bool {
 	return len(h.Depend) == 0
 }
 
-type SagaStep struct {
+type TransSagaStep struct {
 	Name       string
 	Action     string
 	Compensate string
@@ -274,7 +274,7 @@ type SagaStep struct {
 	Depend     []string
 }
 
-var StepTest = []*SagaStep{
+var StepTest = []*TransSagaStep{
 	{
 		Name:       "step1",
 		Action:     "step1_action",

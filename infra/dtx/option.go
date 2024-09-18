@@ -2,10 +2,10 @@ package dtx
 
 import "time"
 
-type Option func(*Saga)
+type Option func(*TransSaga)
 
 func WithTimeout(d time.Duration) Option {
-	return func(s *Saga) {
-		s.timeout = d
+	return func(t *TransSaga) {
+		t.timeout = d
 	}
 }
