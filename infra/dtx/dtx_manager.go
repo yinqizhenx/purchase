@@ -49,7 +49,7 @@ func (txm *DistributeTxManager) NewTx(ctx context.Context) *TransSaga {
 	return nil
 }
 
-func (txm *DistributeTxManager) NewTransSagaTx(ctx context.Context, steps []*TransSagaStep, opts ...Option) (*TransSaga, error) {
+func (txm *DistributeTxManager) NewTransSaga(ctx context.Context, steps []*TransSagaStep, opts ...Option) (*TransSaga, error) {
 	trans := &TransSaga{
 		id:      uuid.NewString(),
 		storage: txm.storage,

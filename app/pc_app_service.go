@@ -38,7 +38,7 @@ func (s *PaymentCenterAppService) AddPaymentApply(ctx context.Context, req *pb.A
 		return nil, err
 	}
 
-	sg, err := s.dtm.NewSagaTx(ctx, dtx.StepTest)
+	sg, err := s.dtm.NewTransSaga(ctx, dtx.StepTest)
 	if err != nil {
 		return nil, err
 	}
