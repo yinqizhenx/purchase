@@ -96,6 +96,11 @@ func (m *AsyncTaskMux) Listen(ctx context.Context) {
 				return
 			case m.sem <- struct{}{}:
 				go func() {
+					task, err := m.lockAndLoadTask(ctx, taskID)
+					if err != nil {
+						logx.Error(ctx, "lockAndLoadTask fail", slog.String("task", taskID), slog.Any("error", err))
+						return
+					}
 					defer func() {
 						err := m.unLockTask(ctx, taskID)
 						if err != nil {
@@ -106,11 +111,6 @@ func (m *AsyncTaskMux) Listen(ctx context.Context) {
 							logx.Error(ctx, "handle async task from listen panic", slog.Any("error", p))
 						}
 					}()
-					task, err := m.lockAndLoadTask(ctx, taskID)
-					if err != nil {
-						logx.Error(ctx, "lockAndLoadTask fail", slog.String("task", taskID), slog.Any("error", err))
-						return
-					}
 					if len(task) == 1 {
 						err = m.Handle(ctx, task[0])
 						if err != nil {
@@ -241,7 +241,15 @@ func (m *AsyncTaskMux) lockAndLoadTask(ctx context.Context, taskIDs ...string) (
 			lockedIDs = append(lockedIDs, taskID)
 		}
 	}
-	return m.dal.FindAllPending(ctx, taskIDs)
+	_, err := m.dal.FindAllPending(ctx, taskIDs)
+	if err != nil {
+		for _, taskID := range taskIDs {
+			if err := m.unLockTask(ctx, taskID); err != nil {
+				logx.Errorf(ctx, "unlock task fail, err:%v", err)
+			}
+		}
+	}
+	return nil, err
 }
 
 func (m *AsyncTaskMux) lockTask(ctx context.Context, taskID string) error {
@@ -251,6 +259,16 @@ func (m *AsyncTaskMux) lockTask(ctx context.Context, taskID string) error {
 		return err
 	}
 	m.locks[taskID] = lock
+	return nil
+}
+
+func (m *AsyncTaskMux) unLockTasks(ctx context.Context, taskIDs ...string) error {
+	for _, taskID := range taskIDs {
+		err := m.unLockTask(ctx, taskID)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
