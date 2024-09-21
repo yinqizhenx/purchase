@@ -241,7 +241,7 @@ func (m *AsyncTaskMux) lockAndLoadTask(ctx context.Context, taskIDs ...string) (
 			lockedIDs = append(lockedIDs, taskID)
 		}
 	}
-	_, err := m.dal.FindAllPending(ctx, taskIDs)
+	tasks, err := m.dal.FindAllPending(ctx, taskIDs)
 	if err != nil {
 		for _, taskID := range taskIDs {
 			if err := m.unLockTask(ctx, taskID); err != nil {
@@ -249,7 +249,7 @@ func (m *AsyncTaskMux) lockAndLoadTask(ctx context.Context, taskIDs ...string) (
 			}
 		}
 	}
-	return nil, err
+	return tasks, err
 }
 
 func (m *AsyncTaskMux) lockTask(ctx context.Context, taskID string) error {
