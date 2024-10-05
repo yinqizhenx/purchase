@@ -168,7 +168,7 @@ func (c *Consumer) Run(ctx context.Context) {
 	for {
 		err := c.cg.Consume(ctx, c.topics, c) // 传入定义好的 ConsumerGroupHandler 结构体
 		if err != nil {
-			fmt.Printf("consume error: %#v\n", err)
+			logx.Errorf(ctx, "consume error: %#v\n", err)
 		}
 	}
 }
