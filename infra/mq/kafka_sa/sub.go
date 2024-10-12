@@ -202,46 +202,49 @@ func (c *Consumer) handleMessage(ctx context.Context, m *mq.Message, h mq.Handle
 			if err = c.CommitMessage(ctx, m); err != nil {
 				logx.Error(ctx, "failed to commit messages:", slog.Any("error", err), slog.Any("message", m))
 			}
-		} else {
-			if !c.isConsumeRlq {
-				// 已经消费过，但消费失败了
-				c.ReconsumeLater(m)
-			}
+			return
 		}
-	} else {
-		// 未消费过，执行消费逻辑
-		err = h(ctx, m)
-		if err != nil {
-			logx.Error(ctx, "consume message fail", slog.Any("error", err), slog.Any("message", m))
-			// 消费失败, 清除掉幂等key
-			// 如果RemoveFailKey失败，ReconsumeLater成功，重会等到key过期删除，然后被消费
-			// 如果RemoveFailKey成功，ReconsumeLater失败，不会再次消费
-			// 如果RemoveFailKey失败，ReconsumeLater失败，队列未提交ack，会等到key过期删除，不会再次被消费
-			err = retry.Run(func() error {
-				return c.sub.idp.RemoveFailKey(ctx, m.ID)
-			}, 2)
-			if err != nil {
-				logx.Error(ctx, "RemoveFailKey fail after retry 2 times", slog.Any("error", err), slog.String("key", m.ID))
-			}
-			if !c.isConsumeRlq {
-				c.ReconsumeLater(m)
-			}
-		} else {
-			// 消费采成功
-			err = retry.Run(func() error {
-				return c.sub.idp.UpdateKeyDone(ctx, m.ID)
-			}, 2)
-			if err != nil {
-				logx.Error(ctx, "UpdateKeyDone fail after retry 2 times", slog.Any("error", err), slog.String("key", m.ID))
-			}
-			err = retry.Run(func() error {
-				return c.CommitMessage(ctx, m)
-			}, 2)
-			if err != nil {
-				logx.Error(ctx, "consumer ack fail after retry 2 times", slog.Any("error", err), slog.Any("message", m))
-			}
+		// 消费重试队列里的消息，只是将消息推送到初始topic，理论不会失败，不要再往重试队列里投递，避免复杂化
+		if !c.isConsumeRlq {
+			// 已经消费过，但消费失败了
+			c.ReconsumeLater(m)
 		}
+		return
 	}
+	// 未消费过，执行消费逻辑
+	err = h(ctx, m)
+	// 消费失败
+	if err != nil {
+		logx.Error(ctx, "consume message fail", slog.Any("error", err), slog.Any("message", m))
+		// 消费失败, 清除掉幂等key
+		// 如果RemoveFailKey失败，ReconsumeLater成功，重会等到key过期删除，然后被消费
+		// 如果RemoveFailKey成功，ReconsumeLater失败，队列未提交ack（下一次offset提交成功，会把之前的offset一起提交），不会再次消费，需要人工介入resume
+		// 如果RemoveFailKey失败，ReconsumeLater失败，队列未提交ack，会等到key过期删除，不会再次被消费, 需要人工介入resume
+		err = retry.Run(func() error {
+			return c.sub.idp.RemoveFailKey(ctx, m.ID)
+		}, 2)
+		if err != nil {
+			logx.Error(ctx, "RemoveFailKey fail after retry 2 times", slog.Any("error", err), slog.String("key", m.ID))
+		}
+		if !c.isConsumeRlq {
+			c.ReconsumeLater(m)
+		}
+		return
+	}
+	// 消费成功
+	err = retry.Run(func() error {
+		return c.sub.idp.UpdateKeyDone(ctx, m.ID)
+	}, 2)
+	if err != nil {
+		logx.Error(ctx, "UpdateKeyDone fail after retry 2 times", slog.Any("error", err), slog.String("key", m.ID))
+	}
+	err = retry.Run(func() error {
+		return c.CommitMessage(ctx, m)
+	}, 2)
+	if err != nil {
+		logx.Error(ctx, "consumer ack fail after retry 2 times", slog.Any("error", err), slog.Any("message", m))
+	}
+	return
 }
 
 func (c *Consumer) buildMessage(m *sarama.ConsumerMessage) (*mq.Message, error) {
@@ -336,6 +339,7 @@ func (c *Consumer) redelivery(ctx context.Context, m *mq.Message) error {
 	fmt.Println(fmt.Sprintf("bizCODE: %s发送消息到topic:%s", m.BizCode(), m.EventName()))
 	err := c.sub.pub.Publish(ctx, m)
 	if err != nil {
+		logx.Error(ctx, fmt.Sprintf("retry message ,bizCODE: %s发送消息到topic:%s", m.BizCode(), m.EventName()), slog.Any("error", err))
 		return err
 	}
 	err = c.CommitMessage(ctx, m)
