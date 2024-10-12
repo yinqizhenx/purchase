@@ -42,8 +42,9 @@ func retryBackoff(n int) time.Duration {
 }
 
 type kafkaSubscriber struct {
-	handlers  map[domainEvent.Event][]domainEvent.Handler
-	address   []string
+	client   sarama.Client
+	handlers map[domainEvent.Event][]domainEvent.Handler
+	//address   []string
 	idp       idempotent.Idempotent
 	consumers []*Consumer
 	pub       mq.Publisher
@@ -66,12 +67,18 @@ func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg
 	conf.Consumer.Offsets.Initial = sarama.OffsetNewest // 从最新的 offset 读取，如果设置为 OffsetOldest 则从最旧的 offset 读取
 	conf.Consumer.Offsets.AutoCommit.Enable = false     // 不自动提交offset
 
+	client, err := sarama.NewClient(address, conf)
+	if err != nil {
+		return nil, err
+	}
+
 	s := &kafkaSubscriber{
+		client:   client,
 		handlers: handlerAgg.Build(),
-		address:  address,
-		idp:      idp,
-		pub:      pub,
-		conf:     conf,
+		//address:  address,
+		idp:  idp,
+		pub:  pub,
+		conf: conf,
 	}
 	return s, nil
 }
@@ -133,7 +140,7 @@ func (s *kafkaSubscriber) Close() error {
 }
 
 func NewConsumer(sub *kafkaSubscriber, topics []string, consumerGroup string, handler mq.Handler, isConsumeRlq bool) (*Consumer, error) {
-	cg, err := sarama.NewConsumerGroup(sub.address, consumerGroup, sub.conf)
+	cg, err := sarama.NewConsumerGroupFromClient(consumerGroup, sub.client)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +175,7 @@ func (c *Consumer) Run(ctx context.Context) {
 	for {
 		err := c.cg.Consume(ctx, c.topics, c) // 传入定义好的 ConsumerGroupHandler 结构体
 		if err != nil {
-			fmt.Printf("consume error: %#v\n", err)
+			logx.Errorf(ctx, "consume error: %#v\n", err)
 		}
 	}
 }
