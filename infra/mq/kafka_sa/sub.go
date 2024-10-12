@@ -89,11 +89,11 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 		return func(ctx context.Context, m *mq.Message) error {
 			for _, e := range events {
 				if e.EventName() == m.EventName() {
-					msg, err := e.Decode(m.Body)
+					evt, err := e.Decode(m.Body)
 					if err != nil {
 						return err
 					}
-					return h(ctx, msg)
+					return h(ctx, evt)
 				}
 			}
 			return nil
