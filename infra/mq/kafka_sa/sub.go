@@ -42,7 +42,8 @@ func retryBackoff(n int) time.Duration {
 }
 
 type kafkaSubscriber struct {
-	client   sarama.Client
+	client sarama.Client
+	// event is topic, handler is consumer group
 	handlers map[domainEvent.Event][]domainEvent.Handler
 	// address   []string
 	idp       idempotent.Idempotent
