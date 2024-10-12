@@ -44,7 +44,7 @@ func retryBackoff(n int) time.Duration {
 type kafkaSubscriber struct {
 	client   sarama.Client
 	handlers map[domainEvent.Event][]domainEvent.Handler
-	//address   []string
+	// address   []string
 	idp       idempotent.Idempotent
 	consumers []*Consumer
 	pub       mq.Publisher
@@ -75,7 +75,7 @@ func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg
 	s := &kafkaSubscriber{
 		client:   client,
 		handlers: handlerAgg.Build(),
-		//address:  address,
+		// address:  address,
 		idp:  idp,
 		pub:  pub,
 		conf: conf,
@@ -116,6 +116,7 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 		c, err := NewConsumer(s, topics, handlerName, transferHandler(events, handlerMap[handlerName]), false)
 		if err != nil {
 			logx.Error(ctx, "new consume err", slog.Any("error", err))
+			continue
 		}
 		s.registerConsumer(c)
 		go c.Run(ctx)
