@@ -163,6 +163,7 @@ func NewConsumer(sub *kafkaSubscriber, topics []string, consumerGroup string, ha
 	return c, nil
 }
 
+// Consumer is a consumer group
 type Consumer struct {
 	sub          *kafkaSubscriber
 	handler      mq.Handler
