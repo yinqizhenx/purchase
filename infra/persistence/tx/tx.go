@@ -2,6 +2,7 @@ package tx
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 
@@ -51,7 +52,7 @@ func (m *TransactionManager) Transaction(ctx context.Context, fn func(ctx contex
 	case PropagationRequiresNew:
 		return m.withRequiresNewPropagation(ctx, fn)
 	}
-	panic("not support propagation")
+	return errors.New("not supported tx propagation")
 }
 
 // withNeverPropagation 不在事务中执行
