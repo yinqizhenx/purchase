@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/google/uuid"
 
 	"purchase/infra/utils"
 
@@ -17,7 +18,7 @@ import (
 )
 
 const (
-	defaultTimeout = 100 * time.Second
+	defaultTimeout = 10 * time.Second
 )
 
 func NewTransSaga() *TransSaga {
@@ -209,7 +210,7 @@ func (t *TransSaga) build(steps []*Branch, handlers map[string]func(context.Cont
 	}
 
 	for _, step := range steps {
-		if len(step.ActionDepend) == 0 || step.ActionDepend[0] == "" {
+		if len(step.ActionDepend) == 0 {
 			t.root.next = append(t.root.next, stepMap[step.Name])
 			stepMap[step.Name].previous = append(stepMap[step.Name].previous, t.root)
 			t.root.compensatePrevious = append(t.root.compensatePrevious, stepMap[step.Name])
@@ -422,7 +423,7 @@ func (s *Step) handleCompensate(ctx context.Context) {
 func (s *Step) onActionSuccess(ctx context.Context) {
 	s.changeState(ctx, StepActionSuccess)
 	s.saga.tryUpdateSuccess(ctx)
-	//fmt.Println(fmt.Sprintf("step[%s] action done success，状态变更完成， 开始通知下游", s.name))
+	// fmt.Println(fmt.Sprintf("step[%s] action done success，状态变更完成， 开始通知下游", s.name))
 	for _, stp := range s.next {
 		stp.actionCh <- struct{}{}
 	}

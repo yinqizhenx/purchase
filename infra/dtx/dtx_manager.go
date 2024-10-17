@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -161,7 +163,7 @@ var StepTest = []*TransSagaStep{
 		Name:       "step5",
 		Action:     "step5_action",
 		Compensate: "step5_rollback",
-		//Depend:     []string{"step5"},
+		// Depend:     []string{"step5"},
 		Payload: nil,
 	},
 }
@@ -188,12 +190,12 @@ func registerForTest(txm *DistributeTxManager) {
 		return nil
 	})
 	txm.RegisterHandler("step3_rollback", func(ctx context.Context, payload []byte) error {
-		//time.Sleep(16 * time.Second)
+		// time.Sleep(16 * time.Second)
 		fmt.Println("run step3_rollback")
 		return nil
 	})
 	txm.RegisterHandler("step4_action", func(ctx context.Context, payload []byte) error {
-		//time.Sleep(16 * time.Second)
+		time.Sleep(16 * time.Second)
 		fmt.Println("run step4_action")
 		return errors.New("ssccc")
 	})

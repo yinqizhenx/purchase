@@ -144,6 +144,10 @@ func ConvertTrans(t *ent.Trans) *Trans {
 }
 
 func ConvertBranch(b *ent.Branch) *Branch {
+	actionDepend := make([]string, 0)
+	if b.ActionDepend != "" {
+		actionDepend = strings.Split(b.ActionDepend, ",")
+	}
 	return &Branch{
 		BranchID:         b.BranchID,
 		TransID:          b.TransID,
@@ -153,7 +157,7 @@ func ConvertBranch(b *ent.Branch) *Branch {
 		Action:           b.Action,
 		Compensate:       b.Compensate,
 		Payload:          b.Payload,
-		ActionDepend:     strings.Split(b.ActionDepend, ","),
+		ActionDepend:     actionDepend,
 		CompensateDepend: strings.Split(b.CompensateDepend, ","),
 		FinishedAt:       b.FinishedAt,
 		CreatedAt:        b.CreatedAt,
