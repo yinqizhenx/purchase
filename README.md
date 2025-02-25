@@ -7,7 +7,7 @@
     ├── domain # 领域层
     │   ├── service     # 放置领域服务
     │   ├── repo        # 放置仓储
-    │   ├── oa          # 放置值对象
+    │   ├── vo          # 放置值对象
     │   ├── event       # 领域事件的定义放在这里
     │   └── entity      # 放置聚合根、实体、值对象，枚举、事件的定义放在idl里
     ├── infra # 基础设施层层
@@ -19,8 +19,8 @@
     │   │   └── order_repo.go
     │   └── sal            # 对rpc、http服务的访问，通常是对领域服务接口的实现
     │       └── ...        # 一个文件对应领域服务里一个接口的实现
-    ├── conf # kitex生成的配置dir
-    │   └── kitex.yml
+    ├── conf # 配置dir
+    │   └── config.yml
     ├── idl  # 当前服务的idl，放在其他地方也行
     │   ├── base.proto
     │   └── exam.proto
