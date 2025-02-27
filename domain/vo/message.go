@@ -2,9 +2,15 @@ package vo
 
 type AsyncTaskState string
 
+func (s AsyncTaskState) String() string {
+	return string(s)
+}
+
 const (
-	AsyncTaskStatePending AsyncTaskState = "pending"
-	AsyncTaskStateDone                   = "done"
+	AsyncTaskStatePending   AsyncTaskState = "pending"
+	AsyncTaskStateExecuting AsyncTaskState = "executing"
+	AsyncTaskStateSuccess   AsyncTaskState = "success"
+	AsyncTaskStateFail      AsyncTaskState = "fail"
 )
 
 type AsyncTaskType string

@@ -3,7 +3,6 @@ package async_task
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"sync"
 
@@ -95,7 +94,11 @@ func (m *AsyncTaskMux) Listen(ctx context.Context) {
 				return
 			case m.sem <- struct{}{}:
 				go func() {
-					task, err := m.lockAndLoadTask(ctx, taskID)
+					task, err := m.dal.FindOneNoNil(ctx, taskID)
+					if err != nil {
+						return
+					}
+					_, err = m.lockTaskAndUpdateState(ctx, task)
 					if err != nil {
 						logx.Error(ctx, "lockAndLoadTask fail", slog.String("task", taskID), slog.Any("error", err))
 						return
@@ -110,16 +113,14 @@ func (m *AsyncTaskMux) Listen(ctx context.Context) {
 							logx.Error(ctx, "handle async task from listen panic", slog.Any("error", p))
 						}
 					}()
-					if len(task) == 1 {
-						err = m.Handle(ctx, task[0])
-						if err != nil {
-							logx.Error(ctx, "handle task fail", slog.String("task", taskID), slog.Any("error", err))
-							return
-						}
-						m.onHandleSuccess(ctx, task[0])
-					} else {
-						logx.Errorf(ctx, "load task expect only 1, get %v, task id: %s", len(task), taskID)
+
+					err = m.Handle(ctx, task)
+					if err != nil {
+						logx.Error(ctx, "handle task fail", slog.String("task", taskID), slog.Any("error", err))
+						return
 					}
+					m.onHandleSuccess(ctx, task)
+
 				}()
 			}
 		}
@@ -147,17 +148,25 @@ func (m *AsyncTaskMux) RunCron(ctx context.Context) error {
 }
 
 // onHandleSuccess 这个里面是业务逻辑处理成功后的其他逻辑，一般不会出错，所以要求一定成功，没有抛错误出去，
-func (m *AsyncTaskMux) onHandleSuccess(ctx context.Context, task *async_task.AsyncTask) {
-	err := m.dal.UpdateDone(ctx, task.TaskID)
+func (m *AsyncTaskMux) onHandleSuccess(ctx context.Context, task *async_task.AsyncTask) error {
+	err := m.dal.UpdateTaskSuccess(ctx, task.TaskID)
 	if err != nil {
-		logx.Error(ctx, "update task state done fail", slog.String("task", task.TaskID), slog.Any("error", err))
+		logx.Error(ctx, "update task state success fail", slog.String("task", task.TaskID), slog.Any("error", err))
 	}
-	return
+	return err
+}
+
+func (m *AsyncTaskMux) onHandleFail(ctx context.Context, task *async_task.AsyncTask) error {
+	err := m.dal.UpdateTaskFail(ctx, task.TaskID)
+	if err != nil {
+		logx.Error(ctx, "update task state fail fail", slog.String("task", task.TaskID), slog.Any("error", err))
+	}
+	return err
 }
 
 func (m *AsyncTaskMux) buildCronHandler(ctx context.Context) func() {
 	return func() {
-		taskList, err := m.lockAndLoadTaskWithLimit(ctx, m.maxTaskLoad)
+		taskList, err := m.loadAndLockTaskWithLimit(ctx, m.maxTaskLoad)
 		if err != nil {
 			logx.Error(ctx, "batch load task fail", slog.Any("error", err))
 			return
@@ -170,71 +179,83 @@ func (m *AsyncTaskMux) buildCronHandler(ctx context.Context) func() {
 				}
 			}
 		}()
-		wg := &sync.WaitGroup{}
-		for _, task := range taskList {
-			wg.Add(1)
-			t := task
-			fn := func(context.Context) (hErr error) {
-				defer func() {
-					// task 执行完成及时解锁
-					hErr = m.unLockTask(ctx, task.TaskID)
-					if p := recover(); p != nil {
-						hErr = fmt.Errorf("handle async task from cron panic :%v", p)
-					}
-					// 放在解锁后面
-					wg.Done()
-				}()
-				hErr = m.Handle(ctx, t)
-				if hErr != nil {
-					logx.Error(ctx, "handle task fail", slog.String("task", t.TaskID), slog.Any("error", err))
-					return
-				}
-				m.onHandleSuccess(ctx, t)
-				return
-			}
-			utils.SafeGo(ctx, func() {
-				err = m.txm.Transaction(ctx, fn, tx.PropagationRequiresNew)
-				if err != nil {
-					logx.Error(ctx, "handle task fail", slog.String("task", t.TaskID), slog.Any("error", err))
-				}
-			})
-		}
-		wg.Wait()
+		m.handleTask(ctx, taskList)
 	}
 }
 
-func (m *AsyncTaskMux) lockAndLoadTaskWithLimit(ctx context.Context, limit int) ([]*async_task.AsyncTask, error) {
+func (m *AsyncTaskMux) handleTask(ctx context.Context, taskList []*async_task.AsyncTask) {
+	wg := &sync.WaitGroup{}
+	for _, task := range taskList {
+		wg.Add(1)
+		t := task
+		fn := func(context.Context) (err error) {
+			defer func() {
+				// // task 执行完成及时解锁
+				// hErr = m.unLockTask(ctx, task.TaskID)
+				// if p := recover(); p != nil {
+				// 	hErr = fmt.Errorf("handle async task from cron panic :%v", p)
+				// }
+				// // 放在解锁后面
+				wg.Done()
+			}()
+			err = m.Handle(ctx, t)
+			if err != nil {
+				logx.Error(ctx, "handle task fail", slog.String("task", t.TaskID), slog.Any("error", err))
+				return m.onHandleFail(ctx, t)
+
+			}
+			return m.onHandleSuccess(ctx, t)
+		}
+		utils.SafeGo(ctx, func() {
+			err := m.txm.Transaction(ctx, fn, tx.PropagationRequiresNew)
+			if err != nil {
+				logx.Error(ctx, "handle task fail", slog.String("task", t.TaskID), slog.Any("error", err))
+			}
+		})
+	}
+	wg.Wait()
+}
+
+func (m *AsyncTaskMux) loadAndLockTaskWithLimit(ctx context.Context, limit int) ([]*async_task.AsyncTask, error) {
 	taskList, err := m.loadPendingTaskWithLimit(ctx, limit)
 	if err != nil {
 		return nil, err
 	}
-	taskIDs := make([]string, 0, len(taskList))
-	for _, task := range taskList {
-		taskIDs = append(taskIDs, task.TaskID)
-	}
-	taskList, err = m.lockAndLoadTask(ctx, taskIDs...)
+	// taskIDs := make([]string, 0, len(taskList))
+	// for _, task := range taskList {
+	// 	taskIDs = append(taskIDs, task.TaskID)
+	// }
+	taskList, err = m.lockTaskAndUpdateState(ctx, taskList...)
 	if err != nil {
 		return nil, err
 	}
 	return taskList, nil
 }
 
-func (m *AsyncTaskMux) lockAndLoadTask(ctx context.Context, taskIDs ...string) ([]*async_task.AsyncTask, error) {
+// lockAndLoadTask 先锁再查
+func (m *AsyncTaskMux) lockTaskAndUpdateState(ctx context.Context, tasks ...*async_task.AsyncTask) ([]*async_task.AsyncTask, error) {
 	lockedIDs := make([]string, 0)
-	for _, taskID := range taskIDs {
-		err := m.lockTask(ctx, taskID)
-		if err == nil {
-			lockedIDs = append(lockedIDs, taskID)
+	for _, task := range tasks {
+		err := m.lockTask(ctx, task.TaskID)
+		if err != nil {
+			logx.Infof(ctx, "lock task(%s) fail: %v", task.TaskID, err)
+			continue
 		}
+		lockedIDs = append(lockedIDs, task.TaskID)
 	}
-	tasks, err := m.dal.FindAllPending(ctx, taskIDs)
+	err := m.dal.UpdateTaskExecuting(ctx, lockedIDs...)
 	if err != nil {
-		for _, taskID := range taskIDs {
-			if err := m.unLockTask(ctx, taskID); err != nil {
-				logx.Errorf(ctx, "unlock task fail, err:%v", err)
-			}
-		}
+		return nil, err
 	}
+	// 只查询锁成功的task
+	// tasks, err := m.dal.FindAllPending(ctx, lockedIDs)
+	// if err != nil {
+	// 	for _, taskID := range lockedIDs {
+	// 		if err := m.unLockTask(ctx, taskID); err != nil {
+	// 			logx.Errorf(ctx, "unlock task fail, err:%v", err)
+	// 		}
+	// 	}
+	// }
 	return tasks, err
 }
 
