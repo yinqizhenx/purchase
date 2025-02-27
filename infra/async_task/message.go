@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
-	"time"
 
 	"github.com/robfig/cron/v3"
 
@@ -114,13 +113,10 @@ func (m *AsyncTaskMux) Listen(ctx context.Context) {
 					if len(task) == 1 {
 						err = m.Handle(ctx, task[0])
 						if err != nil {
-							err = m.onHandleFail(ctx, task[0])
-						} else {
-							err = m.onHandleSuccess(ctx, task[0])
-						}
-						if err != nil {
 							logx.Error(ctx, "handle task fail", slog.String("task", taskID), slog.Any("error", err))
+							return
 						}
+						m.onHandleSuccess(ctx, task[0])
 					} else {
 						logx.Errorf(ctx, "load task expect only 1, get %v, task id: %s", len(task), taskID)
 					}
@@ -150,23 +146,13 @@ func (m *AsyncTaskMux) RunCron(ctx context.Context) error {
 	return nil
 }
 
-func (m *AsyncTaskMux) onHandleSuccess(ctx context.Context, task *async_task.AsyncTask) error {
+// onHandleSuccess 这个里面是业务逻辑处理成功后的其他逻辑，一般不会出错，所以要求一定成功，没有抛错误出去，
+func (m *AsyncTaskMux) onHandleSuccess(ctx context.Context, task *async_task.AsyncTask) {
 	err := m.dal.UpdateDone(ctx, task.TaskID)
 	if err != nil {
 		logx.Error(ctx, "update task state done fail", slog.String("task", task.TaskID), slog.Any("error", err))
 	}
-	return err
-}
-
-// onHandleFail retry in 1s
-func (m *AsyncTaskMux) onHandleFail(ctx context.Context, task *async_task.AsyncTask) error {
-	time.Sleep(500 * time.Millisecond)
-	err := m.Handle(ctx, task)
-	if err != nil {
-		logx.Error(ctx, "handle task fail", slog.String("task", task.TaskID), slog.Any("error", err))
-		return err
-	}
-	return m.onHandleSuccess(ctx, task)
+	return
 }
 
 func (m *AsyncTaskMux) buildCronHandler(ctx context.Context) func() {
@@ -200,10 +186,10 @@ func (m *AsyncTaskMux) buildCronHandler(ctx context.Context) func() {
 				}()
 				hErr = m.Handle(ctx, t)
 				if hErr != nil {
-					hErr = m.onHandleFail(ctx, t)
-				} else {
-					hErr = m.onHandleSuccess(ctx, t)
+					logx.Error(ctx, "handle task fail", slog.String("task", t.TaskID), slog.Any("error", err))
+					return
 				}
+				m.onHandleSuccess(ctx, t)
 				return
 			}
 			utils.SafeGo(ctx, func() {
