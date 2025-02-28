@@ -191,7 +191,7 @@ func (m *AsyncTaskMux) handleTask(ctx context.Context, taskList ...*async_task.A
 			return m.onHandleSuccess(ctx, t)
 		}
 		utils.SafeGo(ctx, func() {
-			err := m.txm.Transaction(ctx, fn, tx.PropagationRequiresNew)
+			err := m.txm.Transaction(ctx, fn)
 			if err != nil {
 				logx.Error(ctx, "handle task fail", slog.String("task", t.TaskID), slog.Any("error", err))
 			}
