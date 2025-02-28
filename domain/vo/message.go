@@ -19,3 +19,10 @@ const (
 	AsyncTaskTypeTask  AsyncTaskType = "task"
 	AsyncTaskTypeEvent AsyncTaskType = "event"
 )
+
+type AsyncTaskGroup string
+
+const (
+	Default      AsyncTaskGroup = "default"
+	AsyncMessage AsyncTaskGroup = "async_message"
+)

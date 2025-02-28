@@ -111,17 +111,25 @@ func (dal *AsyncTaskDal) FindAllPendingWithLimit(ctx context.Context, n int) ([]
 	return list, nil
 }
 
-func (dal *AsyncTaskDal) UpdateTaskSuccess(ctx context.Context, taskIDs ...string) error {
-	_, err := dal.getClient(ctx).Update().SetState(vo.AsyncTaskStateSuccess.String()).Where(eTask.TaskIDIn(taskIDs...)).Save(ctx)
+func (dal *AsyncTaskDal) UpdateExecutingTaskSuccess(ctx context.Context, taskIDs ...string) error {
+	_, err := dal.getClient(ctx).Update().SetState(vo.AsyncTaskStateSuccess.String()).
+		Where(eTask.TaskIDIn(taskIDs...)).
+		Where(eTask.StateEQ(vo.AsyncTaskStateExecuting.String())).
+		Save(ctx)
 	return err
 }
 
-func (dal *AsyncTaskDal) UpdateTaskFail(ctx context.Context, taskIDs ...string) error {
-	_, err := dal.getClient(ctx).Update().SetState(vo.AsyncTaskStateFail.String()).Where(eTask.TaskIDIn(taskIDs...)).Save(ctx)
+func (dal *AsyncTaskDal) UpdateExecutingTaskFail(ctx context.Context, taskIDs ...string) error {
+	_, err := dal.getClient(ctx).Update().SetState(vo.AsyncTaskStateFail.String()).
+		Where(eTask.TaskIDIn(taskIDs...)).
+		Where(eTask.StateEQ(vo.AsyncTaskStateExecuting.String())).
+		Save(ctx)
 	return err
 }
 
-func (dal *AsyncTaskDal) UpdateTaskExecuting(ctx context.Context, taskIDs ...string) error {
-	_, err := dal.getClient(ctx).Update().SetState(vo.AsyncTaskStateExecuting.String()).Where(eTask.TaskIDIn(taskIDs...)).Save(ctx)
-	return err
+func (dal *AsyncTaskDal) UpdatePendingTaskExecuting(ctx context.Context, taskIDs ...string) (int, error) {
+	return dal.getClient(ctx).Update().SetState(vo.AsyncTaskStateExecuting.String()).
+		Where(eTask.TaskIDIn(taskIDs...)).
+		Where(eTask.StateEQ(vo.AsyncTaskStatePending.String())).
+		Save(ctx)
 }

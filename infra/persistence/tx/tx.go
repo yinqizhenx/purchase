@@ -139,7 +139,7 @@ func (m *TransactionManager) runWithTransaction(txCtx *TransactionContext, fn fu
 		return fmt.Errorf("commit transaction fail: %w", err)
 	}
 
-	return nil
+	return
 }
 
 // RunAfterTxCommit 在事务提交后执行，用于事物中的异步操作，保证如果事务失败，不执行异步操作
