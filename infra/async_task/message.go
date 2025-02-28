@@ -42,14 +42,15 @@ type AsyncTaskMux struct {
 
 func NewAsyncTaskMux(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.TransactionManager, ch *chanx.UnboundedChan[string], opts ...Option) *AsyncTaskMux {
 	h := &AsyncTaskMux{
-		pub:         pub,
-		handlers:    make(map[string]Handler),
-		ch:          ch,
-		cron:        cron.New(),
-		dal:         dal,
-		txm:         txm,
-		concurrency: defaultConcurrency, // default 5 worker max
-		maxTaskLoad: defaultMaxTaskLoad,
+		pub:          pub,
+		handlers:     make(map[string]Handler),
+		ch:           ch,
+		cron:         cron.New(),
+		dal:          dal,
+		txm:          txm,
+		concurrency:  defaultConcurrency, // default 5 worker max
+		maxTaskLoad:  defaultMaxTaskLoad,
+		groupWorkers: make(map[vo.AsyncTaskGroup]*GroupWorker),
 	}
 	for _, opt := range opts {
 		opt(h)
