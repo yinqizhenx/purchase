@@ -18,7 +18,6 @@ import (
 	"purchase/infra/acl"
 	"purchase/infra/async_task"
 	"purchase/infra/config"
-	"purchase/infra/dlock"
 	"purchase/infra/dtx"
 	"purchase/infra/idempotent"
 	"purchase/infra/logx"
@@ -73,14 +72,13 @@ func initApp() (*App, func(), error) {
 		cleanup()
 		return nil, nil, err
 	}
+	asyncTaskMux := scheduler.NewAsyncTaskServer(publisher, asyncTaskDal, transactionManager, unboundedChan)
 	redisClient, err := data.NewRedis(configConfig)
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	lockBuilder := dlock.NewRedisLock(redisClient)
-	asyncTaskMux := scheduler.NewAsyncTaskServer(publisher, asyncTaskDal, transactionManager, unboundedChan, lockBuilder)
 	idempotentIdempotent := idempotent.NewIdempotentImpl(redisClient)
 	handlerAggregator := event_handler.NewDomainEventHandler()
 	subscriber, err := kafka_sa.NewKafkaSubscriber(configConfig, idempotentIdempotent, handlerAggregator, publisher)

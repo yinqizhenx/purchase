@@ -18,7 +18,6 @@ import (
 	"purchase/infra/acl"
 	"purchase/infra/async_task"
 	"purchase/infra/config"
-	"purchase/infra/dlock"
 	"purchase/infra/dtx"
 	"purchase/infra/idempotent"
 	"purchase/infra/logx"
@@ -52,7 +51,7 @@ func initApp() (*App, func(), error) {
 		config.ProviderSet,
 		logx.ProviderSet,
 		async_task.ProviderSet,
-		dlock.ProviderSet,
+		// dlock.ProviderSet,
 		request.ProviderSet,
 		idempotent.ProviderSet,
 		factory.ProviderSet,
