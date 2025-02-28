@@ -29,12 +29,14 @@ type GroupWorker struct {
 	// maxTaskLoad int
 	// lockBuilder dlock.LockBuilder
 	// locks       map[string]dlock.DistributeLock
-	cancel func()
-	mdw    []Middleware
-	mu     sync.Mutex
+	cancel  func()
+	cancel2 func()
+	mdw     []Middleware
+	mu      sync.Mutex
 }
 
-func NewGroupWorker(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.TransactionManager, ch *chanx.UnboundedChan[*async_task.AsyncTask]) *GroupWorker {
+func NewGroupWorker(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.TransactionManager) *GroupWorker {
+	ch, cancel := NewTaskChan()
 	h := &GroupWorker{
 		pub:      pub,
 		handlers: make(map[string]Handler),
@@ -43,6 +45,7 @@ func NewGroupWorker(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.Transaction
 		dal:         dal,
 		txm:         txm,
 		concurrency: defaultConcurrency, // default 5 worker max
+		cancel2:     cancel,
 		// maxTaskLoad: defaultMaxTaskLoad,
 	}
 	h.sem = make(chan struct{}, h.concurrency)
@@ -61,12 +64,10 @@ func (m *GroupWorker) Start(ctx context.Context) error {
 	return nil
 }
 
-func (m *GroupWorker) Stop(ctx context.Context) error {
+func (m *GroupWorker) Stop() {
 	if m.cancel != nil {
 		m.cancel()
 	}
-	// m.cron.Stop()
-	return nil
 }
 
 func (m *GroupWorker) Listen(ctx context.Context) {

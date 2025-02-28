@@ -37,6 +37,7 @@ func (dal *AsyncTaskDal) AddTask(ctx context.Context, task *async_task.AsyncTask
 	err := dal.getClient(ctx).Create().
 		SetTaskID(task.TaskID).
 		SetTaskType(string(task.TaskType)).
+		SetTaskGroup(string(task.TaskGroup)).
 		SetTaskData(task.TaskData).
 		Exec(ctx)
 	return err

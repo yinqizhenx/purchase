@@ -80,8 +80,7 @@ func (m *AsyncTaskMux) Stop(ctx context.Context) error {
 	}
 	m.cron.Stop()
 	for _, gw := range m.groupWorkers {
-		worker := gw
-		go worker.Stop(ctx)
+		gw.Stop()
 	}
 	return nil
 }
@@ -142,8 +141,11 @@ func (m *AsyncTaskMux) loadPendingTaskWithLimit(ctx context.Context, limit int) 
 	return list, err
 }
 
-func (m *AsyncTaskMux) RegisterHandler(key string, handler Handler) {
+func (m *AsyncTaskMux) RegisterHandler(key string, group vo.AsyncTaskGroup, handler Handler) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.handlers[key] = handler
+	if m.groupWorkers[group] == nil {
+		m.groupWorkers[group] = NewGroupWorker(m.pub, m.dal, m.txm)
+	}
 }

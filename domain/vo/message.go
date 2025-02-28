@@ -23,6 +23,6 @@ const (
 type AsyncTaskGroup string
 
 const (
-	Default      AsyncTaskGroup = "default"
-	AsyncMessage AsyncTaskGroup = "async_message"
+	GroupDefault      AsyncTaskGroup = "default"
+	GroupAsyncMessage AsyncTaskGroup = "async_message"
 )

@@ -14,6 +14,7 @@ var (
 		{Name: "id", Type: field.TypeInt64, Increment: true},
 		{Name: "task_id", Type: field.TypeString},
 		{Name: "task_type", Type: field.TypeString},
+		{Name: "task_group", Type: field.TypeString},
 		{Name: "task_name", Type: field.TypeString},
 		{Name: "biz_id", Type: field.TypeString},
 		{Name: "task_data", Type: field.TypeString},

@@ -17,6 +17,8 @@ const (
 	FieldTaskID = "task_id"
 	// FieldTaskType holds the string denoting the task_type field in the database.
 	FieldTaskType = "task_type"
+	// FieldTaskGroup holds the string denoting the task_group field in the database.
+	FieldTaskGroup = "task_group"
 	// FieldTaskName holds the string denoting the task_name field in the database.
 	FieldTaskName = "task_name"
 	// FieldBizID holds the string denoting the biz_id field in the database.
@@ -38,6 +40,7 @@ var Columns = []string{
 	FieldID,
 	FieldTaskID,
 	FieldTaskType,
+	FieldTaskGroup,
 	FieldTaskName,
 	FieldBizID,
 	FieldTaskData,
@@ -79,6 +82,11 @@ func ByTaskID(opts ...sql.OrderTermOption) OrderOption {
 // ByTaskType orders the results by the task_type field.
 func ByTaskType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTaskType, opts...).ToFunc()
+}
+
+// ByTaskGroup orders the results by the task_group field.
+func ByTaskGroup(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTaskGroup, opts...).ToFunc()
 }
 
 // ByTaskName orders the results by the task_name field.

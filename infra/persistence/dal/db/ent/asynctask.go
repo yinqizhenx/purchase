@@ -21,6 +21,8 @@ type AsyncTask struct {
 	TaskID string `json:"task_id,omitempty"`
 	// TaskType holds the value of the "task_type" field.
 	TaskType string `json:"task_type,omitempty"`
+	// TaskGroup holds the value of the "task_group" field.
+	TaskGroup string `json:"task_group,omitempty"`
 	// TaskName holds the value of the "task_name" field.
 	TaskName string `json:"task_name,omitempty"`
 	// BizID holds the value of the "biz_id" field.
@@ -43,7 +45,7 @@ func (*AsyncTask) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case asynctask.FieldID:
 			values[i] = new(sql.NullInt64)
-		case asynctask.FieldTaskID, asynctask.FieldTaskType, asynctask.FieldTaskName, asynctask.FieldBizID, asynctask.FieldTaskData, asynctask.FieldState:
+		case asynctask.FieldTaskID, asynctask.FieldTaskType, asynctask.FieldTaskGroup, asynctask.FieldTaskName, asynctask.FieldBizID, asynctask.FieldTaskData, asynctask.FieldState:
 			values[i] = new(sql.NullString)
 		case asynctask.FieldCreatedAt, asynctask.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -79,6 +81,12 @@ func (at *AsyncTask) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field task_type", values[i])
 			} else if value.Valid {
 				at.TaskType = value.String
+			}
+		case asynctask.FieldTaskGroup:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field task_group", values[i])
+			} else if value.Valid {
+				at.TaskGroup = value.String
 			}
 		case asynctask.FieldTaskName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -157,6 +165,9 @@ func (at *AsyncTask) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("task_type=")
 	builder.WriteString(at.TaskType)
+	builder.WriteString(", ")
+	builder.WriteString("task_group=")
+	builder.WriteString(at.TaskGroup)
 	builder.WriteString(", ")
 	builder.WriteString("task_name=")
 	builder.WriteString(at.TaskName)

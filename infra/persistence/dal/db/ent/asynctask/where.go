@@ -64,6 +64,11 @@ func TaskType(v string) predicate.AsyncTask {
 	return predicate.AsyncTask(sql.FieldEQ(FieldTaskType, v))
 }
 
+// TaskGroup applies equality check predicate on the "task_group" field. It's identical to TaskGroupEQ.
+func TaskGroup(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldEQ(FieldTaskGroup, v))
+}
+
 // TaskName applies equality check predicate on the "task_name" field. It's identical to TaskNameEQ.
 func TaskName(v string) predicate.AsyncTask {
 	return predicate.AsyncTask(sql.FieldEQ(FieldTaskName, v))
@@ -222,6 +227,71 @@ func TaskTypeEqualFold(v string) predicate.AsyncTask {
 // TaskTypeContainsFold applies the ContainsFold predicate on the "task_type" field.
 func TaskTypeContainsFold(v string) predicate.AsyncTask {
 	return predicate.AsyncTask(sql.FieldContainsFold(FieldTaskType, v))
+}
+
+// TaskGroupEQ applies the EQ predicate on the "task_group" field.
+func TaskGroupEQ(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldEQ(FieldTaskGroup, v))
+}
+
+// TaskGroupNEQ applies the NEQ predicate on the "task_group" field.
+func TaskGroupNEQ(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldNEQ(FieldTaskGroup, v))
+}
+
+// TaskGroupIn applies the In predicate on the "task_group" field.
+func TaskGroupIn(vs ...string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldIn(FieldTaskGroup, vs...))
+}
+
+// TaskGroupNotIn applies the NotIn predicate on the "task_group" field.
+func TaskGroupNotIn(vs ...string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldNotIn(FieldTaskGroup, vs...))
+}
+
+// TaskGroupGT applies the GT predicate on the "task_group" field.
+func TaskGroupGT(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldGT(FieldTaskGroup, v))
+}
+
+// TaskGroupGTE applies the GTE predicate on the "task_group" field.
+func TaskGroupGTE(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldGTE(FieldTaskGroup, v))
+}
+
+// TaskGroupLT applies the LT predicate on the "task_group" field.
+func TaskGroupLT(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldLT(FieldTaskGroup, v))
+}
+
+// TaskGroupLTE applies the LTE predicate on the "task_group" field.
+func TaskGroupLTE(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldLTE(FieldTaskGroup, v))
+}
+
+// TaskGroupContains applies the Contains predicate on the "task_group" field.
+func TaskGroupContains(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldContains(FieldTaskGroup, v))
+}
+
+// TaskGroupHasPrefix applies the HasPrefix predicate on the "task_group" field.
+func TaskGroupHasPrefix(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldHasPrefix(FieldTaskGroup, v))
+}
+
+// TaskGroupHasSuffix applies the HasSuffix predicate on the "task_group" field.
+func TaskGroupHasSuffix(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldHasSuffix(FieldTaskGroup, v))
+}
+
+// TaskGroupEqualFold applies the EqualFold predicate on the "task_group" field.
+func TaskGroupEqualFold(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldEqualFold(FieldTaskGroup, v))
+}
+
+// TaskGroupContainsFold applies the ContainsFold predicate on the "task_group" field.
+func TaskGroupContainsFold(v string) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldContainsFold(FieldTaskGroup, v))
 }
 
 // TaskNameEQ applies the EQ predicate on the "task_name" field.

@@ -43,6 +43,7 @@ type AsyncTaskMutation struct {
 	id            *int64
 	task_id       *string
 	task_type     *string
+	task_group    *string
 	task_name     *string
 	biz_id        *string
 	task_data     *string
@@ -229,6 +230,42 @@ func (m *AsyncTaskMutation) OldTaskType(ctx context.Context) (v string, err erro
 // ResetTaskType resets all changes to the "task_type" field.
 func (m *AsyncTaskMutation) ResetTaskType() {
 	m.task_type = nil
+}
+
+// SetTaskGroup sets the "task_group" field.
+func (m *AsyncTaskMutation) SetTaskGroup(s string) {
+	m.task_group = &s
+}
+
+// TaskGroup returns the value of the "task_group" field in the mutation.
+func (m *AsyncTaskMutation) TaskGroup() (r string, exists bool) {
+	v := m.task_group
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTaskGroup returns the old "task_group" field's value of the AsyncTask entity.
+// If the AsyncTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AsyncTaskMutation) OldTaskGroup(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTaskGroup is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTaskGroup requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTaskGroup: %w", err)
+	}
+	return oldValue.TaskGroup, nil
+}
+
+// ResetTaskGroup resets all changes to the "task_group" field.
+func (m *AsyncTaskMutation) ResetTaskGroup() {
+	m.task_group = nil
 }
 
 // SetTaskName sets the "task_name" field.
@@ -481,12 +518,15 @@ func (m *AsyncTaskMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AsyncTaskMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.task_id != nil {
 		fields = append(fields, asynctask.FieldTaskID)
 	}
 	if m.task_type != nil {
 		fields = append(fields, asynctask.FieldTaskType)
+	}
+	if m.task_group != nil {
+		fields = append(fields, asynctask.FieldTaskGroup)
 	}
 	if m.task_name != nil {
 		fields = append(fields, asynctask.FieldTaskName)
@@ -518,6 +558,8 @@ func (m *AsyncTaskMutation) Field(name string) (ent.Value, bool) {
 		return m.TaskID()
 	case asynctask.FieldTaskType:
 		return m.TaskType()
+	case asynctask.FieldTaskGroup:
+		return m.TaskGroup()
 	case asynctask.FieldTaskName:
 		return m.TaskName()
 	case asynctask.FieldBizID:
@@ -543,6 +585,8 @@ func (m *AsyncTaskMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldTaskID(ctx)
 	case asynctask.FieldTaskType:
 		return m.OldTaskType(ctx)
+	case asynctask.FieldTaskGroup:
+		return m.OldTaskGroup(ctx)
 	case asynctask.FieldTaskName:
 		return m.OldTaskName(ctx)
 	case asynctask.FieldBizID:
@@ -577,6 +621,13 @@ func (m *AsyncTaskMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTaskType(v)
+		return nil
+	case asynctask.FieldTaskGroup:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTaskGroup(v)
 		return nil
 	case asynctask.FieldTaskName:
 		v, ok := value.(string)
@@ -674,6 +725,9 @@ func (m *AsyncTaskMutation) ResetField(name string) error {
 		return nil
 	case asynctask.FieldTaskType:
 		m.ResetTaskType()
+		return nil
+	case asynctask.FieldTaskGroup:
+		m.ResetTaskGroup()
 		return nil
 	case asynctask.FieldTaskName:
 		m.ResetTaskName()

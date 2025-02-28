@@ -34,6 +34,12 @@ func (atc *AsyncTaskCreate) SetTaskType(s string) *AsyncTaskCreate {
 	return atc
 }
 
+// SetTaskGroup sets the "task_group" field.
+func (atc *AsyncTaskCreate) SetTaskGroup(s string) *AsyncTaskCreate {
+	atc.mutation.SetTaskGroup(s)
+	return atc
+}
+
 // SetTaskName sets the "task_name" field.
 func (atc *AsyncTaskCreate) SetTaskName(s string) *AsyncTaskCreate {
 	atc.mutation.SetTaskName(s)
@@ -145,6 +151,9 @@ func (atc *AsyncTaskCreate) check() error {
 	if _, ok := atc.mutation.TaskType(); !ok {
 		return &ValidationError{Name: "task_type", err: errors.New(`ent: missing required field "AsyncTask.task_type"`)}
 	}
+	if _, ok := atc.mutation.TaskGroup(); !ok {
+		return &ValidationError{Name: "task_group", err: errors.New(`ent: missing required field "AsyncTask.task_group"`)}
+	}
 	if _, ok := atc.mutation.TaskName(); !ok {
 		return &ValidationError{Name: "task_name", err: errors.New(`ent: missing required field "AsyncTask.task_name"`)}
 	}
@@ -203,6 +212,10 @@ func (atc *AsyncTaskCreate) createSpec() (*AsyncTask, *sqlgraph.CreateSpec) {
 	if value, ok := atc.mutation.TaskType(); ok {
 		_spec.SetField(asynctask.FieldTaskType, field.TypeString, value)
 		_node.TaskType = value
+	}
+	if value, ok := atc.mutation.TaskGroup(); ok {
+		_spec.SetField(asynctask.FieldTaskGroup, field.TypeString, value)
+		_node.TaskGroup = value
 	}
 	if value, ok := atc.mutation.TaskName(); ok {
 		_spec.SetField(asynctask.FieldTaskName, field.TypeString, value)
@@ -301,6 +314,18 @@ func (u *AsyncTaskUpsert) SetTaskType(v string) *AsyncTaskUpsert {
 // UpdateTaskType sets the "task_type" field to the value that was provided on create.
 func (u *AsyncTaskUpsert) UpdateTaskType() *AsyncTaskUpsert {
 	u.SetExcluded(asynctask.FieldTaskType)
+	return u
+}
+
+// SetTaskGroup sets the "task_group" field.
+func (u *AsyncTaskUpsert) SetTaskGroup(v string) *AsyncTaskUpsert {
+	u.Set(asynctask.FieldTaskGroup, v)
+	return u
+}
+
+// UpdateTaskGroup sets the "task_group" field to the value that was provided on create.
+func (u *AsyncTaskUpsert) UpdateTaskGroup() *AsyncTaskUpsert {
+	u.SetExcluded(asynctask.FieldTaskGroup)
 	return u
 }
 
@@ -449,6 +474,20 @@ func (u *AsyncTaskUpsertOne) SetTaskType(v string) *AsyncTaskUpsertOne {
 func (u *AsyncTaskUpsertOne) UpdateTaskType() *AsyncTaskUpsertOne {
 	return u.Update(func(s *AsyncTaskUpsert) {
 		s.UpdateTaskType()
+	})
+}
+
+// SetTaskGroup sets the "task_group" field.
+func (u *AsyncTaskUpsertOne) SetTaskGroup(v string) *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetTaskGroup(v)
+	})
+}
+
+// UpdateTaskGroup sets the "task_group" field to the value that was provided on create.
+func (u *AsyncTaskUpsertOne) UpdateTaskGroup() *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateTaskGroup()
 	})
 }
 
@@ -775,6 +814,20 @@ func (u *AsyncTaskUpsertBulk) SetTaskType(v string) *AsyncTaskUpsertBulk {
 func (u *AsyncTaskUpsertBulk) UpdateTaskType() *AsyncTaskUpsertBulk {
 	return u.Update(func(s *AsyncTaskUpsert) {
 		s.UpdateTaskType()
+	})
+}
+
+// SetTaskGroup sets the "task_group" field.
+func (u *AsyncTaskUpsertBulk) SetTaskGroup(v string) *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetTaskGroup(v)
+	})
+}
+
+// UpdateTaskGroup sets the "task_group" field to the value that was provided on create.
+func (u *AsyncTaskUpsertBulk) UpdateTaskGroup() *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateTaskGroup()
 	})
 }
 

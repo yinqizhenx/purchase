@@ -19,11 +19,11 @@ func init() {
 	asynctaskFields := schema.AsyncTask{}.Fields()
 	_ = asynctaskFields
 	// asynctaskDescCreatedAt is the schema descriptor for created_at field.
-	asynctaskDescCreatedAt := asynctaskFields[7].Descriptor()
+	asynctaskDescCreatedAt := asynctaskFields[8].Descriptor()
 	// asynctask.DefaultCreatedAt holds the default value on creation for the created_at field.
 	asynctask.DefaultCreatedAt = asynctaskDescCreatedAt.Default.(func() time.Time)
 	// asynctaskDescUpdatedAt is the schema descriptor for updated_at field.
-	asynctaskDescUpdatedAt := asynctaskFields[8].Descriptor()
+	asynctaskDescUpdatedAt := asynctaskFields[9].Descriptor()
 	// asynctask.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	asynctask.DefaultUpdatedAt = asynctaskDescUpdatedAt.Default.(func() time.Time)
 	branchFields := schema.Branch{}.Fields()

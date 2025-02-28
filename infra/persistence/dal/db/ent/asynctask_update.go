@@ -56,6 +56,20 @@ func (atu *AsyncTaskUpdate) SetNillableTaskType(s *string) *AsyncTaskUpdate {
 	return atu
 }
 
+// SetTaskGroup sets the "task_group" field.
+func (atu *AsyncTaskUpdate) SetTaskGroup(s string) *AsyncTaskUpdate {
+	atu.mutation.SetTaskGroup(s)
+	return atu
+}
+
+// SetNillableTaskGroup sets the "task_group" field if the given value is not nil.
+func (atu *AsyncTaskUpdate) SetNillableTaskGroup(s *string) *AsyncTaskUpdate {
+	if s != nil {
+		atu.SetTaskGroup(*s)
+	}
+	return atu
+}
+
 // SetTaskName sets the "task_name" field.
 func (atu *AsyncTaskUpdate) SetTaskName(s string) *AsyncTaskUpdate {
 	atu.mutation.SetTaskName(s)
@@ -187,6 +201,9 @@ func (atu *AsyncTaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := atu.mutation.TaskType(); ok {
 		_spec.SetField(asynctask.FieldTaskType, field.TypeString, value)
 	}
+	if value, ok := atu.mutation.TaskGroup(); ok {
+		_spec.SetField(asynctask.FieldTaskGroup, field.TypeString, value)
+	}
 	if value, ok := atu.mutation.TaskName(); ok {
 		_spec.SetField(asynctask.FieldTaskName, field.TypeString, value)
 	}
@@ -249,6 +266,20 @@ func (atuo *AsyncTaskUpdateOne) SetTaskType(s string) *AsyncTaskUpdateOne {
 func (atuo *AsyncTaskUpdateOne) SetNillableTaskType(s *string) *AsyncTaskUpdateOne {
 	if s != nil {
 		atuo.SetTaskType(*s)
+	}
+	return atuo
+}
+
+// SetTaskGroup sets the "task_group" field.
+func (atuo *AsyncTaskUpdateOne) SetTaskGroup(s string) *AsyncTaskUpdateOne {
+	atuo.mutation.SetTaskGroup(s)
+	return atuo
+}
+
+// SetNillableTaskGroup sets the "task_group" field if the given value is not nil.
+func (atuo *AsyncTaskUpdateOne) SetNillableTaskGroup(s *string) *AsyncTaskUpdateOne {
+	if s != nil {
+		atuo.SetTaskGroup(*s)
 	}
 	return atuo
 }
@@ -413,6 +444,9 @@ func (atuo *AsyncTaskUpdateOne) sqlSave(ctx context.Context) (_node *AsyncTask, 
 	}
 	if value, ok := atuo.mutation.TaskType(); ok {
 		_spec.SetField(asynctask.FieldTaskType, field.TypeString, value)
+	}
+	if value, ok := atuo.mutation.TaskGroup(); ok {
+		_spec.SetField(asynctask.FieldTaskGroup, field.TypeString, value)
 	}
 	if value, ok := atuo.mutation.TaskName(); ok {
 		_spec.SetField(asynctask.FieldTaskName, field.TypeString, value)
