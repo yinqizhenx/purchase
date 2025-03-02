@@ -52,7 +52,7 @@ func NewGroupWorker(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.Transaction
 	return h
 }
 
-func (m *GroupWorker) Start(ctx context.Context) error {
+func (m *GroupWorker) Start(ctx context.Context) {
 	nctx, cancel := context.WithCancel(ctx)
 	m.cancel = cancel
 	// err := m.RunCron(nctx)
@@ -61,7 +61,6 @@ func (m *GroupWorker) Start(ctx context.Context) error {
 	// 	return err
 	// }
 	m.Listen(nctx)
-	return nil
 }
 
 func (m *GroupWorker) Stop() {

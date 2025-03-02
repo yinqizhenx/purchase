@@ -62,14 +62,14 @@ func NewAsyncTaskMux(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.Transactio
 func (m *AsyncTaskMux) Start(ctx context.Context) error {
 	nctx, cancel := context.WithCancel(ctx)
 	m.cancel = cancel
-	for _, gw := range m.groupWorkers {
-		worker := gw
-		go worker.Start(ctx)
-	}
 	err := m.RunCron(nctx)
 	if err != nil {
 		logx.Error(ctx, "launch task cron handle fail", slog.Any("error", err))
 		return err
+	}
+	for _, gw := range m.groupWorkers {
+		worker := gw
+		go worker.Start(ctx)
 	}
 	m.Listen(nctx)
 	return nil
