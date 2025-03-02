@@ -72,7 +72,7 @@ func (m *AsyncTaskMux) Start(ctx context.Context) error {
 	return nil
 }
 
-func (m *AsyncTaskMux) Stop(ctx context.Context) error {
+func (m *AsyncTaskMux) Stop(_ context.Context) error {
 	if m.cancel != nil {
 		m.cancel()
 	}
