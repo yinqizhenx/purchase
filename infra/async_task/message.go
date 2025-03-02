@@ -2,6 +2,7 @@ package async_task
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"sync"
 
@@ -90,9 +91,9 @@ func (m *AsyncTaskMux) Listen(ctx context.Context) {
 			return
 		case taskID := <-m.ch.Out:
 			go func() {
-				task, err := m.dal.FindOneNoNil(ctx, taskID)
+				task, err := m.mustGetPendingTask(ctx, taskID)
 				if err != nil {
-					logx.Errorf(ctx, "find one task fail:%s", taskID)
+					logx.Errorf(ctx, "find one task fail:%s, err :%s", taskID, err)
 					return
 				}
 
@@ -114,7 +115,7 @@ func (m *AsyncTaskMux) RunCron(ctx context.Context) error {
 
 func (m *AsyncTaskMux) buildCronHandler(ctx context.Context) func() {
 	return func() {
-		taskList, err := m.loadPendingTaskWithLimit(ctx, m.maxTaskLoad)
+		taskList, err := m.getPendingTaskWithLimit(ctx, m.maxTaskLoad)
 		if err != nil {
 			logx.Error(ctx, "batch load task fail", slog.Any("error", err))
 			return
@@ -134,9 +135,20 @@ func (m *AsyncTaskMux) distribute(ctx context.Context, task *async_task.AsyncTas
 	gw.PutTask(task)
 }
 
-func (m *AsyncTaskMux) loadPendingTaskWithLimit(ctx context.Context, limit int) ([]*async_task.AsyncTask, error) {
+func (m *AsyncTaskMux) getPendingTaskWithLimit(ctx context.Context, limit int) ([]*async_task.AsyncTask, error) {
 	list, err := m.dal.FindAllPendingWithLimit(ctx, limit)
 	return list, err
+}
+
+func (m *AsyncTaskMux) mustGetPendingTask(ctx context.Context, taskID string) (*async_task.AsyncTask, error) {
+	task, err := m.dal.FindOneNoNil(ctx, taskID)
+	if err != nil {
+		return nil, err
+	}
+	if task.State != vo.AsyncTaskStatePending {
+		return nil, errors.New("task is not pending state")
+	}
+	return task, nil
 }
 
 func (m *AsyncTaskMux) RegisterHandler(key string, group vo.AsyncTaskGroup, handler Handler) {
