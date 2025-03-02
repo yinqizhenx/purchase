@@ -16,7 +16,7 @@ import (
 	"purchase/pkg/chanx"
 )
 
-const defaultMaxTaskLoad = 10
+const defaultMaxTaskLoad = 100
 
 const defaultConcurrency = 5
 
