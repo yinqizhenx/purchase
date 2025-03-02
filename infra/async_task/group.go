@@ -16,7 +16,6 @@ import (
 )
 
 type GroupWorker struct {
-	// msg          *message.Task
 	pub mq.Publisher
 	// handles 涉及到数据库变动的，需要在事务里执行
 	handlers map[string]Handler
@@ -26,27 +25,22 @@ type GroupWorker struct {
 	txm         *tx.TransactionManager
 	sem         chan struct{}
 	concurrency int
-	// maxTaskLoad int
-	// lockBuilder dlock.LockBuilder
-	// locks       map[string]dlock.DistributeLock
-	cancel  func()
-	cancel2 func()
-	mdw     []Middleware
-	mu      sync.Mutex
+	cancel      func()
+	cancel2     func()
+	mdw         []Middleware
+	mu          sync.Mutex
 }
 
 func NewGroupWorker(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.TransactionManager) *GroupWorker {
 	ch, cancel := NewTaskChan()
 	h := &GroupWorker{
-		pub:      pub,
-		handlers: make(map[string]Handler),
-		ch:       ch,
-		// cron:        cron.New(),
+		pub:         pub,
+		handlers:    make(map[string]Handler),
+		ch:          ch,
 		dal:         dal,
 		txm:         txm,
 		concurrency: defaultConcurrency, // default 5 worker max
 		cancel2:     cancel,
-		// maxTaskLoad: defaultMaxTaskLoad,
 	}
 	h.sem = make(chan struct{}, h.concurrency)
 	return h
@@ -55,11 +49,6 @@ func NewGroupWorker(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.Transaction
 func (m *GroupWorker) Start(ctx context.Context) {
 	nctx, cancel := context.WithCancel(ctx)
 	m.cancel = cancel
-	// err := m.RunCron(nctx)
-	// if err != nil {
-	// 	logx.Error(ctx, "launch task cron handle fail", slog.Any("error", err))
-	// 	return err
-	// }
 	m.Listen(nctx)
 }
 
@@ -183,9 +172,3 @@ func (m *GroupWorker) SendMessage(ctx context.Context, task *async_task.AsyncTas
 func (m *GroupWorker) PutTask(task *async_task.AsyncTask) {
 	m.ch.In <- task
 }
-
-// func (m *GroupWorker) RegisterHandler(key string, handler Handler) {
-// 	m.mu.Lock()
-// 	defer m.mu.Unlock()
-// 	m.handlers[key] = handler
-// }

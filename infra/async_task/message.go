@@ -23,15 +23,13 @@ const defaultConcurrency = 5
 type Handler func(ctx context.Context, payload []byte) error
 
 type AsyncTaskMux struct {
-	// msg          *message.Task
 	pub mq.Publisher
 	// handles 涉及到数据库变动的，需要在事务里执行
-	handlers map[string]Handler
-	ch       *chanx.UnboundedChan[string]
-	cron     *cron.Cron
-	dal      *dal.AsyncTaskDal
-	txm      *tx.TransactionManager
-	// sem          chan struct{}
+	handlers     map[string]Handler
+	ch           *chanx.UnboundedChan[string]
+	cron         *cron.Cron
+	dal          *dal.AsyncTaskDal
+	txm          *tx.TransactionManager
 	concurrency  int
 	maxTaskLoad  int
 	cancel       func()
@@ -55,7 +53,6 @@ func NewAsyncTaskMux(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.Transactio
 	for _, opt := range opts {
 		opt(h)
 	}
-	// h.sem = make(chan struct{}, h.concurrency)
 	return h
 }
 
