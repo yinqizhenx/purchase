@@ -442,7 +442,7 @@ func (s *Step) onActionFail(ctx context.Context, err error) {
 	if err := s.saga.syncStateChange(ctx); err != nil {
 		logx.Errorf(ctx, "update branch state fail: %v", err)
 	}
-	fmt.Println(fmt.Sprintf("step[%s] action done fail状态变更完成， 开始回滚", s.name))
+	logx.Infof(ctx, "step[%s] action done fail状态变更完成， 开始回滚", s.name)
 	s.compensateCh <- struct{}{} // 开始回滚
 }
 

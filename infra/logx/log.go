@@ -16,7 +16,7 @@ func Debug(ctx context.Context, msg string, a ...slog.Attr) {
 
 // Debugf logs a message at debug level.
 func Debugf(ctx context.Context, format string, a ...interface{}) {
-	slog.DebugContext(ctx, format, fmt.Sprintf(format, a...))
+	slog.DebugContext(ctx, fmt.Sprintf(format, a...))
 }
 
 // Info logs a message at info level.
@@ -26,7 +26,7 @@ func Info(ctx context.Context, msg string, a ...slog.Attr) {
 
 // Infof logs a message at info level.
 func Infof(ctx context.Context, format string, a ...interface{}) {
-	slog.InfoContext(ctx, format, fmt.Sprintf(format, a...))
+	slog.InfoContext(ctx, fmt.Sprintf(format, a...))
 }
 
 // Warn logs a message at warn level.
@@ -36,7 +36,7 @@ func Warn(ctx context.Context, msg string, a ...slog.Attr) {
 
 // // Warnf logs a message at warnf level.
 func Warnf(ctx context.Context, format string, a ...interface{}) {
-	slog.WarnContext(ctx, format, fmt.Sprintf(format, a...))
+	slog.WarnContext(ctx, fmt.Sprintf(format, a...))
 }
 
 // Error logs a message at error level.
