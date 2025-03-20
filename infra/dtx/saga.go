@@ -79,7 +79,7 @@ func (t *TransSaga) AsyncExec() {
 		// case <-ctx.Done():
 		// 	fmt.Println("context done 退出AsyncExec")
 		case <-t.done:
-			fmt.Println("执行完成 退出AsyncExec")
+			logx.Info(ctx, "执行完成 退出AsyncExec")
 		}
 	})
 }
@@ -332,20 +332,20 @@ func (s *Step) runAction(ctx context.Context) {
 		// 	logx.Errorf(ctx, "saga tx context done: %v", s.name)
 		// 	return
 		case <-s.closed:
-			fmt.Println(fmt.Sprintf("trans closed action准备退出: %s", s.name))
+			logx.Infof(ctx, "trans closed action准备退出: %s", s.name)
 			return
 		case <-s.actionCh:
-			fmt.Println(fmt.Sprintf("收到action: %s", s.name))
+			logx.Infof(ctx, "收到action: %s", s.name)
 			s.actionNotifyCount++
 
 			// 已经失败了则不执行
 			if s.saga.isFailed() {
-				fmt.Println("已经失败不执行" + s.name)
+				logx.Infof(ctx, "已经失败不执行"+s.name)
 				return
 			}
 
 			if s.actionNotifyCount < len(s.previous) {
-				fmt.Println(fmt.Sprintf("当前action count %d, name %s", s.actionNotifyCount, s.name))
+				logx.Infof(ctx, "当前action count %d, name %s", s.actionNotifyCount, s.name)
 				continue
 			}
 
@@ -475,11 +475,11 @@ func (s *Step) runCompensate(ctx context.Context) {
 		// 	logx.Errorf(ctx, "saga tx context done: %v", ctx.Done())
 		// 	return
 		case <-s.closed:
-			fmt.Println(fmt.Sprintf("trans closed compensate准备退出: %s", s.name))
+			logx.Infof(ctx, "trans closed compensate准备退出: %s", s.name)
 			return
 		case <-s.compensateCh:
 			// 前序依赖step需要全部回滚完成或待执行
-			fmt.Println(fmt.Sprintf("收到compensate: %s", s.name))
+			logx.Infof(ctx, "收到compensate: %s", s.name)
 			s.compensateNotifyCount++
 
 			isPreviousCompensateDone := true
@@ -497,7 +497,7 @@ func (s *Step) runCompensate(ctx context.Context) {
 			}
 
 			if s.compensateNotifyCount < len(s.compensatePrevious) {
-				fmt.Println(fmt.Sprintf("当前compensate count %d, name %s", s.compensateNotifyCount, s.name))
+				logx.Infof(ctx, "当前compensate count %d, name %s", s.compensateNotifyCount, s.name)
 				continue
 			}
 
@@ -519,7 +519,7 @@ func (s *Step) runCompensate(ctx context.Context) {
 
 func (s *Step) onCompensateSuccess(ctx context.Context) {
 	s.changeState(ctx, StepCompensateSuccess)
-	fmt.Println(fmt.Sprintf("step[%s] compensate done success状态变更完成，通知上有回滚", s.name))
+	logx.Infof(ctx, "step[%s] compensate done success状态变更完成，通知上有回滚", s.name)
 	for _, stp := range s.compensateNext {
 		stp.compensateCh <- struct{}{}
 	}
@@ -527,7 +527,7 @@ func (s *Step) onCompensateSuccess(ctx context.Context) {
 
 func (s *Step) onCompensateFail(ctx context.Context) {
 	s.changeState(ctx, StepCompensateFail)
-	fmt.Println(fmt.Sprintf("step[%s] compensate done fail状态变更完成，阻塞住了", s.name))
+	logx.Infof(ctx, "step[%s] compensate done fail状态变更完成，阻塞住了", s.name)
 	// todo 更新db任务状态，人工介入, 其他回滚是否要继续执行
 }
 
