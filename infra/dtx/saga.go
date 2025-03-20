@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	defaultTimeout = 10 * time.Second
+	defaultTimeout = 3 * time.Second
 )
 
 func NewTransSaga() *TransSaga {
@@ -31,23 +31,24 @@ type TransSaga struct {
 	root  *Step
 	steps []*Step
 	// order   map[string][]string
-	state    atomic.Int32 // 0 - 执行中， 1 - 失败， 2 - 成功
-	errCh    chan error   // 正向执行的错误channel，容量为1
-	storage  TransStorage
-	timeout  time.Duration
+	state   atomic.Int32 // 0 - 执行中， 1 - 失败， 2 - 成功
+	errCh   chan error   // 正向执行的错误channel，容量为1
+	storage TransStorage
+	// timeout  time.Duration
 	done     chan struct{}
 	isFromDB bool
 }
 
 func (t *TransSaga) Exec(ctx context.Context) error {
-	t.AsyncExec(ctx)
+	t.AsyncExec()
 	return <-t.errCh
 }
 
-func (t *TransSaga) AsyncExec(ctx context.Context) {
+func (t *TransSaga) AsyncExec() {
+	ctx := context.Background()
 	utils.SafeGo(ctx, func() {
-		ctx, cancel := context.WithTimeout(context.Background(), t.timeout)
-		defer cancel()
+		// ctx, cancel := context.WithTimeout(context.Background(), t.timeout)
+		// defer cancel()
 
 		if !t.isFromDB {
 			err := t.sync(ctx)
@@ -75,8 +76,8 @@ func (t *TransSaga) AsyncExec(ctx context.Context) {
 		t.root.actionCh <- struct{}{}
 
 		select {
-		case <-ctx.Done():
-			fmt.Println("context done 退出AsyncExec")
+		// case <-ctx.Done():
+		// 	fmt.Println("context done 退出AsyncExec")
 		case <-t.done:
 			fmt.Println("执行完成 退出AsyncExec")
 		}
@@ -243,9 +244,9 @@ func (t *TransSaga) build(steps []*Branch, handlers map[string]func(context.Cont
 		opt(t)
 	}
 
-	if t.timeout == 0 {
-		t.timeout = defaultTimeout
-	}
+	// if t.timeout == 0 {
+	// 	t.timeout = defaultTimeout
+	// }
 	return t, nil
 }
 
@@ -327,9 +328,9 @@ func (s *Step) isSuccess() bool {
 func (s *Step) runAction(ctx context.Context) {
 	for {
 		select {
-		case <-ctx.Done():
-			logx.Errorf(ctx, "saga tx context done: %v", s.name)
-			return
+		// case <-ctx.Done():
+		// 	logx.Errorf(ctx, "saga tx context done: %v", s.name)
+		// 	return
 		case <-s.closed:
 			fmt.Println(fmt.Sprintf("trans closed action准备退出: %s", s.name))
 			return
@@ -470,9 +471,9 @@ func (s *Step) noNeedCompensate() bool {
 func (s *Step) runCompensate(ctx context.Context) {
 	for {
 		select {
-		case <-ctx.Done():
-			logx.Errorf(ctx, "saga tx context done: %v", ctx.Done())
-			return
+		// case <-ctx.Done():
+		// 	logx.Errorf(ctx, "saga tx context done: %v", ctx.Done())
+		// 	return
 		case <-s.closed:
 			fmt.Println(fmt.Sprintf("trans closed compensate准备退出: %s", s.name))
 			return

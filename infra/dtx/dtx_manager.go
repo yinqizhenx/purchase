@@ -34,7 +34,7 @@ func (txm *DistributeTxManager) Start(ctx context.Context) error {
 		return err
 	}
 	for _, t := range trans {
-		t.AsyncExec(ctx)
+		t.AsyncExec()
 	}
 	return nil
 }
@@ -195,7 +195,7 @@ func registerForTest(txm *DistributeTxManager) {
 		return nil
 	})
 	txm.RegisterHandler("step4_action", func(ctx context.Context, payload []byte) error {
-		time.Sleep(16 * time.Second)
+		time.Sleep(5 * time.Second)
 		fmt.Println("run step4_action")
 		return errors.New("ssccc")
 	})
