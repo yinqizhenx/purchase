@@ -74,10 +74,10 @@ func (s *StorageImpl) SaveBranch(ctx context.Context, branchList []*Branch) erro
 			SetName(b.Name).
 			SetAction(b.Action).
 			SetCompensate(b.Compensate).
-			SetPayload(b.Payload).
+			SetActionPayload(string(b.ActionPayload)).
+			SetCompensatePayload(string(b.CompensatePayload)).
 			SetActionDepend(strings.Join(b.ActionDepend, ",")).
 			SetCompensateDepend(strings.Join(b.CompensateDepend, ",")).
-			SetFinishedAt(b.FinishedAt).
 			SetCreatedAt(b.CreatedAt).
 			SetCreatedBy(b.CreatedBy).
 			SetUpdatedBy(b.UpdatedBy).
@@ -145,12 +145,13 @@ func (s *StorageImpl) MustGetBranchesByTransIDList(ctx context.Context, transIDL
 
 func ConvertTrans(t *ent.Trans) *Trans {
 	return &Trans{
-		ID:         t.ID,
-		Name:       t.Name,
-		State:      t.State,
-		FinishedAt: t.FinishedAt,
-		CreatedAt:  t.CreatedAt,
-		CreatedBy:  t.CreatedBy,
+		ID:           t.ID,
+		Name:         t.Name,
+		State:        t.State,
+		ExecuteState: t.ExecuteState,
+		FinishedAt:   t.FinishedAt,
+		CreatedAt:    t.CreatedAt,
+		CreatedBy:    t.CreatedBy,
 	}
 }
 
@@ -160,20 +161,20 @@ func ConvertBranch(b *ent.Branch) *Branch {
 		actionDepend = strings.Split(b.ActionDepend, ",")
 	}
 	return &Branch{
-		Code:             b.Code,
-		TransID:          b.TransID,
-		Type:             b.Type,
-		State:            StepStatus(b.State),
-		Name:             b.Name,
-		Action:           b.Action,
-		Compensate:       b.Compensate,
-		Payload:          b.Payload,
-		ActionDepend:     actionDepend,
-		CompensateDepend: strings.Split(b.CompensateDepend, ","),
-		FinishedAt:       b.FinishedAt,
-		CreatedAt:        b.CreatedAt,
-		CreatedBy:        b.CreatedBy,
-		UpdatedAt:        b.UpdatedAt,
-		IsDead:           b.IsDead,
+		Code:              b.Code,
+		TransID:           b.TransID,
+		Type:              b.Type,
+		State:             StepStatus(b.State),
+		Name:              b.Name,
+		Action:            b.Action,
+		Compensate:        b.Compensate,
+		ActionPayload:     []byte(b.ActionPayload),
+		CompensatePayload: []byte(b.CompensatePayload),
+		ActionDepend:      actionDepend,
+		CompensateDepend:  strings.Split(b.CompensateDepend, ","),
+		CreatedAt:         b.CreatedAt,
+		CreatedBy:         b.CreatedBy,
+		UpdatedAt:         b.UpdatedAt,
+		IsDead:            b.IsDead,
 	}
 }

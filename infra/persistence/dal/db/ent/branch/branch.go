@@ -27,14 +27,14 @@ const (
 	FieldAction = "action"
 	// FieldCompensate holds the string denoting the compensate field in the database.
 	FieldCompensate = "compensate"
-	// FieldPayload holds the string denoting the payload field in the database.
-	FieldPayload = "payload"
+	// FieldActionPayload holds the string denoting the action_payload field in the database.
+	FieldActionPayload = "action_payload"
+	// FieldCompensatePayload holds the string denoting the compensate_payload field in the database.
+	FieldCompensatePayload = "compensate_payload"
 	// FieldActionDepend holds the string denoting the action_depend field in the database.
 	FieldActionDepend = "action_depend"
 	// FieldCompensateDepend holds the string denoting the compensate_depend field in the database.
 	FieldCompensateDepend = "compensate_depend"
-	// FieldFinishedAt holds the string denoting the finished_at field in the database.
-	FieldFinishedAt = "finished_at"
 	// FieldIsDead holds the string denoting the is_dead field in the database.
 	FieldIsDead = "is_dead"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -59,10 +59,10 @@ var Columns = []string{
 	FieldName,
 	FieldAction,
 	FieldCompensate,
-	FieldPayload,
+	FieldActionPayload,
+	FieldCompensatePayload,
 	FieldActionDepend,
 	FieldCompensateDepend,
-	FieldFinishedAt,
 	FieldIsDead,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -81,8 +81,6 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// DefaultFinishedAt holds the default value on creation for the "finished_at" field.
-	DefaultFinishedAt func() time.Time
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
@@ -132,9 +130,14 @@ func ByCompensate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCompensate, opts...).ToFunc()
 }
 
-// ByPayload orders the results by the payload field.
-func ByPayload(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldPayload, opts...).ToFunc()
+// ByActionPayload orders the results by the action_payload field.
+func ByActionPayload(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldActionPayload, opts...).ToFunc()
+}
+
+// ByCompensatePayload orders the results by the compensate_payload field.
+func ByCompensatePayload(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCompensatePayload, opts...).ToFunc()
 }
 
 // ByActionDepend orders the results by the action_depend field.
@@ -145,11 +148,6 @@ func ByActionDepend(opts ...sql.OrderTermOption) OrderOption {
 // ByCompensateDepend orders the results by the compensate_depend field.
 func ByCompensateDepend(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCompensateDepend, opts...).ToFunc()
-}
-
-// ByFinishedAt orders the results by the finished_at field.
-func ByFinishedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldFinishedAt, opts...).ToFunc()
 }
 
 // ByIsDead orders the results by the is_dead field.

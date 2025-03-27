@@ -59,12 +59,13 @@ func (txm *DistributeTxManager) NewTransSaga(steps []*TransSagaStep, opts ...Opt
 	for _, stp := range steps {
 		branches = append(branches, &Branch{
 			// BranchID:     uuid.NewString(),
-			State:        StepPending,
-			Name:         stp.Name,
-			Action:       stp.Action,
-			Compensate:   stp.Compensate,
-			Payload:      string(stp.Payload),
-			ActionDepend: stp.Depend,
+			State:             StepPending,
+			Name:              stp.Name,
+			Action:            stp.Action,
+			Compensate:        stp.Compensate,
+			ActionPayload:     stp.ActionPayload,
+			ActionDepend:      stp.Depend,
+			CompensatePayload: stp.CompensatePayload,
 		})
 	}
 	return trans.build(branches, txm.handlers, opts...)
@@ -121,48 +122,54 @@ func (h *TransSagaStep) hasNoDepend() bool {
 }
 
 type TransSagaStep struct {
-	Name       string
-	Action     string
-	Compensate string
-	Payload    []byte
-	Depend     []string
+	Name              string
+	Action            string
+	Compensate        string
+	ActionPayload     []byte
+	CompensatePayload []byte
+	Depend            []string
 }
 
 var StepTest = []*TransSagaStep{
 	{
-		Name:       "step1",
-		Action:     "step1_action",
-		Compensate: "step1_rollback",
-		Depend:     nil,
-		Payload:    nil,
+		Name:              "step1",
+		Action:            "step1_action",
+		Compensate:        "step1_rollback",
+		Depend:            nil,
+		ActionPayload:     nil,
+		CompensatePayload: nil,
 	},
 	{
-		Name:       "step2",
-		Action:     "step2_action",
-		Compensate: "step2_rollback",
-		Depend:     []string{"step1"},
-		Payload:    nil,
+		Name:              "step2",
+		Action:            "step2_action",
+		Compensate:        "step2_rollback",
+		Depend:            []string{"step1"},
+		ActionPayload:     nil,
+		CompensatePayload: nil,
 	},
 	{
-		Name:       "step3",
-		Action:     "step3_action",
-		Compensate: "step3_rollback",
-		Depend:     []string{"step1"},
-		Payload:    nil,
+		Name:              "step3",
+		Action:            "step3_action",
+		Compensate:        "step3_rollback",
+		Depend:            []string{"step1"},
+		ActionPayload:     nil,
+		CompensatePayload: nil,
 	},
 	{
-		Name:       "step4",
-		Action:     "step4_action",
-		Compensate: "step4_rollback",
-		Depend:     []string{"step2"},
-		Payload:    nil,
+		Name:              "step4",
+		Action:            "step4_action",
+		Compensate:        "step4_rollback",
+		Depend:            []string{"step2"},
+		ActionPayload:     nil,
+		CompensatePayload: nil,
 	},
 	{
 		Name:       "step5",
 		Action:     "step5_action",
 		Compensate: "step5_rollback",
 		// Depend:     []string{"step5"},
-		Payload: nil,
+		ActionPayload:     nil,
+		CompensatePayload: nil,
 	},
 }
 

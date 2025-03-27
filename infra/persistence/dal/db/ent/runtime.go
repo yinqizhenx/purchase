@@ -28,10 +28,6 @@ func init() {
 	asynctask.DefaultUpdatedAt = asynctaskDescUpdatedAt.Default.(func() time.Time)
 	branchFields := schema.Branch{}.Fields()
 	_ = branchFields
-	// branchDescFinishedAt is the schema descriptor for finished_at field.
-	branchDescFinishedAt := branchFields[10].Descriptor()
-	// branch.DefaultFinishedAt holds the default value on creation for the finished_at field.
-	branch.DefaultFinishedAt = branchDescFinishedAt.Default.(func() time.Time)
 	// branchDescCreatedAt is the schema descriptor for created_at field.
 	branchDescCreatedAt := branchFields[12].Descriptor()
 	// branch.DefaultCreatedAt holds the default value on creation for the created_at field.

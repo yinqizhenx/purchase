@@ -64,9 +64,15 @@ func (bc *BranchCreate) SetCompensate(s string) *BranchCreate {
 	return bc
 }
 
-// SetPayload sets the "payload" field.
-func (bc *BranchCreate) SetPayload(s string) *BranchCreate {
-	bc.mutation.SetPayload(s)
+// SetActionPayload sets the "action_payload" field.
+func (bc *BranchCreate) SetActionPayload(s string) *BranchCreate {
+	bc.mutation.SetActionPayload(s)
+	return bc
+}
+
+// SetCompensatePayload sets the "compensate_payload" field.
+func (bc *BranchCreate) SetCompensatePayload(s string) *BranchCreate {
+	bc.mutation.SetCompensatePayload(s)
 	return bc
 }
 
@@ -79,20 +85,6 @@ func (bc *BranchCreate) SetActionDepend(s string) *BranchCreate {
 // SetCompensateDepend sets the "compensate_depend" field.
 func (bc *BranchCreate) SetCompensateDepend(s string) *BranchCreate {
 	bc.mutation.SetCompensateDepend(s)
-	return bc
-}
-
-// SetFinishedAt sets the "finished_at" field.
-func (bc *BranchCreate) SetFinishedAt(t time.Time) *BranchCreate {
-	bc.mutation.SetFinishedAt(t)
-	return bc
-}
-
-// SetNillableFinishedAt sets the "finished_at" field if the given value is not nil.
-func (bc *BranchCreate) SetNillableFinishedAt(t *time.Time) *BranchCreate {
-	if t != nil {
-		bc.SetFinishedAt(*t)
-	}
 	return bc
 }
 
@@ -177,10 +169,6 @@ func (bc *BranchCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bc *BranchCreate) defaults() {
-	if _, ok := bc.mutation.FinishedAt(); !ok {
-		v := branch.DefaultFinishedAt()
-		bc.mutation.SetFinishedAt(v)
-	}
 	if _, ok := bc.mutation.CreatedAt(); !ok {
 		v := branch.DefaultCreatedAt()
 		bc.mutation.SetCreatedAt(v)
@@ -214,17 +202,17 @@ func (bc *BranchCreate) check() error {
 	if _, ok := bc.mutation.Compensate(); !ok {
 		return &ValidationError{Name: "compensate", err: errors.New(`ent: missing required field "Branch.compensate"`)}
 	}
-	if _, ok := bc.mutation.Payload(); !ok {
-		return &ValidationError{Name: "payload", err: errors.New(`ent: missing required field "Branch.payload"`)}
+	if _, ok := bc.mutation.ActionPayload(); !ok {
+		return &ValidationError{Name: "action_payload", err: errors.New(`ent: missing required field "Branch.action_payload"`)}
+	}
+	if _, ok := bc.mutation.CompensatePayload(); !ok {
+		return &ValidationError{Name: "compensate_payload", err: errors.New(`ent: missing required field "Branch.compensate_payload"`)}
 	}
 	if _, ok := bc.mutation.ActionDepend(); !ok {
 		return &ValidationError{Name: "action_depend", err: errors.New(`ent: missing required field "Branch.action_depend"`)}
 	}
 	if _, ok := bc.mutation.CompensateDepend(); !ok {
 		return &ValidationError{Name: "compensate_depend", err: errors.New(`ent: missing required field "Branch.compensate_depend"`)}
-	}
-	if _, ok := bc.mutation.FinishedAt(); !ok {
-		return &ValidationError{Name: "finished_at", err: errors.New(`ent: missing required field "Branch.finished_at"`)}
 	}
 	if _, ok := bc.mutation.IsDead(); !ok {
 		return &ValidationError{Name: "is_dead", err: errors.New(`ent: missing required field "Branch.is_dead"`)}
@@ -296,9 +284,13 @@ func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 		_spec.SetField(branch.FieldCompensate, field.TypeString, value)
 		_node.Compensate = value
 	}
-	if value, ok := bc.mutation.Payload(); ok {
-		_spec.SetField(branch.FieldPayload, field.TypeString, value)
-		_node.Payload = value
+	if value, ok := bc.mutation.ActionPayload(); ok {
+		_spec.SetField(branch.FieldActionPayload, field.TypeString, value)
+		_node.ActionPayload = value
+	}
+	if value, ok := bc.mutation.CompensatePayload(); ok {
+		_spec.SetField(branch.FieldCompensatePayload, field.TypeString, value)
+		_node.CompensatePayload = value
 	}
 	if value, ok := bc.mutation.ActionDepend(); ok {
 		_spec.SetField(branch.FieldActionDepend, field.TypeString, value)
@@ -307,10 +299,6 @@ func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 	if value, ok := bc.mutation.CompensateDepend(); ok {
 		_spec.SetField(branch.FieldCompensateDepend, field.TypeString, value)
 		_node.CompensateDepend = value
-	}
-	if value, ok := bc.mutation.FinishedAt(); ok {
-		_spec.SetField(branch.FieldFinishedAt, field.TypeTime, value)
-		_node.FinishedAt = value
 	}
 	if value, ok := bc.mutation.IsDead(); ok {
 		_spec.SetField(branch.FieldIsDead, field.TypeBool, value)
@@ -474,15 +462,27 @@ func (u *BranchUpsert) UpdateCompensate() *BranchUpsert {
 	return u
 }
 
-// SetPayload sets the "payload" field.
-func (u *BranchUpsert) SetPayload(v string) *BranchUpsert {
-	u.Set(branch.FieldPayload, v)
+// SetActionPayload sets the "action_payload" field.
+func (u *BranchUpsert) SetActionPayload(v string) *BranchUpsert {
+	u.Set(branch.FieldActionPayload, v)
 	return u
 }
 
-// UpdatePayload sets the "payload" field to the value that was provided on create.
-func (u *BranchUpsert) UpdatePayload() *BranchUpsert {
-	u.SetExcluded(branch.FieldPayload)
+// UpdateActionPayload sets the "action_payload" field to the value that was provided on create.
+func (u *BranchUpsert) UpdateActionPayload() *BranchUpsert {
+	u.SetExcluded(branch.FieldActionPayload)
+	return u
+}
+
+// SetCompensatePayload sets the "compensate_payload" field.
+func (u *BranchUpsert) SetCompensatePayload(v string) *BranchUpsert {
+	u.Set(branch.FieldCompensatePayload, v)
+	return u
+}
+
+// UpdateCompensatePayload sets the "compensate_payload" field to the value that was provided on create.
+func (u *BranchUpsert) UpdateCompensatePayload() *BranchUpsert {
+	u.SetExcluded(branch.FieldCompensatePayload)
 	return u
 }
 
@@ -507,18 +507,6 @@ func (u *BranchUpsert) SetCompensateDepend(v string) *BranchUpsert {
 // UpdateCompensateDepend sets the "compensate_depend" field to the value that was provided on create.
 func (u *BranchUpsert) UpdateCompensateDepend() *BranchUpsert {
 	u.SetExcluded(branch.FieldCompensateDepend)
-	return u
-}
-
-// SetFinishedAt sets the "finished_at" field.
-func (u *BranchUpsert) SetFinishedAt(v time.Time) *BranchUpsert {
-	u.Set(branch.FieldFinishedAt, v)
-	return u
-}
-
-// UpdateFinishedAt sets the "finished_at" field to the value that was provided on create.
-func (u *BranchUpsert) UpdateFinishedAt() *BranchUpsert {
-	u.SetExcluded(branch.FieldFinishedAt)
 	return u
 }
 
@@ -727,17 +715,31 @@ func (u *BranchUpsertOne) UpdateCompensate() *BranchUpsertOne {
 	})
 }
 
-// SetPayload sets the "payload" field.
-func (u *BranchUpsertOne) SetPayload(v string) *BranchUpsertOne {
+// SetActionPayload sets the "action_payload" field.
+func (u *BranchUpsertOne) SetActionPayload(v string) *BranchUpsertOne {
 	return u.Update(func(s *BranchUpsert) {
-		s.SetPayload(v)
+		s.SetActionPayload(v)
 	})
 }
 
-// UpdatePayload sets the "payload" field to the value that was provided on create.
-func (u *BranchUpsertOne) UpdatePayload() *BranchUpsertOne {
+// UpdateActionPayload sets the "action_payload" field to the value that was provided on create.
+func (u *BranchUpsertOne) UpdateActionPayload() *BranchUpsertOne {
 	return u.Update(func(s *BranchUpsert) {
-		s.UpdatePayload()
+		s.UpdateActionPayload()
+	})
+}
+
+// SetCompensatePayload sets the "compensate_payload" field.
+func (u *BranchUpsertOne) SetCompensatePayload(v string) *BranchUpsertOne {
+	return u.Update(func(s *BranchUpsert) {
+		s.SetCompensatePayload(v)
+	})
+}
+
+// UpdateCompensatePayload sets the "compensate_payload" field to the value that was provided on create.
+func (u *BranchUpsertOne) UpdateCompensatePayload() *BranchUpsertOne {
+	return u.Update(func(s *BranchUpsert) {
+		s.UpdateCompensatePayload()
 	})
 }
 
@@ -766,20 +768,6 @@ func (u *BranchUpsertOne) SetCompensateDepend(v string) *BranchUpsertOne {
 func (u *BranchUpsertOne) UpdateCompensateDepend() *BranchUpsertOne {
 	return u.Update(func(s *BranchUpsert) {
 		s.UpdateCompensateDepend()
-	})
-}
-
-// SetFinishedAt sets the "finished_at" field.
-func (u *BranchUpsertOne) SetFinishedAt(v time.Time) *BranchUpsertOne {
-	return u.Update(func(s *BranchUpsert) {
-		s.SetFinishedAt(v)
-	})
-}
-
-// UpdateFinishedAt sets the "finished_at" field to the value that was provided on create.
-func (u *BranchUpsertOne) UpdateFinishedAt() *BranchUpsertOne {
-	return u.Update(func(s *BranchUpsert) {
-		s.UpdateFinishedAt()
 	})
 }
 
@@ -1162,17 +1150,31 @@ func (u *BranchUpsertBulk) UpdateCompensate() *BranchUpsertBulk {
 	})
 }
 
-// SetPayload sets the "payload" field.
-func (u *BranchUpsertBulk) SetPayload(v string) *BranchUpsertBulk {
+// SetActionPayload sets the "action_payload" field.
+func (u *BranchUpsertBulk) SetActionPayload(v string) *BranchUpsertBulk {
 	return u.Update(func(s *BranchUpsert) {
-		s.SetPayload(v)
+		s.SetActionPayload(v)
 	})
 }
 
-// UpdatePayload sets the "payload" field to the value that was provided on create.
-func (u *BranchUpsertBulk) UpdatePayload() *BranchUpsertBulk {
+// UpdateActionPayload sets the "action_payload" field to the value that was provided on create.
+func (u *BranchUpsertBulk) UpdateActionPayload() *BranchUpsertBulk {
 	return u.Update(func(s *BranchUpsert) {
-		s.UpdatePayload()
+		s.UpdateActionPayload()
+	})
+}
+
+// SetCompensatePayload sets the "compensate_payload" field.
+func (u *BranchUpsertBulk) SetCompensatePayload(v string) *BranchUpsertBulk {
+	return u.Update(func(s *BranchUpsert) {
+		s.SetCompensatePayload(v)
+	})
+}
+
+// UpdateCompensatePayload sets the "compensate_payload" field to the value that was provided on create.
+func (u *BranchUpsertBulk) UpdateCompensatePayload() *BranchUpsertBulk {
+	return u.Update(func(s *BranchUpsert) {
+		s.UpdateCompensatePayload()
 	})
 }
 
@@ -1201,20 +1203,6 @@ func (u *BranchUpsertBulk) SetCompensateDepend(v string) *BranchUpsertBulk {
 func (u *BranchUpsertBulk) UpdateCompensateDepend() *BranchUpsertBulk {
 	return u.Update(func(s *BranchUpsert) {
 		s.UpdateCompensateDepend()
-	})
-}
-
-// SetFinishedAt sets the "finished_at" field.
-func (u *BranchUpsertBulk) SetFinishedAt(v time.Time) *BranchUpsertBulk {
-	return u.Update(func(s *BranchUpsert) {
-		s.SetFinishedAt(v)
-	})
-}
-
-// UpdateFinishedAt sets the "finished_at" field to the value that was provided on create.
-func (u *BranchUpsertBulk) UpdateFinishedAt() *BranchUpsertBulk {
-	return u.Update(func(s *BranchUpsert) {
-		s.UpdateFinishedAt()
 	})
 }
 

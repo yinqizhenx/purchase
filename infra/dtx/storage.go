@@ -26,22 +26,22 @@ type Trans struct {
 }
 
 type Branch struct {
-	Code             string
-	TransID          int
-	Type             string
-	State            StepStatus
-	Name             string
-	Action           string
-	Compensate       string
-	Payload          string
-	ActionDepend     []string
-	CompensateDepend []string
-	FinishedAt       time.Time
-	IsDead           bool
-	CreatedAt        time.Time
-	CreatedBy        string
-	UpdatedAt        time.Time
-	UpdatedBy        string
+	Code              string
+	TransID           int
+	Type              string
+	State             StepStatus
+	Name              string
+	Action            string
+	Compensate        string
+	ActionPayload     []byte
+	CompensatePayload []byte
+	ActionDepend      []string
+	CompensateDepend  []string
+	IsDead            bool
+	CreatedAt         time.Time
+	CreatedBy         string
+	UpdatedAt         time.Time
+	UpdatedBy         string
 }
 
 type BranchType string

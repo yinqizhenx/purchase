@@ -31,14 +31,14 @@ type Branch struct {
 	Action string `json:"action,omitempty"`
 	// Compensate holds the value of the "compensate" field.
 	Compensate string `json:"compensate,omitempty"`
-	// Payload holds the value of the "payload" field.
-	Payload string `json:"payload,omitempty"`
+	// ActionPayload holds the value of the "action_payload" field.
+	ActionPayload string `json:"action_payload,omitempty"`
+	// CompensatePayload holds the value of the "compensate_payload" field.
+	CompensatePayload string `json:"compensate_payload,omitempty"`
 	// ActionDepend holds the value of the "action_depend" field.
 	ActionDepend string `json:"action_depend,omitempty"`
 	// CompensateDepend holds the value of the "compensate_depend" field.
 	CompensateDepend string `json:"compensate_depend,omitempty"`
-	// FinishedAt holds the value of the "finished_at" field.
-	FinishedAt time.Time `json:"finished_at,omitempty"`
 	// IsDead holds the value of the "is_dead" field.
 	IsDead bool `json:"is_dead,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -61,9 +61,9 @@ func (*Branch) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case branch.FieldID, branch.FieldTransID:
 			values[i] = new(sql.NullInt64)
-		case branch.FieldCode, branch.FieldType, branch.FieldState, branch.FieldName, branch.FieldAction, branch.FieldCompensate, branch.FieldPayload, branch.FieldActionDepend, branch.FieldCompensateDepend, branch.FieldUpdatedBy, branch.FieldCreatedBy:
+		case branch.FieldCode, branch.FieldType, branch.FieldState, branch.FieldName, branch.FieldAction, branch.FieldCompensate, branch.FieldActionPayload, branch.FieldCompensatePayload, branch.FieldActionDepend, branch.FieldCompensateDepend, branch.FieldUpdatedBy, branch.FieldCreatedBy:
 			values[i] = new(sql.NullString)
-		case branch.FieldFinishedAt, branch.FieldCreatedAt, branch.FieldUpdatedAt:
+		case branch.FieldCreatedAt, branch.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -128,11 +128,17 @@ func (b *Branch) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				b.Compensate = value.String
 			}
-		case branch.FieldPayload:
+		case branch.FieldActionPayload:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field payload", values[i])
+				return fmt.Errorf("unexpected type %T for field action_payload", values[i])
 			} else if value.Valid {
-				b.Payload = value.String
+				b.ActionPayload = value.String
+			}
+		case branch.FieldCompensatePayload:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field compensate_payload", values[i])
+			} else if value.Valid {
+				b.CompensatePayload = value.String
 			}
 		case branch.FieldActionDepend:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -145,12 +151,6 @@ func (b *Branch) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field compensate_depend", values[i])
 			} else if value.Valid {
 				b.CompensateDepend = value.String
-			}
-		case branch.FieldFinishedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field finished_at", values[i])
-			} else if value.Valid {
-				b.FinishedAt = value.Time
 			}
 		case branch.FieldIsDead:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -239,17 +239,17 @@ func (b *Branch) String() string {
 	builder.WriteString("compensate=")
 	builder.WriteString(b.Compensate)
 	builder.WriteString(", ")
-	builder.WriteString("payload=")
-	builder.WriteString(b.Payload)
+	builder.WriteString("action_payload=")
+	builder.WriteString(b.ActionPayload)
+	builder.WriteString(", ")
+	builder.WriteString("compensate_payload=")
+	builder.WriteString(b.CompensatePayload)
 	builder.WriteString(", ")
 	builder.WriteString("action_depend=")
 	builder.WriteString(b.ActionDepend)
 	builder.WriteString(", ")
 	builder.WriteString("compensate_depend=")
 	builder.WriteString(b.CompensateDepend)
-	builder.WriteString(", ")
-	builder.WriteString("finished_at=")
-	builder.WriteString(b.FinishedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("is_dead=")
 	builder.WriteString(fmt.Sprintf("%v", b.IsDead))

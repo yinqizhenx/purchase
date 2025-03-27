@@ -133,16 +133,30 @@ func (bu *BranchUpdate) SetNillableCompensate(s *string) *BranchUpdate {
 	return bu
 }
 
-// SetPayload sets the "payload" field.
-func (bu *BranchUpdate) SetPayload(s string) *BranchUpdate {
-	bu.mutation.SetPayload(s)
+// SetActionPayload sets the "action_payload" field.
+func (bu *BranchUpdate) SetActionPayload(s string) *BranchUpdate {
+	bu.mutation.SetActionPayload(s)
 	return bu
 }
 
-// SetNillablePayload sets the "payload" field if the given value is not nil.
-func (bu *BranchUpdate) SetNillablePayload(s *string) *BranchUpdate {
+// SetNillableActionPayload sets the "action_payload" field if the given value is not nil.
+func (bu *BranchUpdate) SetNillableActionPayload(s *string) *BranchUpdate {
 	if s != nil {
-		bu.SetPayload(*s)
+		bu.SetActionPayload(*s)
+	}
+	return bu
+}
+
+// SetCompensatePayload sets the "compensate_payload" field.
+func (bu *BranchUpdate) SetCompensatePayload(s string) *BranchUpdate {
+	bu.mutation.SetCompensatePayload(s)
+	return bu
+}
+
+// SetNillableCompensatePayload sets the "compensate_payload" field if the given value is not nil.
+func (bu *BranchUpdate) SetNillableCompensatePayload(s *string) *BranchUpdate {
+	if s != nil {
+		bu.SetCompensatePayload(*s)
 	}
 	return bu
 }
@@ -171,20 +185,6 @@ func (bu *BranchUpdate) SetCompensateDepend(s string) *BranchUpdate {
 func (bu *BranchUpdate) SetNillableCompensateDepend(s *string) *BranchUpdate {
 	if s != nil {
 		bu.SetCompensateDepend(*s)
-	}
-	return bu
-}
-
-// SetFinishedAt sets the "finished_at" field.
-func (bu *BranchUpdate) SetFinishedAt(t time.Time) *BranchUpdate {
-	bu.mutation.SetFinishedAt(t)
-	return bu
-}
-
-// SetNillableFinishedAt sets the "finished_at" field if the given value is not nil.
-func (bu *BranchUpdate) SetNillableFinishedAt(t *time.Time) *BranchUpdate {
-	if t != nil {
-		bu.SetFinishedAt(*t)
 	}
 	return bu
 }
@@ -324,17 +324,17 @@ func (bu *BranchUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := bu.mutation.Compensate(); ok {
 		_spec.SetField(branch.FieldCompensate, field.TypeString, value)
 	}
-	if value, ok := bu.mutation.Payload(); ok {
-		_spec.SetField(branch.FieldPayload, field.TypeString, value)
+	if value, ok := bu.mutation.ActionPayload(); ok {
+		_spec.SetField(branch.FieldActionPayload, field.TypeString, value)
+	}
+	if value, ok := bu.mutation.CompensatePayload(); ok {
+		_spec.SetField(branch.FieldCompensatePayload, field.TypeString, value)
 	}
 	if value, ok := bu.mutation.ActionDepend(); ok {
 		_spec.SetField(branch.FieldActionDepend, field.TypeString, value)
 	}
 	if value, ok := bu.mutation.CompensateDepend(); ok {
 		_spec.SetField(branch.FieldCompensateDepend, field.TypeString, value)
-	}
-	if value, ok := bu.mutation.FinishedAt(); ok {
-		_spec.SetField(branch.FieldFinishedAt, field.TypeTime, value)
 	}
 	if value, ok := bu.mutation.IsDead(); ok {
 		_spec.SetField(branch.FieldIsDead, field.TypeBool, value)
@@ -476,16 +476,30 @@ func (buo *BranchUpdateOne) SetNillableCompensate(s *string) *BranchUpdateOne {
 	return buo
 }
 
-// SetPayload sets the "payload" field.
-func (buo *BranchUpdateOne) SetPayload(s string) *BranchUpdateOne {
-	buo.mutation.SetPayload(s)
+// SetActionPayload sets the "action_payload" field.
+func (buo *BranchUpdateOne) SetActionPayload(s string) *BranchUpdateOne {
+	buo.mutation.SetActionPayload(s)
 	return buo
 }
 
-// SetNillablePayload sets the "payload" field if the given value is not nil.
-func (buo *BranchUpdateOne) SetNillablePayload(s *string) *BranchUpdateOne {
+// SetNillableActionPayload sets the "action_payload" field if the given value is not nil.
+func (buo *BranchUpdateOne) SetNillableActionPayload(s *string) *BranchUpdateOne {
 	if s != nil {
-		buo.SetPayload(*s)
+		buo.SetActionPayload(*s)
+	}
+	return buo
+}
+
+// SetCompensatePayload sets the "compensate_payload" field.
+func (buo *BranchUpdateOne) SetCompensatePayload(s string) *BranchUpdateOne {
+	buo.mutation.SetCompensatePayload(s)
+	return buo
+}
+
+// SetNillableCompensatePayload sets the "compensate_payload" field if the given value is not nil.
+func (buo *BranchUpdateOne) SetNillableCompensatePayload(s *string) *BranchUpdateOne {
+	if s != nil {
+		buo.SetCompensatePayload(*s)
 	}
 	return buo
 }
@@ -514,20 +528,6 @@ func (buo *BranchUpdateOne) SetCompensateDepend(s string) *BranchUpdateOne {
 func (buo *BranchUpdateOne) SetNillableCompensateDepend(s *string) *BranchUpdateOne {
 	if s != nil {
 		buo.SetCompensateDepend(*s)
-	}
-	return buo
-}
-
-// SetFinishedAt sets the "finished_at" field.
-func (buo *BranchUpdateOne) SetFinishedAt(t time.Time) *BranchUpdateOne {
-	buo.mutation.SetFinishedAt(t)
-	return buo
-}
-
-// SetNillableFinishedAt sets the "finished_at" field if the given value is not nil.
-func (buo *BranchUpdateOne) SetNillableFinishedAt(t *time.Time) *BranchUpdateOne {
-	if t != nil {
-		buo.SetFinishedAt(*t)
 	}
 	return buo
 }
@@ -697,17 +697,17 @@ func (buo *BranchUpdateOne) sqlSave(ctx context.Context) (_node *Branch, err err
 	if value, ok := buo.mutation.Compensate(); ok {
 		_spec.SetField(branch.FieldCompensate, field.TypeString, value)
 	}
-	if value, ok := buo.mutation.Payload(); ok {
-		_spec.SetField(branch.FieldPayload, field.TypeString, value)
+	if value, ok := buo.mutation.ActionPayload(); ok {
+		_spec.SetField(branch.FieldActionPayload, field.TypeString, value)
+	}
+	if value, ok := buo.mutation.CompensatePayload(); ok {
+		_spec.SetField(branch.FieldCompensatePayload, field.TypeString, value)
 	}
 	if value, ok := buo.mutation.ActionDepend(); ok {
 		_spec.SetField(branch.FieldActionDepend, field.TypeString, value)
 	}
 	if value, ok := buo.mutation.CompensateDepend(); ok {
 		_spec.SetField(branch.FieldCompensateDepend, field.TypeString, value)
-	}
-	if value, ok := buo.mutation.FinishedAt(); ok {
-		_spec.SetField(branch.FieldFinishedAt, field.TypeTime, value)
 	}
 	if value, ok := buo.mutation.IsDead(); ok {
 		_spec.SetField(branch.FieldIsDead, field.TypeBool, value)

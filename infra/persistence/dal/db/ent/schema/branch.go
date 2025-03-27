@@ -23,13 +23,10 @@ func (Branch) Fields() []ent.Field {
 		field.String("name"),
 		field.String("action"),
 		field.String("compensate"),
-		field.String("payload"),
+		field.String("action_payload"),
+		field.String("compensate_payload"),
 		field.String("action_depend"),
 		field.String("compensate_depend"),
-		field.Time("finished_at").
-			Default(time.Now).SchemaType(map[string]string{
-			dialect.MySQL: "datetime",
-		}),
 		field.Bool("is_dead"),
 		field.Time("created_at").
 			Default(time.Now).SchemaType(map[string]string{
