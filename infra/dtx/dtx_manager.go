@@ -27,7 +27,7 @@ type DistributeTxManager struct {
 }
 
 func (txm *DistributeTxManager) Start(ctx context.Context) error {
-	trans, err := txm.loadPendingTrans(ctx)
+	trans, err := txm.loadExecutingTrans(ctx)
 	if err != nil {
 		return err
 	}
@@ -70,8 +70,8 @@ func (txm *DistributeTxManager) NewTransSaga(steps []*TransSagaStep, opts ...Opt
 	return trans.build(branches, txm.handlers, opts...)
 }
 
-func (txm *DistributeTxManager) loadPendingTrans(ctx context.Context) ([]*TransSaga, error) {
-	transMap, err := txm.storage.GetPendingTrans(ctx)
+func (txm *DistributeTxManager) loadExecutingTrans(ctx context.Context) ([]*TransSaga, error) {
+	transMap, err := txm.storage.GetExecutingTrans(ctx)
 	if err != nil {
 		return nil, err
 	}

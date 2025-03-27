@@ -114,8 +114,8 @@ func (s *StorageImpl) UpdateBranchState(ctx context.Context, code, newState stri
 	return err
 }
 
-func (s *StorageImpl) GetPendingTrans(ctx context.Context) (map[int]*Trans, error) {
-	transList, err := s.getTransClient(ctx).Query().Where(trans.State("pending")).All(ctx)
+func (s *StorageImpl) GetExecutingTrans(ctx context.Context) (map[int]*Trans, error) {
+	transList, err := s.getTransClient(ctx).Query().Where(trans.ExecuteState("executing")).All(ctx)
 	if err != nil {
 		return nil, err
 	}
