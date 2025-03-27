@@ -297,7 +297,7 @@ func (t *TransSaga) buildRootStep(opts ...StepOption) *Step {
 }
 
 func (t *TransSaga) changeExecuteStateCompleted(ctx context.Context) error {
-	return t.storage.UpdateTransExecuteState(ctx, t.id, "completed")
+	return t.storage.UpdateTransExecuteStateDone(ctx, t.id, "completed")
 }
 
 func (t *TransSaga) close() {

@@ -55,7 +55,7 @@ type TransStorage interface {
 	SaveTrans(ctx context.Context, tx *Trans) (int, error)
 	SaveBranch(ctx context.Context, branchList []*Branch) error
 	UpdateTransState(ctx context.Context, transID int, newState string) error
-	UpdateTransExecuteState(ctx context.Context, transID int, newState string) error
+	UpdateTransExecuteStateDone(ctx context.Context, transID int, newState string) error
 	UpdateBranchState(ctx context.Context, code, newState string) error
 	GetExecutingTrans(ctx context.Context) (map[int]*Trans, error)
 	MustGetBranchesByTransIDList(ctx context.Context, transIDList []int) (map[int][]*Branch, error)

@@ -99,7 +99,7 @@ func (s *StorageImpl) UpdateTransState(ctx context.Context, transID int, newStat
 	return err
 }
 
-func (s *StorageImpl) UpdateTransExecuteState(ctx context.Context, transID int, newState string) error {
+func (s *StorageImpl) UpdateTransExecuteStateDone(ctx context.Context, transID int, newState string) error {
 	err := s.getTransClient(ctx).Update().
 		SetExecuteState(newState).
 		SetFinishedAt(time.Now()).
