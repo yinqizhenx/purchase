@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/wire"
 
@@ -101,6 +102,7 @@ func (s *StorageImpl) UpdateTransState(ctx context.Context, transID int, newStat
 func (s *StorageImpl) UpdateTransExecuteState(ctx context.Context, transID int, newState string) error {
 	err := s.getTransClient(ctx).Update().
 		SetExecuteState(newState).
+		SetFinishedAt(time.Now()).
 		Where(trans.ID(transID)).
 		Exec(ctx)
 	return err
