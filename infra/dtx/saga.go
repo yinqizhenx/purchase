@@ -546,6 +546,7 @@ func (s *Step) runCompensate(ctx context.Context) {
 
 			// 阻塞，直到当前action执行结束
 			for s.state == StepInAction {
+				time.Sleep(10 * time.Millisecond)
 			}
 
 			s.handleCompensate(ctx)
