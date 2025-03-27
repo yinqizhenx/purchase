@@ -127,7 +127,7 @@ func (t *TransSaga) sync(ctx context.Context) error {
 			Action:            stp.action.name,
 			Compensate:        stp.compensate.name,
 			ActionPayload:     stp.action.payload,
-			CompensatePayload: stp.action.payload,
+			CompensatePayload: stp.compensate.payload,
 			ActionDepend:      actionDepend,
 			CompensateDepend:  compensateDepend,
 			IsDead:            false,
