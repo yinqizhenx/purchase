@@ -13,8 +13,6 @@ const (
 	Label = "trans"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldTransID holds the string denoting the trans_id field in the database.
-	FieldTransID = "trans_id"
 	// FieldState holds the string denoting the state field in the database.
 	FieldState = "state"
 	// FieldName holds the string denoting the name field in the database.
@@ -36,7 +34,6 @@ const (
 // Columns holds all SQL columns for trans fields.
 var Columns = []string{
 	FieldID,
-	FieldTransID,
 	FieldState,
 	FieldName,
 	FieldFinishedAt,
@@ -71,11 +68,6 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
-}
-
-// ByTransID orders the results by the trans_id field.
-func ByTransID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldTransID, opts...).ToFunc()
 }
 
 // ByState orders the results by the state field.

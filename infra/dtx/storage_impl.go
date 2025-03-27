@@ -43,9 +43,8 @@ func (s *StorageImpl) getBranchClient(ctx context.Context) *ent.BranchClient {
 	return s.db.Branch
 }
 
-func (s *StorageImpl) SaveTrans(ctx context.Context, t *Trans) error {
-	err := s.getTransClient(ctx).Create().
-		SetTransID(t.TransID).
+func (s *StorageImpl) SaveTrans(ctx context.Context, t *Trans) (int, error) {
+	tran, err := s.getTransClient(ctx).Create().
 		SetName(t.Name).
 		SetState(t.State).
 		SetFinishedAt(t.FinishedAt).
@@ -53,8 +52,11 @@ func (s *StorageImpl) SaveTrans(ctx context.Context, t *Trans) error {
 		SetCreatedBy(t.CreatedBy).
 		SetUpdatedBy(t.UpdatedBy).
 		SetUpdatedAt(t.UpdatedAt).
-		Exec(ctx)
-	return err
+		Save(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return tran.ID, nil
 }
 
 func (s *StorageImpl) SaveBranch(ctx context.Context, branchList []*Branch) error {
@@ -64,7 +66,6 @@ func (s *StorageImpl) SaveBranch(ctx context.Context, branchList []*Branch) erro
 	buildCreate := make([]*ent.BranchCreate, 0)
 	for _, b := range branchList {
 		create := s.getBranchClient(ctx).Create().
-			SetBranchID(b.BranchID).
 			SetTransID(b.TransID).
 			SetType(b.Type).
 			SetState(b.State.String()).
@@ -87,36 +88,36 @@ func (s *StorageImpl) SaveBranch(ctx context.Context, branchList []*Branch) erro
 	return err
 }
 
-func (s *StorageImpl) UpdateTransState(ctx context.Context, transID string, newState string) error {
+func (s *StorageImpl) UpdateTransState(ctx context.Context, transID int, newState string) error {
 	err := s.getTransClient(ctx).Update().
 		SetState(newState).
-		Where(trans.TransID(transID)).
+		Where(trans.ID(transID)).
 		Exec(ctx)
 	return err
 }
 
-func (s *StorageImpl) UpdateBranchState(ctx context.Context, branchID string, newState string) error {
+func (s *StorageImpl) UpdateBranchState(ctx context.Context, branchID int, newState string) error {
 	err := s.getBranchClient(ctx).Update().
 		SetState(newState).
-		Where(branch.BranchID(branchID)).
+		Where(branch.ID(branchID)).
 		Exec(ctx)
 	return err
 }
 
-func (s *StorageImpl) GetPendingTrans(ctx context.Context) (map[string]*Trans, error) {
+func (s *StorageImpl) GetPendingTrans(ctx context.Context) (map[int]*Trans, error) {
 	transList, err := s.getTransClient(ctx).Query().Where(trans.State("pending")).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	transMap := make(map[string]*Trans)
+	transMap := make(map[int]*Trans)
 	for _, t := range transList {
-		transMap[t.TransID] = ConvertTrans(t)
+		transMap[t.ID] = ConvertTrans(t)
 	}
 	return transMap, nil
 }
 
-func (s *StorageImpl) MustGetBranchesByTransIDList(ctx context.Context, transIDList []string) (map[string][]*Branch, error) {
-	branchMap := make(map[string][]*Branch)
+func (s *StorageImpl) MustGetBranchesByTransIDList(ctx context.Context, transIDList []int) (map[int][]*Branch, error) {
+	branchMap := make(map[int][]*Branch)
 	branchList, err := s.getBranchClient(ctx).Query().Where(branch.TransIDIn(transIDList...)).All(ctx)
 	if err != nil {
 		return nil, err
@@ -134,7 +135,7 @@ func (s *StorageImpl) MustGetBranchesByTransIDList(ctx context.Context, transIDL
 
 func ConvertTrans(t *ent.Trans) *Trans {
 	return &Trans{
-		TransID:    t.TransID,
+		ID:         t.ID,
 		Name:       t.Name,
 		State:      t.State,
 		FinishedAt: t.FinishedAt,
@@ -149,7 +150,7 @@ func ConvertBranch(b *ent.Branch) *Branch {
 		actionDepend = strings.Split(b.ActionDepend, ",")
 	}
 	return &Branch{
-		BranchID:         b.BranchID,
+		ID:               b.ID,
 		TransID:          b.TransID,
 		Type:             b.Type,
 		State:            StepStatus(b.State),

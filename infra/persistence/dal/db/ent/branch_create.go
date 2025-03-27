@@ -22,15 +22,9 @@ type BranchCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetBranchID sets the "branch_id" field.
-func (bc *BranchCreate) SetBranchID(s string) *BranchCreate {
-	bc.mutation.SetBranchID(s)
-	return bc
-}
-
 // SetTransID sets the "trans_id" field.
-func (bc *BranchCreate) SetTransID(s string) *BranchCreate {
-	bc.mutation.SetTransID(s)
+func (bc *BranchCreate) SetTransID(i int) *BranchCreate {
+	bc.mutation.SetTransID(i)
 	return bc
 }
 
@@ -193,9 +187,6 @@ func (bc *BranchCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (bc *BranchCreate) check() error {
-	if _, ok := bc.mutation.BranchID(); !ok {
-		return &ValidationError{Name: "branch_id", err: errors.New(`ent: missing required field "Branch.branch_id"`)}
-	}
 	if _, ok := bc.mutation.TransID(); !ok {
 		return &ValidationError{Name: "trans_id", err: errors.New(`ent: missing required field "Branch.trans_id"`)}
 	}
@@ -268,12 +259,8 @@ func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 		_spec = sqlgraph.NewCreateSpec(branch.Table, sqlgraph.NewFieldSpec(branch.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = bc.conflict
-	if value, ok := bc.mutation.BranchID(); ok {
-		_spec.SetField(branch.FieldBranchID, field.TypeString, value)
-		_node.BranchID = value
-	}
 	if value, ok := bc.mutation.TransID(); ok {
-		_spec.SetField(branch.FieldTransID, field.TypeString, value)
+		_spec.SetField(branch.FieldTransID, field.TypeInt, value)
 		_node.TransID = value
 	}
 	if value, ok := bc.mutation.GetType(); ok {
@@ -339,7 +326,7 @@ func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Branch.Create().
-//		SetBranchID(v).
+//		SetTransID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -348,7 +335,7 @@ func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.BranchUpsert) {
-//			SetBranchID(v+v).
+//			SetTransID(v+v).
 //		}).
 //		Exec(ctx)
 func (bc *BranchCreate) OnConflict(opts ...sql.ConflictOption) *BranchUpsertOne {
@@ -384,20 +371,8 @@ type (
 	}
 )
 
-// SetBranchID sets the "branch_id" field.
-func (u *BranchUpsert) SetBranchID(v string) *BranchUpsert {
-	u.Set(branch.FieldBranchID, v)
-	return u
-}
-
-// UpdateBranchID sets the "branch_id" field to the value that was provided on create.
-func (u *BranchUpsert) UpdateBranchID() *BranchUpsert {
-	u.SetExcluded(branch.FieldBranchID)
-	return u
-}
-
 // SetTransID sets the "trans_id" field.
-func (u *BranchUpsert) SetTransID(v string) *BranchUpsert {
+func (u *BranchUpsert) SetTransID(v int) *BranchUpsert {
 	u.Set(branch.FieldTransID, v)
 	return u
 }
@@ -405,6 +380,12 @@ func (u *BranchUpsert) SetTransID(v string) *BranchUpsert {
 // UpdateTransID sets the "trans_id" field to the value that was provided on create.
 func (u *BranchUpsert) UpdateTransID() *BranchUpsert {
 	u.SetExcluded(branch.FieldTransID)
+	return u
+}
+
+// AddTransID adds v to the "trans_id" field.
+func (u *BranchUpsert) AddTransID(v int) *BranchUpsert {
+	u.Add(branch.FieldTransID, v)
 	return u
 }
 
@@ -616,24 +597,17 @@ func (u *BranchUpsertOne) Update(set func(*BranchUpsert)) *BranchUpsertOne {
 	return u
 }
 
-// SetBranchID sets the "branch_id" field.
-func (u *BranchUpsertOne) SetBranchID(v string) *BranchUpsertOne {
-	return u.Update(func(s *BranchUpsert) {
-		s.SetBranchID(v)
-	})
-}
-
-// UpdateBranchID sets the "branch_id" field to the value that was provided on create.
-func (u *BranchUpsertOne) UpdateBranchID() *BranchUpsertOne {
-	return u.Update(func(s *BranchUpsert) {
-		s.UpdateBranchID()
-	})
-}
-
 // SetTransID sets the "trans_id" field.
-func (u *BranchUpsertOne) SetTransID(v string) *BranchUpsertOne {
+func (u *BranchUpsertOne) SetTransID(v int) *BranchUpsertOne {
 	return u.Update(func(s *BranchUpsert) {
 		s.SetTransID(v)
+	})
+}
+
+// AddTransID adds v to the "trans_id" field.
+func (u *BranchUpsertOne) AddTransID(v int) *BranchUpsertOne {
+	return u.Update(func(s *BranchUpsert) {
+		s.AddTransID(v)
 	})
 }
 
@@ -975,7 +949,7 @@ func (bcb *BranchCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.BranchUpsert) {
-//			SetBranchID(v+v).
+//			SetTransID(v+v).
 //		}).
 //		Exec(ctx)
 func (bcb *BranchCreateBulk) OnConflict(opts ...sql.ConflictOption) *BranchUpsertBulk {
@@ -1044,24 +1018,17 @@ func (u *BranchUpsertBulk) Update(set func(*BranchUpsert)) *BranchUpsertBulk {
 	return u
 }
 
-// SetBranchID sets the "branch_id" field.
-func (u *BranchUpsertBulk) SetBranchID(v string) *BranchUpsertBulk {
-	return u.Update(func(s *BranchUpsert) {
-		s.SetBranchID(v)
-	})
-}
-
-// UpdateBranchID sets the "branch_id" field to the value that was provided on create.
-func (u *BranchUpsertBulk) UpdateBranchID() *BranchUpsertBulk {
-	return u.Update(func(s *BranchUpsert) {
-		s.UpdateBranchID()
-	})
-}
-
 // SetTransID sets the "trans_id" field.
-func (u *BranchUpsertBulk) SetTransID(v string) *BranchUpsertBulk {
+func (u *BranchUpsertBulk) SetTransID(v int) *BranchUpsertBulk {
 	return u.Update(func(s *BranchUpsert) {
 		s.SetTransID(v)
+	})
+}
+
+// AddTransID adds v to the "trans_id" field.
+func (u *BranchUpsertBulk) AddTransID(v int) *BranchUpsertBulk {
+	return u.Update(func(s *BranchUpsert) {
+		s.AddTransID(v)
 	})
 }
 

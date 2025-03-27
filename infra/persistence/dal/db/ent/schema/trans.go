@@ -16,7 +16,6 @@ type Trans struct {
 // Fields of the Trans.
 func (Trans) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("trans_id"),
 		field.String("state"),
 		field.String("name"),
 		field.Time("finished_at").

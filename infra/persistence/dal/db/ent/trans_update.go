@@ -28,20 +28,6 @@ func (tu *TransUpdate) Where(ps ...predicate.Trans) *TransUpdate {
 	return tu
 }
 
-// SetTransID sets the "trans_id" field.
-func (tu *TransUpdate) SetTransID(s string) *TransUpdate {
-	tu.mutation.SetTransID(s)
-	return tu
-}
-
-// SetNillableTransID sets the "trans_id" field if the given value is not nil.
-func (tu *TransUpdate) SetNillableTransID(s *string) *TransUpdate {
-	if s != nil {
-		tu.SetTransID(*s)
-	}
-	return tu
-}
-
 // SetState sets the "state" field.
 func (tu *TransUpdate) SetState(s string) *TransUpdate {
 	tu.mutation.SetState(s)
@@ -181,9 +167,6 @@ func (tu *TransUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := tu.mutation.TransID(); ok {
-		_spec.SetField(trans.FieldTransID, field.TypeString, value)
-	}
 	if value, ok := tu.mutation.State(); ok {
 		_spec.SetField(trans.FieldState, field.TypeString, value)
 	}
@@ -223,20 +206,6 @@ type TransUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *TransMutation
-}
-
-// SetTransID sets the "trans_id" field.
-func (tuo *TransUpdateOne) SetTransID(s string) *TransUpdateOne {
-	tuo.mutation.SetTransID(s)
-	return tuo
-}
-
-// SetNillableTransID sets the "trans_id" field if the given value is not nil.
-func (tuo *TransUpdateOne) SetNillableTransID(s *string) *TransUpdateOne {
-	if s != nil {
-		tuo.SetTransID(*s)
-	}
-	return tuo
 }
 
 // SetState sets the "state" field.
@@ -407,9 +376,6 @@ func (tuo *TransUpdateOne) sqlSave(ctx context.Context) (_node *Trans, err error
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := tuo.mutation.TransID(); ok {
-		_spec.SetField(trans.FieldTransID, field.TypeString, value)
 	}
 	if value, ok := tuo.mutation.State(); ok {
 		_spec.SetField(trans.FieldState, field.TypeString, value)

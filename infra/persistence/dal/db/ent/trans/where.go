@@ -54,11 +54,6 @@ func IDLTE(id int) predicate.Trans {
 	return predicate.Trans(sql.FieldLTE(FieldID, id))
 }
 
-// TransID applies equality check predicate on the "trans_id" field. It's identical to TransIDEQ.
-func TransID(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldEQ(FieldTransID, v))
-}
-
 // State applies equality check predicate on the "state" field. It's identical to StateEQ.
 func State(v string) predicate.Trans {
 	return predicate.Trans(sql.FieldEQ(FieldState, v))
@@ -92,71 +87,6 @@ func UpdatedBy(v string) predicate.Trans {
 // CreatedBy applies equality check predicate on the "created_by" field. It's identical to CreatedByEQ.
 func CreatedBy(v string) predicate.Trans {
 	return predicate.Trans(sql.FieldEQ(FieldCreatedBy, v))
-}
-
-// TransIDEQ applies the EQ predicate on the "trans_id" field.
-func TransIDEQ(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldEQ(FieldTransID, v))
-}
-
-// TransIDNEQ applies the NEQ predicate on the "trans_id" field.
-func TransIDNEQ(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldNEQ(FieldTransID, v))
-}
-
-// TransIDIn applies the In predicate on the "trans_id" field.
-func TransIDIn(vs ...string) predicate.Trans {
-	return predicate.Trans(sql.FieldIn(FieldTransID, vs...))
-}
-
-// TransIDNotIn applies the NotIn predicate on the "trans_id" field.
-func TransIDNotIn(vs ...string) predicate.Trans {
-	return predicate.Trans(sql.FieldNotIn(FieldTransID, vs...))
-}
-
-// TransIDGT applies the GT predicate on the "trans_id" field.
-func TransIDGT(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldGT(FieldTransID, v))
-}
-
-// TransIDGTE applies the GTE predicate on the "trans_id" field.
-func TransIDGTE(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldGTE(FieldTransID, v))
-}
-
-// TransIDLT applies the LT predicate on the "trans_id" field.
-func TransIDLT(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldLT(FieldTransID, v))
-}
-
-// TransIDLTE applies the LTE predicate on the "trans_id" field.
-func TransIDLTE(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldLTE(FieldTransID, v))
-}
-
-// TransIDContains applies the Contains predicate on the "trans_id" field.
-func TransIDContains(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldContains(FieldTransID, v))
-}
-
-// TransIDHasPrefix applies the HasPrefix predicate on the "trans_id" field.
-func TransIDHasPrefix(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldHasPrefix(FieldTransID, v))
-}
-
-// TransIDHasSuffix applies the HasSuffix predicate on the "trans_id" field.
-func TransIDHasSuffix(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldHasSuffix(FieldTransID, v))
-}
-
-// TransIDEqualFold applies the EqualFold predicate on the "trans_id" field.
-func TransIDEqualFold(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldEqualFold(FieldTransID, v))
-}
-
-// TransIDContainsFold applies the ContainsFold predicate on the "trans_id" field.
-func TransIDContainsFold(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldContainsFold(FieldTransID, v))
 }
 
 // StateEQ applies the EQ predicate on the "state" field.

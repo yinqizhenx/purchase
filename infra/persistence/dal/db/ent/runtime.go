@@ -29,15 +29,15 @@ func init() {
 	branchFields := schema.Branch{}.Fields()
 	_ = branchFields
 	// branchDescFinishedAt is the schema descriptor for finished_at field.
-	branchDescFinishedAt := branchFields[10].Descriptor()
+	branchDescFinishedAt := branchFields[9].Descriptor()
 	// branch.DefaultFinishedAt holds the default value on creation for the finished_at field.
 	branch.DefaultFinishedAt = branchDescFinishedAt.Default.(func() time.Time)
 	// branchDescCreatedAt is the schema descriptor for created_at field.
-	branchDescCreatedAt := branchFields[12].Descriptor()
+	branchDescCreatedAt := branchFields[11].Descriptor()
 	// branch.DefaultCreatedAt holds the default value on creation for the created_at field.
 	branch.DefaultCreatedAt = branchDescCreatedAt.Default.(func() time.Time)
 	// branchDescUpdatedAt is the schema descriptor for updated_at field.
-	branchDescUpdatedAt := branchFields[13].Descriptor()
+	branchDescUpdatedAt := branchFields[12].Descriptor()
 	// branch.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	branch.DefaultUpdatedAt = branchDescUpdatedAt.Default.(func() time.Time)
 	paheadFields := schema.PAHead{}.Fields()
@@ -63,15 +63,15 @@ func init() {
 	transFields := schema.Trans{}.Fields()
 	_ = transFields
 	// transDescFinishedAt is the schema descriptor for finished_at field.
-	transDescFinishedAt := transFields[3].Descriptor()
+	transDescFinishedAt := transFields[2].Descriptor()
 	// trans.DefaultFinishedAt holds the default value on creation for the finished_at field.
 	trans.DefaultFinishedAt = transDescFinishedAt.Default.(func() time.Time)
 	// transDescCreatedAt is the schema descriptor for created_at field.
-	transDescCreatedAt := transFields[4].Descriptor()
+	transDescCreatedAt := transFields[3].Descriptor()
 	// trans.DefaultCreatedAt holds the default value on creation for the created_at field.
 	trans.DefaultCreatedAt = transDescCreatedAt.Default.(func() time.Time)
 	// transDescUpdatedAt is the schema descriptor for updated_at field.
-	transDescUpdatedAt := transFields[5].Descriptor()
+	transDescUpdatedAt := transFields[4].Descriptor()
 	// trans.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	trans.DefaultUpdatedAt = transDescUpdatedAt.Default.(func() time.Time)
 }

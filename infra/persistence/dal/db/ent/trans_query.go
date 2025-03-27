@@ -263,12 +263,12 @@ func (tq *TransQuery) Clone() *TransQuery {
 // Example:
 //
 //	var v []struct {
-//		TransID string `json:"trans_id,omitempty"`
+//		State string `json:"state,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Trans.Query().
-//		GroupBy(trans.FieldTransID).
+//		GroupBy(trans.FieldState).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (tq *TransQuery) GroupBy(field string, fields ...string) *TransGroupBy {
@@ -286,11 +286,11 @@ func (tq *TransQuery) GroupBy(field string, fields ...string) *TransGroupBy {
 // Example:
 //
 //	var v []struct {
-//		TransID string `json:"trans_id,omitempty"`
+//		State string `json:"state,omitempty"`
 //	}
 //
 //	client.Trans.Query().
-//		Select(trans.FieldTransID).
+//		Select(trans.FieldState).
 //		Scan(ctx, &v)
 func (tq *TransQuery) Select(fields ...string) *TransSelect {
 	tq.ctx.Fields = append(tq.ctx.Fields, fields...)

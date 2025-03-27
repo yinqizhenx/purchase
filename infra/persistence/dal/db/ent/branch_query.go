@@ -263,12 +263,12 @@ func (bq *BranchQuery) Clone() *BranchQuery {
 // Example:
 //
 //	var v []struct {
-//		BranchID string `json:"branch_id,omitempty"`
+//		TransID int `json:"trans_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Branch.Query().
-//		GroupBy(branch.FieldBranchID).
+//		GroupBy(branch.FieldTransID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (bq *BranchQuery) GroupBy(field string, fields ...string) *BranchGroupBy {
@@ -286,11 +286,11 @@ func (bq *BranchQuery) GroupBy(field string, fields ...string) *BranchGroupBy {
 // Example:
 //
 //	var v []struct {
-//		BranchID string `json:"branch_id,omitempty"`
+//		TransID int `json:"trans_id,omitempty"`
 //	}
 //
 //	client.Branch.Query().
-//		Select(branch.FieldBranchID).
+//		Select(branch.FieldTransID).
 //		Scan(ctx, &v)
 func (bq *BranchQuery) Select(fields ...string) *BranchSelect {
 	bq.ctx.Fields = append(bq.ctx.Fields, fields...)

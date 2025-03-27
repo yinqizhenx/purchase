@@ -22,12 +22,6 @@ type TransCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetTransID sets the "trans_id" field.
-func (tc *TransCreate) SetTransID(s string) *TransCreate {
-	tc.mutation.SetTransID(s)
-	return tc
-}
-
 // SetState sets the "state" field.
 func (tc *TransCreate) SetState(s string) *TransCreate {
 	tc.mutation.SetState(s)
@@ -145,9 +139,6 @@ func (tc *TransCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (tc *TransCreate) check() error {
-	if _, ok := tc.mutation.TransID(); !ok {
-		return &ValidationError{Name: "trans_id", err: errors.New(`ent: missing required field "Trans.trans_id"`)}
-	}
 	if _, ok := tc.mutation.State(); !ok {
 		return &ValidationError{Name: "state", err: errors.New(`ent: missing required field "Trans.state"`)}
 	}
@@ -196,10 +187,6 @@ func (tc *TransCreate) createSpec() (*Trans, *sqlgraph.CreateSpec) {
 		_spec = sqlgraph.NewCreateSpec(trans.Table, sqlgraph.NewFieldSpec(trans.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = tc.conflict
-	if value, ok := tc.mutation.TransID(); ok {
-		_spec.SetField(trans.FieldTransID, field.TypeString, value)
-		_node.TransID = value
-	}
 	if value, ok := tc.mutation.State(); ok {
 		_spec.SetField(trans.FieldState, field.TypeString, value)
 		_node.State = value
@@ -235,7 +222,7 @@ func (tc *TransCreate) createSpec() (*Trans, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Trans.Create().
-//		SetTransID(v).
+//		SetState(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -244,7 +231,7 @@ func (tc *TransCreate) createSpec() (*Trans, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.TransUpsert) {
-//			SetTransID(v+v).
+//			SetState(v+v).
 //		}).
 //		Exec(ctx)
 func (tc *TransCreate) OnConflict(opts ...sql.ConflictOption) *TransUpsertOne {
@@ -279,18 +266,6 @@ type (
 		*sql.UpdateSet
 	}
 )
-
-// SetTransID sets the "trans_id" field.
-func (u *TransUpsert) SetTransID(v string) *TransUpsert {
-	u.Set(trans.FieldTransID, v)
-	return u
-}
-
-// UpdateTransID sets the "trans_id" field to the value that was provided on create.
-func (u *TransUpsert) UpdateTransID() *TransUpsert {
-	u.SetExcluded(trans.FieldTransID)
-	return u
-}
 
 // SetState sets the "state" field.
 func (u *TransUpsert) SetState(v string) *TransUpsert {
@@ -414,20 +389,6 @@ func (u *TransUpsertOne) Update(set func(*TransUpsert)) *TransUpsertOne {
 		set(&TransUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetTransID sets the "trans_id" field.
-func (u *TransUpsertOne) SetTransID(v string) *TransUpsertOne {
-	return u.Update(func(s *TransUpsert) {
-		s.SetTransID(v)
-	})
-}
-
-// UpdateTransID sets the "trans_id" field to the value that was provided on create.
-func (u *TransUpsertOne) UpdateTransID() *TransUpsertOne {
-	return u.Update(func(s *TransUpsert) {
-		s.UpdateTransID()
-	})
 }
 
 // SetState sets the "state" field.
@@ -663,7 +624,7 @@ func (tcb *TransCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.TransUpsert) {
-//			SetTransID(v+v).
+//			SetState(v+v).
 //		}).
 //		Exec(ctx)
 func (tcb *TransCreateBulk) OnConflict(opts ...sql.ConflictOption) *TransUpsertBulk {
@@ -730,20 +691,6 @@ func (u *TransUpsertBulk) Update(set func(*TransUpsert)) *TransUpsertBulk {
 		set(&TransUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetTransID sets the "trans_id" field.
-func (u *TransUpsertBulk) SetTransID(v string) *TransUpsertBulk {
-	return u.Update(func(s *TransUpsert) {
-		s.SetTransID(v)
-	})
-}
-
-// UpdateTransID sets the "trans_id" field to the value that was provided on create.
-func (u *TransUpsertBulk) UpdateTransID() *TransUpsertBulk {
-	return u.Update(func(s *TransUpsert) {
-		s.UpdateTransID()
-	})
 }
 
 // SetState sets the "state" field.

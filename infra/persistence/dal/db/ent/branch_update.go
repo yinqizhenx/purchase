@@ -28,31 +28,24 @@ func (bu *BranchUpdate) Where(ps ...predicate.Branch) *BranchUpdate {
 	return bu
 }
 
-// SetBranchID sets the "branch_id" field.
-func (bu *BranchUpdate) SetBranchID(s string) *BranchUpdate {
-	bu.mutation.SetBranchID(s)
-	return bu
-}
-
-// SetNillableBranchID sets the "branch_id" field if the given value is not nil.
-func (bu *BranchUpdate) SetNillableBranchID(s *string) *BranchUpdate {
-	if s != nil {
-		bu.SetBranchID(*s)
-	}
-	return bu
-}
-
 // SetTransID sets the "trans_id" field.
-func (bu *BranchUpdate) SetTransID(s string) *BranchUpdate {
-	bu.mutation.SetTransID(s)
+func (bu *BranchUpdate) SetTransID(i int) *BranchUpdate {
+	bu.mutation.ResetTransID()
+	bu.mutation.SetTransID(i)
 	return bu
 }
 
 // SetNillableTransID sets the "trans_id" field if the given value is not nil.
-func (bu *BranchUpdate) SetNillableTransID(s *string) *BranchUpdate {
-	if s != nil {
-		bu.SetTransID(*s)
+func (bu *BranchUpdate) SetNillableTransID(i *int) *BranchUpdate {
+	if i != nil {
+		bu.SetTransID(*i)
 	}
+	return bu
+}
+
+// AddTransID adds i to the "trans_id" field.
+func (bu *BranchUpdate) AddTransID(i int) *BranchUpdate {
+	bu.mutation.AddTransID(i)
 	return bu
 }
 
@@ -293,11 +286,11 @@ func (bu *BranchUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := bu.mutation.BranchID(); ok {
-		_spec.SetField(branch.FieldBranchID, field.TypeString, value)
-	}
 	if value, ok := bu.mutation.TransID(); ok {
-		_spec.SetField(branch.FieldTransID, field.TypeString, value)
+		_spec.SetField(branch.FieldTransID, field.TypeInt, value)
+	}
+	if value, ok := bu.mutation.AddedTransID(); ok {
+		_spec.AddField(branch.FieldTransID, field.TypeInt, value)
 	}
 	if value, ok := bu.mutation.GetType(); ok {
 		_spec.SetField(branch.FieldType, field.TypeString, value)
@@ -361,31 +354,24 @@ type BranchUpdateOne struct {
 	mutation *BranchMutation
 }
 
-// SetBranchID sets the "branch_id" field.
-func (buo *BranchUpdateOne) SetBranchID(s string) *BranchUpdateOne {
-	buo.mutation.SetBranchID(s)
-	return buo
-}
-
-// SetNillableBranchID sets the "branch_id" field if the given value is not nil.
-func (buo *BranchUpdateOne) SetNillableBranchID(s *string) *BranchUpdateOne {
-	if s != nil {
-		buo.SetBranchID(*s)
-	}
-	return buo
-}
-
 // SetTransID sets the "trans_id" field.
-func (buo *BranchUpdateOne) SetTransID(s string) *BranchUpdateOne {
-	buo.mutation.SetTransID(s)
+func (buo *BranchUpdateOne) SetTransID(i int) *BranchUpdateOne {
+	buo.mutation.ResetTransID()
+	buo.mutation.SetTransID(i)
 	return buo
 }
 
 // SetNillableTransID sets the "trans_id" field if the given value is not nil.
-func (buo *BranchUpdateOne) SetNillableTransID(s *string) *BranchUpdateOne {
-	if s != nil {
-		buo.SetTransID(*s)
+func (buo *BranchUpdateOne) SetNillableTransID(i *int) *BranchUpdateOne {
+	if i != nil {
+		buo.SetTransID(*i)
 	}
+	return buo
+}
+
+// AddTransID adds i to the "trans_id" field.
+func (buo *BranchUpdateOne) AddTransID(i int) *BranchUpdateOne {
+	buo.mutation.AddTransID(i)
 	return buo
 }
 
@@ -656,11 +642,11 @@ func (buo *BranchUpdateOne) sqlSave(ctx context.Context) (_node *Branch, err err
 			}
 		}
 	}
-	if value, ok := buo.mutation.BranchID(); ok {
-		_spec.SetField(branch.FieldBranchID, field.TypeString, value)
-	}
 	if value, ok := buo.mutation.TransID(); ok {
-		_spec.SetField(branch.FieldTransID, field.TypeString, value)
+		_spec.SetField(branch.FieldTransID, field.TypeInt, value)
+	}
+	if value, ok := buo.mutation.AddedTransID(); ok {
+		_spec.AddField(branch.FieldTransID, field.TypeInt, value)
 	}
 	if value, ok := buo.mutation.GetType(); ok {
 		_spec.SetField(branch.FieldType, field.TypeString, value)

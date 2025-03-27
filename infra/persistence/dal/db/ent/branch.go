@@ -17,10 +17,8 @@ type Branch struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// BranchID holds the value of the "branch_id" field.
-	BranchID string `json:"branch_id,omitempty"`
 	// TransID holds the value of the "trans_id" field.
-	TransID string `json:"trans_id,omitempty"`
+	TransID int `json:"trans_id,omitempty"`
 	// Type holds the value of the "type" field.
 	Type string `json:"type,omitempty"`
 	// State holds the value of the "state" field.
@@ -59,9 +57,9 @@ func (*Branch) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case branch.FieldIsDead:
 			values[i] = new(sql.NullBool)
-		case branch.FieldID:
+		case branch.FieldID, branch.FieldTransID:
 			values[i] = new(sql.NullInt64)
-		case branch.FieldBranchID, branch.FieldTransID, branch.FieldType, branch.FieldState, branch.FieldName, branch.FieldAction, branch.FieldCompensate, branch.FieldPayload, branch.FieldActionDepend, branch.FieldCompensateDepend, branch.FieldUpdatedBy, branch.FieldCreatedBy:
+		case branch.FieldType, branch.FieldState, branch.FieldName, branch.FieldAction, branch.FieldCompensate, branch.FieldPayload, branch.FieldActionDepend, branch.FieldCompensateDepend, branch.FieldUpdatedBy, branch.FieldCreatedBy:
 			values[i] = new(sql.NullString)
 		case branch.FieldFinishedAt, branch.FieldCreatedAt, branch.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -86,17 +84,11 @@ func (b *Branch) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			b.ID = int(value.Int64)
-		case branch.FieldBranchID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field branch_id", values[i])
-			} else if value.Valid {
-				b.BranchID = value.String
-			}
 		case branch.FieldTransID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field trans_id", values[i])
 			} else if value.Valid {
-				b.TransID = value.String
+				b.TransID = int(value.Int64)
 			}
 		case branch.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -218,11 +210,8 @@ func (b *Branch) String() string {
 	var builder strings.Builder
 	builder.WriteString("Branch(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", b.ID))
-	builder.WriteString("branch_id=")
-	builder.WriteString(b.BranchID)
-	builder.WriteString(", ")
 	builder.WriteString("trans_id=")
-	builder.WriteString(b.TransID)
+	builder.WriteString(fmt.Sprintf("%v", b.TransID))
 	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(b.Type)

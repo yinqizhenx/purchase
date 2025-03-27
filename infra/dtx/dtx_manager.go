@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 const (
@@ -52,7 +50,7 @@ func (txm *DistributeTxManager) NewTx(ctx context.Context) *TransSaga {
 
 func (txm *DistributeTxManager) NewTransSaga(steps []*TransSagaStep, opts ...Option) (*TransSaga, error) {
 	trans := &TransSaga{
-		id:      uuid.NewString(),
+		// id:      uuid.NewString(),
 		storage: txm.storage,
 		errCh:   make(chan error, 1),
 		done:    make(chan struct{}),
@@ -60,7 +58,7 @@ func (txm *DistributeTxManager) NewTransSaga(steps []*TransSagaStep, opts ...Opt
 	branches := make([]*Branch, 0, len(steps))
 	for _, stp := range steps {
 		branches = append(branches, &Branch{
-			BranchID:     uuid.NewString(),
+			// BranchID:     uuid.NewString(),
 			State:        StepPending,
 			Name:         stp.Name,
 			Action:       stp.Action,
@@ -78,7 +76,7 @@ func (txm *DistributeTxManager) loadPendingTrans(ctx context.Context) ([]*TransS
 		return nil, err
 	}
 
-	transIDList := make([]string, 0, len(transMap))
+	transIDList := make([]int, 0, len(transMap))
 	for id := range transMap {
 		transIDList = append(transIDList, id)
 	}
@@ -102,7 +100,7 @@ func (txm *DistributeTxManager) loadPendingTrans(ctx context.Context) ([]*TransS
 
 func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch, opts ...Option) (*TransSaga, error) {
 	trans := &TransSaga{
-		id:       t.TransID,
+		id:       t.ID,
 		storage:  txm.storage,
 		errCh:    make(chan error, 1),
 		done:     make(chan struct{}),

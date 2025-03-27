@@ -8,8 +8,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/google/uuid"
-
 	"purchase/infra/utils"
 
 	"purchase/pkg/retry"
@@ -27,7 +25,7 @@ func NewTransSaga() *TransSaga {
 }
 
 type TransSaga struct {
-	id    string
+	id    int
 	root  *Step
 	steps []*Step
 	// order   map[string][]string
@@ -86,7 +84,6 @@ func (t *TransSaga) AsyncExec() {
 
 func (t *TransSaga) sync(ctx context.Context) error {
 	tx := &Trans{
-		TransID:    t.id,
 		Name:       "test",
 		State:      "pending",
 		FinishedAt: time.Now(),
@@ -95,6 +92,12 @@ func (t *TransSaga) sync(ctx context.Context) error {
 		UpdatedBy:  "dd",
 		UpdatedAt:  time.Now(),
 	}
+
+	tranID, err := t.storage.SaveTrans(ctx, tx)
+	if err != nil {
+		return err
+	}
+
 	branchList := make([]*Branch, 0)
 	for _, stp := range t.steps {
 		actionDepend := make([]string, 0)
@@ -111,8 +114,8 @@ func (t *TransSaga) sync(ctx context.Context) error {
 		}
 
 		branch := &Branch{
-			BranchID:         stp.id,
-			TransID:          stp.saga.id,
+			// BranchID:         stp.id,
+			TransID:          tranID,
 			Type:             "action",
 			State:            "pending",
 			Name:             stp.name,
@@ -130,10 +133,7 @@ func (t *TransSaga) sync(ctx context.Context) error {
 		}
 		branchList = append(branchList, branch)
 	}
-	err := t.storage.SaveTrans(ctx, tx)
-	if err != nil {
-		return err
-	}
+
 	err = t.storage.SaveBranch(ctx, branchList)
 	if err != nil {
 		return err
@@ -181,7 +181,7 @@ func (t *TransSaga) build(steps []*Branch, handlers map[string]func(context.Cont
 	stepMap := make(map[string]*Step)
 	for _, s := range steps {
 		stp := &Step{
-			id:    s.BranchID,
+			id:    s.ID,
 			saga:  t,
 			name:  s.Name,
 			state: s.State,
@@ -254,7 +254,7 @@ func (t *TransSaga) build(steps []*Branch, handlers map[string]func(context.Cont
 
 func (t *TransSaga) buildRootStep(opts ...StepOption) *Step {
 	root := &Step{
-		id:    uuid.NewString(),
+		// id:    uuid.NewString(),
 		saga:  t,
 		name:  rootStepName,
 		state: StepPending,
@@ -289,7 +289,7 @@ func (t *TransSaga) close() {
 }
 
 type Step struct {
-	id                 string
+	id                 int
 	saga               *TransSaga
 	action             Caller
 	compensate         Caller

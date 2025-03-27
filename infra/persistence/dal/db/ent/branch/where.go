@@ -54,13 +54,8 @@ func IDLTE(id int) predicate.Branch {
 	return predicate.Branch(sql.FieldLTE(FieldID, id))
 }
 
-// BranchID applies equality check predicate on the "branch_id" field. It's identical to BranchIDEQ.
-func BranchID(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldEQ(FieldBranchID, v))
-}
-
 // TransID applies equality check predicate on the "trans_id" field. It's identical to TransIDEQ.
-func TransID(v string) predicate.Branch {
+func TransID(v int) predicate.Branch {
 	return predicate.Branch(sql.FieldEQ(FieldTransID, v))
 }
 
@@ -134,134 +129,44 @@ func CreatedBy(v string) predicate.Branch {
 	return predicate.Branch(sql.FieldEQ(FieldCreatedBy, v))
 }
 
-// BranchIDEQ applies the EQ predicate on the "branch_id" field.
-func BranchIDEQ(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldEQ(FieldBranchID, v))
-}
-
-// BranchIDNEQ applies the NEQ predicate on the "branch_id" field.
-func BranchIDNEQ(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldNEQ(FieldBranchID, v))
-}
-
-// BranchIDIn applies the In predicate on the "branch_id" field.
-func BranchIDIn(vs ...string) predicate.Branch {
-	return predicate.Branch(sql.FieldIn(FieldBranchID, vs...))
-}
-
-// BranchIDNotIn applies the NotIn predicate on the "branch_id" field.
-func BranchIDNotIn(vs ...string) predicate.Branch {
-	return predicate.Branch(sql.FieldNotIn(FieldBranchID, vs...))
-}
-
-// BranchIDGT applies the GT predicate on the "branch_id" field.
-func BranchIDGT(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldGT(FieldBranchID, v))
-}
-
-// BranchIDGTE applies the GTE predicate on the "branch_id" field.
-func BranchIDGTE(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldGTE(FieldBranchID, v))
-}
-
-// BranchIDLT applies the LT predicate on the "branch_id" field.
-func BranchIDLT(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldLT(FieldBranchID, v))
-}
-
-// BranchIDLTE applies the LTE predicate on the "branch_id" field.
-func BranchIDLTE(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldLTE(FieldBranchID, v))
-}
-
-// BranchIDContains applies the Contains predicate on the "branch_id" field.
-func BranchIDContains(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldContains(FieldBranchID, v))
-}
-
-// BranchIDHasPrefix applies the HasPrefix predicate on the "branch_id" field.
-func BranchIDHasPrefix(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldHasPrefix(FieldBranchID, v))
-}
-
-// BranchIDHasSuffix applies the HasSuffix predicate on the "branch_id" field.
-func BranchIDHasSuffix(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldHasSuffix(FieldBranchID, v))
-}
-
-// BranchIDEqualFold applies the EqualFold predicate on the "branch_id" field.
-func BranchIDEqualFold(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldEqualFold(FieldBranchID, v))
-}
-
-// BranchIDContainsFold applies the ContainsFold predicate on the "branch_id" field.
-func BranchIDContainsFold(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldContainsFold(FieldBranchID, v))
-}
-
 // TransIDEQ applies the EQ predicate on the "trans_id" field.
-func TransIDEQ(v string) predicate.Branch {
+func TransIDEQ(v int) predicate.Branch {
 	return predicate.Branch(sql.FieldEQ(FieldTransID, v))
 }
 
 // TransIDNEQ applies the NEQ predicate on the "trans_id" field.
-func TransIDNEQ(v string) predicate.Branch {
+func TransIDNEQ(v int) predicate.Branch {
 	return predicate.Branch(sql.FieldNEQ(FieldTransID, v))
 }
 
 // TransIDIn applies the In predicate on the "trans_id" field.
-func TransIDIn(vs ...string) predicate.Branch {
+func TransIDIn(vs ...int) predicate.Branch {
 	return predicate.Branch(sql.FieldIn(FieldTransID, vs...))
 }
 
 // TransIDNotIn applies the NotIn predicate on the "trans_id" field.
-func TransIDNotIn(vs ...string) predicate.Branch {
+func TransIDNotIn(vs ...int) predicate.Branch {
 	return predicate.Branch(sql.FieldNotIn(FieldTransID, vs...))
 }
 
 // TransIDGT applies the GT predicate on the "trans_id" field.
-func TransIDGT(v string) predicate.Branch {
+func TransIDGT(v int) predicate.Branch {
 	return predicate.Branch(sql.FieldGT(FieldTransID, v))
 }
 
 // TransIDGTE applies the GTE predicate on the "trans_id" field.
-func TransIDGTE(v string) predicate.Branch {
+func TransIDGTE(v int) predicate.Branch {
 	return predicate.Branch(sql.FieldGTE(FieldTransID, v))
 }
 
 // TransIDLT applies the LT predicate on the "trans_id" field.
-func TransIDLT(v string) predicate.Branch {
+func TransIDLT(v int) predicate.Branch {
 	return predicate.Branch(sql.FieldLT(FieldTransID, v))
 }
 
 // TransIDLTE applies the LTE predicate on the "trans_id" field.
-func TransIDLTE(v string) predicate.Branch {
+func TransIDLTE(v int) predicate.Branch {
 	return predicate.Branch(sql.FieldLTE(FieldTransID, v))
-}
-
-// TransIDContains applies the Contains predicate on the "trans_id" field.
-func TransIDContains(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldContains(FieldTransID, v))
-}
-
-// TransIDHasPrefix applies the HasPrefix predicate on the "trans_id" field.
-func TransIDHasPrefix(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldHasPrefix(FieldTransID, v))
-}
-
-// TransIDHasSuffix applies the HasSuffix predicate on the "trans_id" field.
-func TransIDHasSuffix(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldHasSuffix(FieldTransID, v))
-}
-
-// TransIDEqualFold applies the EqualFold predicate on the "trans_id" field.
-func TransIDEqualFold(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldEqualFold(FieldTransID, v))
-}
-
-// TransIDContainsFold applies the ContainsFold predicate on the "trans_id" field.
-func TransIDContainsFold(v string) predicate.Branch {
-	return predicate.Branch(sql.FieldContainsFold(FieldTransID, v))
 }
 
 // TypeEQ applies the EQ predicate on the "type" field.

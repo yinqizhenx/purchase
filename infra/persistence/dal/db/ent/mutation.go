@@ -805,8 +805,8 @@ type BranchMutation struct {
 	op                Op
 	typ               string
 	id                *int
-	branch_id         *string
-	trans_id          *string
+	trans_id          *int
+	addtrans_id       *int
 	_type             *string
 	state             *string
 	name              *string
@@ -925,49 +925,14 @@ func (m *BranchMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetBranchID sets the "branch_id" field.
-func (m *BranchMutation) SetBranchID(s string) {
-	m.branch_id = &s
-}
-
-// BranchID returns the value of the "branch_id" field in the mutation.
-func (m *BranchMutation) BranchID() (r string, exists bool) {
-	v := m.branch_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBranchID returns the old "branch_id" field's value of the Branch entity.
-// If the Branch object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BranchMutation) OldBranchID(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBranchID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBranchID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBranchID: %w", err)
-	}
-	return oldValue.BranchID, nil
-}
-
-// ResetBranchID resets all changes to the "branch_id" field.
-func (m *BranchMutation) ResetBranchID() {
-	m.branch_id = nil
-}
-
 // SetTransID sets the "trans_id" field.
-func (m *BranchMutation) SetTransID(s string) {
-	m.trans_id = &s
+func (m *BranchMutation) SetTransID(i int) {
+	m.trans_id = &i
+	m.addtrans_id = nil
 }
 
 // TransID returns the value of the "trans_id" field in the mutation.
-func (m *BranchMutation) TransID() (r string, exists bool) {
+func (m *BranchMutation) TransID() (r int, exists bool) {
 	v := m.trans_id
 	if v == nil {
 		return
@@ -978,7 +943,7 @@ func (m *BranchMutation) TransID() (r string, exists bool) {
 // OldTransID returns the old "trans_id" field's value of the Branch entity.
 // If the Branch object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BranchMutation) OldTransID(ctx context.Context) (v string, err error) {
+func (m *BranchMutation) OldTransID(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldTransID is only allowed on UpdateOne operations")
 	}
@@ -992,9 +957,28 @@ func (m *BranchMutation) OldTransID(ctx context.Context) (v string, err error) {
 	return oldValue.TransID, nil
 }
 
+// AddTransID adds i to the "trans_id" field.
+func (m *BranchMutation) AddTransID(i int) {
+	if m.addtrans_id != nil {
+		*m.addtrans_id += i
+	} else {
+		m.addtrans_id = &i
+	}
+}
+
+// AddedTransID returns the value that was added to the "trans_id" field in this mutation.
+func (m *BranchMutation) AddedTransID() (r int, exists bool) {
+	v := m.addtrans_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
 // ResetTransID resets all changes to the "trans_id" field.
 func (m *BranchMutation) ResetTransID() {
 	m.trans_id = nil
+	m.addtrans_id = nil
 }
 
 // SetType sets the "type" field.
@@ -1535,10 +1519,7 @@ func (m *BranchMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BranchMutation) Fields() []string {
-	fields := make([]string, 0, 16)
-	if m.branch_id != nil {
-		fields = append(fields, branch.FieldBranchID)
-	}
+	fields := make([]string, 0, 15)
 	if m.trans_id != nil {
 		fields = append(fields, branch.FieldTransID)
 	}
@@ -1592,8 +1573,6 @@ func (m *BranchMutation) Fields() []string {
 // schema.
 func (m *BranchMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case branch.FieldBranchID:
-		return m.BranchID()
 	case branch.FieldTransID:
 		return m.TransID()
 	case branch.FieldType:
@@ -1633,8 +1612,6 @@ func (m *BranchMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *BranchMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case branch.FieldBranchID:
-		return m.OldBranchID(ctx)
 	case branch.FieldTransID:
 		return m.OldTransID(ctx)
 	case branch.FieldType:
@@ -1674,15 +1651,8 @@ func (m *BranchMutation) OldField(ctx context.Context, name string) (ent.Value, 
 // type.
 func (m *BranchMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case branch.FieldBranchID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBranchID(v)
-		return nil
 	case branch.FieldTransID:
-		v, ok := value.(string)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -1793,13 +1763,21 @@ func (m *BranchMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *BranchMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addtrans_id != nil {
+		fields = append(fields, branch.FieldTransID)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *BranchMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case branch.FieldTransID:
+		return m.AddedTransID()
+	}
 	return nil, false
 }
 
@@ -1808,6 +1786,13 @@ func (m *BranchMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *BranchMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case branch.FieldTransID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTransID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Branch numeric field %s", name)
 }
@@ -1835,9 +1820,6 @@ func (m *BranchMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *BranchMutation) ResetField(name string) error {
 	switch name {
-	case branch.FieldBranchID:
-		m.ResetBranchID()
-		return nil
 	case branch.FieldTransID:
 		m.ResetTransID()
 		return nil
@@ -3581,7 +3563,6 @@ type TransMutation struct {
 	op            Op
 	typ           string
 	id            *int
-	trans_id      *string
 	state         *string
 	name          *string
 	finished_at   *time.Time
@@ -3691,42 +3672,6 @@ func (m *TransMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
-}
-
-// SetTransID sets the "trans_id" field.
-func (m *TransMutation) SetTransID(s string) {
-	m.trans_id = &s
-}
-
-// TransID returns the value of the "trans_id" field in the mutation.
-func (m *TransMutation) TransID() (r string, exists bool) {
-	v := m.trans_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTransID returns the old "trans_id" field's value of the Trans entity.
-// If the Trans object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TransMutation) OldTransID(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTransID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTransID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTransID: %w", err)
-	}
-	return oldValue.TransID, nil
-}
-
-// ResetTransID resets all changes to the "trans_id" field.
-func (m *TransMutation) ResetTransID() {
-	m.trans_id = nil
 }
 
 // SetState sets the "state" field.
@@ -4015,10 +3960,7 @@ func (m *TransMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TransMutation) Fields() []string {
-	fields := make([]string, 0, 8)
-	if m.trans_id != nil {
-		fields = append(fields, trans.FieldTransID)
-	}
+	fields := make([]string, 0, 7)
 	if m.state != nil {
 		fields = append(fields, trans.FieldState)
 	}
@@ -4048,8 +3990,6 @@ func (m *TransMutation) Fields() []string {
 // schema.
 func (m *TransMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case trans.FieldTransID:
-		return m.TransID()
 	case trans.FieldState:
 		return m.State()
 	case trans.FieldName:
@@ -4073,8 +4013,6 @@ func (m *TransMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *TransMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case trans.FieldTransID:
-		return m.OldTransID(ctx)
 	case trans.FieldState:
 		return m.OldState(ctx)
 	case trans.FieldName:
@@ -4098,13 +4036,6 @@ func (m *TransMutation) OldField(ctx context.Context, name string) (ent.Value, e
 // type.
 func (m *TransMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case trans.FieldTransID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTransID(v)
-		return nil
 	case trans.FieldState:
 		v, ok := value.(string)
 		if !ok {
@@ -4203,9 +4134,6 @@ func (m *TransMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *TransMutation) ResetField(name string) error {
 	switch name {
-	case trans.FieldTransID:
-		m.ResetTransID()
-		return nil
 	case trans.FieldState:
 		m.ResetState()
 		return nil

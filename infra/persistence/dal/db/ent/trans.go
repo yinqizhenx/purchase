@@ -17,8 +17,6 @@ type Trans struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// TransID holds the value of the "trans_id" field.
-	TransID string `json:"trans_id,omitempty"`
 	// State holds the value of the "state" field.
 	State string `json:"state,omitempty"`
 	// Name holds the value of the "name" field.
@@ -43,7 +41,7 @@ func (*Trans) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case trans.FieldID:
 			values[i] = new(sql.NullInt64)
-		case trans.FieldTransID, trans.FieldState, trans.FieldName, trans.FieldUpdatedBy, trans.FieldCreatedBy:
+		case trans.FieldState, trans.FieldName, trans.FieldUpdatedBy, trans.FieldCreatedBy:
 			values[i] = new(sql.NullString)
 		case trans.FieldFinishedAt, trans.FieldCreatedAt, trans.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -68,12 +66,6 @@ func (t *Trans) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			t.ID = int(value.Int64)
-		case trans.FieldTransID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field trans_id", values[i])
-			} else if value.Valid {
-				t.TransID = value.String
-			}
 		case trans.FieldState:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field state", values[i])
@@ -152,9 +144,6 @@ func (t *Trans) String() string {
 	var builder strings.Builder
 	builder.WriteString("Trans(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", t.ID))
-	builder.WriteString("trans_id=")
-	builder.WriteString(t.TransID)
-	builder.WriteString(", ")
 	builder.WriteString("state=")
 	builder.WriteString(t.State)
 	builder.WriteString(", ")
