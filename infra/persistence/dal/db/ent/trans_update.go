@@ -42,6 +42,20 @@ func (tu *TransUpdate) SetNillableState(s *string) *TransUpdate {
 	return tu
 }
 
+// SetExecuteState sets the "execute_state" field.
+func (tu *TransUpdate) SetExecuteState(s string) *TransUpdate {
+	tu.mutation.SetExecuteState(s)
+	return tu
+}
+
+// SetNillableExecuteState sets the "execute_state" field if the given value is not nil.
+func (tu *TransUpdate) SetNillableExecuteState(s *string) *TransUpdate {
+	if s != nil {
+		tu.SetExecuteState(*s)
+	}
+	return tu
+}
+
 // SetName sets the "name" field.
 func (tu *TransUpdate) SetName(s string) *TransUpdate {
 	tu.mutation.SetName(s)
@@ -170,6 +184,9 @@ func (tu *TransUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := tu.mutation.State(); ok {
 		_spec.SetField(trans.FieldState, field.TypeString, value)
 	}
+	if value, ok := tu.mutation.ExecuteState(); ok {
+		_spec.SetField(trans.FieldExecuteState, field.TypeString, value)
+	}
 	if value, ok := tu.mutation.Name(); ok {
 		_spec.SetField(trans.FieldName, field.TypeString, value)
 	}
@@ -218,6 +235,20 @@ func (tuo *TransUpdateOne) SetState(s string) *TransUpdateOne {
 func (tuo *TransUpdateOne) SetNillableState(s *string) *TransUpdateOne {
 	if s != nil {
 		tuo.SetState(*s)
+	}
+	return tuo
+}
+
+// SetExecuteState sets the "execute_state" field.
+func (tuo *TransUpdateOne) SetExecuteState(s string) *TransUpdateOne {
+	tuo.mutation.SetExecuteState(s)
+	return tuo
+}
+
+// SetNillableExecuteState sets the "execute_state" field if the given value is not nil.
+func (tuo *TransUpdateOne) SetNillableExecuteState(s *string) *TransUpdateOne {
+	if s != nil {
+		tuo.SetExecuteState(*s)
 	}
 	return tuo
 }
@@ -379,6 +410,9 @@ func (tuo *TransUpdateOne) sqlSave(ctx context.Context) (_node *Trans, err error
 	}
 	if value, ok := tuo.mutation.State(); ok {
 		_spec.SetField(trans.FieldState, field.TypeString, value)
+	}
+	if value, ok := tuo.mutation.ExecuteState(); ok {
+		_spec.SetField(trans.FieldExecuteState, field.TypeString, value)
 	}
 	if value, ok := tuo.mutation.Name(); ok {
 		_spec.SetField(trans.FieldName, field.TypeString, value)

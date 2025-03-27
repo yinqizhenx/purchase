@@ -28,6 +28,20 @@ func (bu *BranchUpdate) Where(ps ...predicate.Branch) *BranchUpdate {
 	return bu
 }
 
+// SetCode sets the "code" field.
+func (bu *BranchUpdate) SetCode(s string) *BranchUpdate {
+	bu.mutation.SetCode(s)
+	return bu
+}
+
+// SetNillableCode sets the "code" field if the given value is not nil.
+func (bu *BranchUpdate) SetNillableCode(s *string) *BranchUpdate {
+	if s != nil {
+		bu.SetCode(*s)
+	}
+	return bu
+}
+
 // SetTransID sets the "trans_id" field.
 func (bu *BranchUpdate) SetTransID(i int) *BranchUpdate {
 	bu.mutation.ResetTransID()
@@ -286,6 +300,9 @@ func (bu *BranchUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := bu.mutation.Code(); ok {
+		_spec.SetField(branch.FieldCode, field.TypeString, value)
+	}
 	if value, ok := bu.mutation.TransID(); ok {
 		_spec.SetField(branch.FieldTransID, field.TypeInt, value)
 	}
@@ -352,6 +369,20 @@ type BranchUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *BranchMutation
+}
+
+// SetCode sets the "code" field.
+func (buo *BranchUpdateOne) SetCode(s string) *BranchUpdateOne {
+	buo.mutation.SetCode(s)
+	return buo
+}
+
+// SetNillableCode sets the "code" field if the given value is not nil.
+func (buo *BranchUpdateOne) SetNillableCode(s *string) *BranchUpdateOne {
+	if s != nil {
+		buo.SetCode(*s)
+	}
+	return buo
 }
 
 // SetTransID sets the "trans_id" field.
@@ -641,6 +672,9 @@ func (buo *BranchUpdateOne) sqlSave(ctx context.Context) (_node *Branch, err err
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := buo.mutation.Code(); ok {
+		_spec.SetField(branch.FieldCode, field.TypeString, value)
 	}
 	if value, ok := buo.mutation.TransID(); ok {
 		_spec.SetField(branch.FieldTransID, field.TypeInt, value)

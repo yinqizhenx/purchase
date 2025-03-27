@@ -17,6 +17,8 @@ type Branch struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// Code holds the value of the "code" field.
+	Code string `json:"code,omitempty"`
 	// TransID holds the value of the "trans_id" field.
 	TransID int `json:"trans_id,omitempty"`
 	// Type holds the value of the "type" field.
@@ -59,7 +61,7 @@ func (*Branch) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case branch.FieldID, branch.FieldTransID:
 			values[i] = new(sql.NullInt64)
-		case branch.FieldType, branch.FieldState, branch.FieldName, branch.FieldAction, branch.FieldCompensate, branch.FieldPayload, branch.FieldActionDepend, branch.FieldCompensateDepend, branch.FieldUpdatedBy, branch.FieldCreatedBy:
+		case branch.FieldCode, branch.FieldType, branch.FieldState, branch.FieldName, branch.FieldAction, branch.FieldCompensate, branch.FieldPayload, branch.FieldActionDepend, branch.FieldCompensateDepend, branch.FieldUpdatedBy, branch.FieldCreatedBy:
 			values[i] = new(sql.NullString)
 		case branch.FieldFinishedAt, branch.FieldCreatedAt, branch.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -84,6 +86,12 @@ func (b *Branch) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			b.ID = int(value.Int64)
+		case branch.FieldCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field code", values[i])
+			} else if value.Valid {
+				b.Code = value.String
+			}
 		case branch.FieldTransID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field trans_id", values[i])
@@ -210,6 +218,9 @@ func (b *Branch) String() string {
 	var builder strings.Builder
 	builder.WriteString("Branch(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", b.ID))
+	builder.WriteString("code=")
+	builder.WriteString(b.Code)
+	builder.WriteString(", ")
 	builder.WriteString("trans_id=")
 	builder.WriteString(fmt.Sprintf("%v", b.TransID))
 	builder.WriteString(", ")

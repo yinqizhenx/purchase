@@ -22,6 +22,12 @@ type BranchCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetCode sets the "code" field.
+func (bc *BranchCreate) SetCode(s string) *BranchCreate {
+	bc.mutation.SetCode(s)
+	return bc
+}
+
 // SetTransID sets the "trans_id" field.
 func (bc *BranchCreate) SetTransID(i int) *BranchCreate {
 	bc.mutation.SetTransID(i)
@@ -187,6 +193,9 @@ func (bc *BranchCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (bc *BranchCreate) check() error {
+	if _, ok := bc.mutation.Code(); !ok {
+		return &ValidationError{Name: "code", err: errors.New(`ent: missing required field "Branch.code"`)}
+	}
 	if _, ok := bc.mutation.TransID(); !ok {
 		return &ValidationError{Name: "trans_id", err: errors.New(`ent: missing required field "Branch.trans_id"`)}
 	}
@@ -259,6 +268,10 @@ func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 		_spec = sqlgraph.NewCreateSpec(branch.Table, sqlgraph.NewFieldSpec(branch.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = bc.conflict
+	if value, ok := bc.mutation.Code(); ok {
+		_spec.SetField(branch.FieldCode, field.TypeString, value)
+		_node.Code = value
+	}
 	if value, ok := bc.mutation.TransID(); ok {
 		_spec.SetField(branch.FieldTransID, field.TypeInt, value)
 		_node.TransID = value
@@ -326,7 +339,7 @@ func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Branch.Create().
-//		SetTransID(v).
+//		SetCode(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -335,7 +348,7 @@ func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.BranchUpsert) {
-//			SetTransID(v+v).
+//			SetCode(v+v).
 //		}).
 //		Exec(ctx)
 func (bc *BranchCreate) OnConflict(opts ...sql.ConflictOption) *BranchUpsertOne {
@@ -370,6 +383,18 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetCode sets the "code" field.
+func (u *BranchUpsert) SetCode(v string) *BranchUpsert {
+	u.Set(branch.FieldCode, v)
+	return u
+}
+
+// UpdateCode sets the "code" field to the value that was provided on create.
+func (u *BranchUpsert) UpdateCode() *BranchUpsert {
+	u.SetExcluded(branch.FieldCode)
+	return u
+}
 
 // SetTransID sets the "trans_id" field.
 func (u *BranchUpsert) SetTransID(v int) *BranchUpsert {
@@ -595,6 +620,20 @@ func (u *BranchUpsertOne) Update(set func(*BranchUpsert)) *BranchUpsertOne {
 		set(&BranchUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetCode sets the "code" field.
+func (u *BranchUpsertOne) SetCode(v string) *BranchUpsertOne {
+	return u.Update(func(s *BranchUpsert) {
+		s.SetCode(v)
+	})
+}
+
+// UpdateCode sets the "code" field to the value that was provided on create.
+func (u *BranchUpsertOne) UpdateCode() *BranchUpsertOne {
+	return u.Update(func(s *BranchUpsert) {
+		s.UpdateCode()
+	})
 }
 
 // SetTransID sets the "trans_id" field.
@@ -949,7 +988,7 @@ func (bcb *BranchCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.BranchUpsert) {
-//			SetTransID(v+v).
+//			SetCode(v+v).
 //		}).
 //		Exec(ctx)
 func (bcb *BranchCreateBulk) OnConflict(opts ...sql.ConflictOption) *BranchUpsertBulk {
@@ -1016,6 +1055,20 @@ func (u *BranchUpsertBulk) Update(set func(*BranchUpsert)) *BranchUpsertBulk {
 		set(&BranchUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetCode sets the "code" field.
+func (u *BranchUpsertBulk) SetCode(v string) *BranchUpsertBulk {
+	return u.Update(func(s *BranchUpsert) {
+		s.SetCode(v)
+	})
+}
+
+// UpdateCode sets the "code" field to the value that was provided on create.
+func (u *BranchUpsertBulk) UpdateCode() *BranchUpsertBulk {
+	return u.Update(func(s *BranchUpsert) {
+		s.UpdateCode()
+	})
 }
 
 // SetTransID sets the "trans_id" field.

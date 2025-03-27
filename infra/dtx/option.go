@@ -10,7 +10,7 @@ type Option func(*TransSaga)
 
 type StepOption func(*Step)
 
-func WithStepID(id int) StepOption {
+func WithStepID(id string) StepOption {
 	return func(s *Step) {
 		s.id = id
 	}

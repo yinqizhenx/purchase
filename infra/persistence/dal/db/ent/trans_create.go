@@ -28,6 +28,12 @@ func (tc *TransCreate) SetState(s string) *TransCreate {
 	return tc
 }
 
+// SetExecuteState sets the "execute_state" field.
+func (tc *TransCreate) SetExecuteState(s string) *TransCreate {
+	tc.mutation.SetExecuteState(s)
+	return tc
+}
+
 // SetName sets the "name" field.
 func (tc *TransCreate) SetName(s string) *TransCreate {
 	tc.mutation.SetName(s)
@@ -142,6 +148,9 @@ func (tc *TransCreate) check() error {
 	if _, ok := tc.mutation.State(); !ok {
 		return &ValidationError{Name: "state", err: errors.New(`ent: missing required field "Trans.state"`)}
 	}
+	if _, ok := tc.mutation.ExecuteState(); !ok {
+		return &ValidationError{Name: "execute_state", err: errors.New(`ent: missing required field "Trans.execute_state"`)}
+	}
 	if _, ok := tc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Trans.name"`)}
 	}
@@ -190,6 +199,10 @@ func (tc *TransCreate) createSpec() (*Trans, *sqlgraph.CreateSpec) {
 	if value, ok := tc.mutation.State(); ok {
 		_spec.SetField(trans.FieldState, field.TypeString, value)
 		_node.State = value
+	}
+	if value, ok := tc.mutation.ExecuteState(); ok {
+		_spec.SetField(trans.FieldExecuteState, field.TypeString, value)
+		_node.ExecuteState = value
 	}
 	if value, ok := tc.mutation.Name(); ok {
 		_spec.SetField(trans.FieldName, field.TypeString, value)
@@ -276,6 +289,18 @@ func (u *TransUpsert) SetState(v string) *TransUpsert {
 // UpdateState sets the "state" field to the value that was provided on create.
 func (u *TransUpsert) UpdateState() *TransUpsert {
 	u.SetExcluded(trans.FieldState)
+	return u
+}
+
+// SetExecuteState sets the "execute_state" field.
+func (u *TransUpsert) SetExecuteState(v string) *TransUpsert {
+	u.Set(trans.FieldExecuteState, v)
+	return u
+}
+
+// UpdateExecuteState sets the "execute_state" field to the value that was provided on create.
+func (u *TransUpsert) UpdateExecuteState() *TransUpsert {
+	u.SetExcluded(trans.FieldExecuteState)
 	return u
 }
 
@@ -402,6 +427,20 @@ func (u *TransUpsertOne) SetState(v string) *TransUpsertOne {
 func (u *TransUpsertOne) UpdateState() *TransUpsertOne {
 	return u.Update(func(s *TransUpsert) {
 		s.UpdateState()
+	})
+}
+
+// SetExecuteState sets the "execute_state" field.
+func (u *TransUpsertOne) SetExecuteState(v string) *TransUpsertOne {
+	return u.Update(func(s *TransUpsert) {
+		s.SetExecuteState(v)
+	})
+}
+
+// UpdateExecuteState sets the "execute_state" field to the value that was provided on create.
+func (u *TransUpsertOne) UpdateExecuteState() *TransUpsertOne {
+	return u.Update(func(s *TransUpsert) {
+		s.UpdateExecuteState()
 	})
 }
 
@@ -704,6 +743,20 @@ func (u *TransUpsertBulk) SetState(v string) *TransUpsertBulk {
 func (u *TransUpsertBulk) UpdateState() *TransUpsertBulk {
 	return u.Update(func(s *TransUpsert) {
 		s.UpdateState()
+	})
+}
+
+// SetExecuteState sets the "execute_state" field.
+func (u *TransUpsertBulk) SetExecuteState(v string) *TransUpsertBulk {
+	return u.Update(func(s *TransUpsert) {
+		s.SetExecuteState(v)
+	})
+}
+
+// UpdateExecuteState sets the "execute_state" field to the value that was provided on create.
+func (u *TransUpsertBulk) UpdateExecuteState() *TransUpsertBulk {
+	return u.Update(func(s *TransUpsert) {
+		s.UpdateExecuteState()
 	})
 }
 

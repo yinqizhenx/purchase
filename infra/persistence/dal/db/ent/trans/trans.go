@@ -15,6 +15,8 @@ const (
 	FieldID = "id"
 	// FieldState holds the string denoting the state field in the database.
 	FieldState = "state"
+	// FieldExecuteState holds the string denoting the execute_state field in the database.
+	FieldExecuteState = "execute_state"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldFinishedAt holds the string denoting the finished_at field in the database.
@@ -35,6 +37,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldState,
+	FieldExecuteState,
 	FieldName,
 	FieldFinishedAt,
 	FieldCreatedAt,
@@ -73,6 +76,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByState orders the results by the state field.
 func ByState(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldState, opts...).ToFunc()
+}
+
+// ByExecuteState orders the results by the execute_state field.
+func ByExecuteState(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExecuteState, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.

@@ -31,6 +31,7 @@ var (
 	// BranchesColumns holds the columns for the "branches" table.
 	BranchesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "code", Type: field.TypeString},
 		{Name: "trans_id", Type: field.TypeInt},
 		{Name: "type", Type: field.TypeString},
 		{Name: "state", Type: field.TypeString},
@@ -96,6 +97,7 @@ var (
 	TransColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "state", Type: field.TypeString},
+		{Name: "execute_state", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "finished_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},

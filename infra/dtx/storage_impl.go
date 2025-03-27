@@ -47,6 +47,7 @@ func (s *StorageImpl) SaveTrans(ctx context.Context, t *Trans) (int, error) {
 	tran, err := s.getTransClient(ctx).Create().
 		SetName(t.Name).
 		SetState(t.State).
+		SetExecuteState(t.ExecuteState).
 		SetFinishedAt(t.FinishedAt).
 		SetCreatedAt(t.CreatedAt).
 		SetCreatedBy(t.CreatedBy).
@@ -66,6 +67,7 @@ func (s *StorageImpl) SaveBranch(ctx context.Context, branchList []*Branch) erro
 	buildCreate := make([]*ent.BranchCreate, 0)
 	for _, b := range branchList {
 		create := s.getBranchClient(ctx).Create().
+			SetCode(b.Code).
 			SetTransID(b.TransID).
 			SetType(b.Type).
 			SetState(b.State.String()).
@@ -96,10 +98,18 @@ func (s *StorageImpl) UpdateTransState(ctx context.Context, transID int, newStat
 	return err
 }
 
-func (s *StorageImpl) UpdateBranchState(ctx context.Context, branchID int, newState string) error {
+func (s *StorageImpl) UpdateTransExecuteState(ctx context.Context, transID int, newState string) error {
+	err := s.getTransClient(ctx).Update().
+		SetExecuteState(newState).
+		Where(trans.ID(transID)).
+		Exec(ctx)
+	return err
+}
+
+func (s *StorageImpl) UpdateBranchState(ctx context.Context, code, newState string) error {
 	err := s.getBranchClient(ctx).Update().
 		SetState(newState).
-		Where(branch.ID(branchID)).
+		Where(branch.Code(code)).
 		Exec(ctx)
 	return err
 }
@@ -150,7 +160,7 @@ func ConvertBranch(b *ent.Branch) *Branch {
 		actionDepend = strings.Split(b.ActionDepend, ",")
 	}
 	return &Branch{
-		ID:               b.ID,
+		Code:             b.Code,
 		TransID:          b.TransID,
 		Type:             b.Type,
 		State:            StepStatus(b.State),

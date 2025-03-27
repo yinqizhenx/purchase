@@ -13,6 +13,8 @@ const (
 	Label = "branch"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldCode holds the string denoting the code field in the database.
+	FieldCode = "code"
 	// FieldTransID holds the string denoting the trans_id field in the database.
 	FieldTransID = "trans_id"
 	// FieldType holds the string denoting the type field in the database.
@@ -50,6 +52,7 @@ const (
 // Columns holds all SQL columns for branch fields.
 var Columns = []string{
 	FieldID,
+	FieldCode,
 	FieldTransID,
 	FieldType,
 	FieldState,
@@ -92,6 +95,11 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByCode orders the results by the code field.
+func ByCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCode, opts...).ToFunc()
 }
 
 // ByTransID orders the results by the trans_id field.

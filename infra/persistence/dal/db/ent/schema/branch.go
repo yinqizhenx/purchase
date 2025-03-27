@@ -16,6 +16,7 @@ type Branch struct {
 // Fields of the Branch.
 func (Branch) Fields() []ent.Field {
 	return []ent.Field{
+		field.String("code"),
 		field.Int("trans_id"),
 		field.String("type"),
 		field.String("state"),

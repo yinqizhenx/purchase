@@ -84,19 +84,22 @@ func (t *TransSaga) AsyncExec() {
 
 func (t *TransSaga) sync(ctx context.Context) error {
 	tx := &Trans{
-		Name:       "test",
-		State:      "pending",
-		FinishedAt: time.Now(),
-		CreatedAt:  time.Now(),
-		CreatedBy:  "yinqizhen",
-		UpdatedBy:  "dd",
-		UpdatedAt:  time.Now(),
+		Name:         "test",
+		State:        "pending",
+		ExecuteState: "executing",
+		FinishedAt:   time.Now(),
+		CreatedAt:    time.Now(),
+		CreatedBy:    "yinqizhen",
+		UpdatedBy:    "dd",
+		UpdatedAt:    time.Now(),
 	}
 
 	tranID, err := t.storage.SaveTrans(ctx, tx)
 	if err != nil {
 		return err
 	}
+
+	t.id = tranID
 
 	branchList := make([]*Branch, 0)
 	for _, stp := range t.steps {
@@ -113,8 +116,10 @@ func (t *TransSaga) sync(ctx context.Context) error {
 			compensateDepend = append(compensateDepend, n.name)
 		}
 
+		stepID := fmt.Sprintf("%d_%s", tranID, stp.name)
+		stp.id = stepID
 		branch := &Branch{
-			// BranchID:         stp.id,
+			Code:             stepID,
 			TransID:          tranID,
 			Type:             "action",
 			State:            "pending",
@@ -152,8 +157,12 @@ func (t *TransSaga) tryUpdateSuccess(ctx context.Context) {
 		return
 	}
 	if err := t.syncStateChange(ctx); err != nil {
-		logx.Errorf(ctx, "update branch state success: %v", err)
+		logx.Errorf(ctx, "update branch state fail: %v", err)
 	}
+	if err := t.changeExecuteStateCompleted(ctx); err != nil {
+		logx.Errorf(ctx, "update branch execute state fail, when success: %v", err)
+	}
+
 	t.close()
 }
 
@@ -176,12 +185,16 @@ func (t *TransSaga) isFailed() bool {
 	return t.state.Load() == 1
 }
 
+func (t *TransSaga) isSuccess() bool {
+	return t.state.Load() == 2
+}
+
 func (t *TransSaga) build(steps []*Branch, handlers map[string]func(context.Context, []byte) error, opts ...Option) (*TransSaga, error) {
 	t.root = t.buildRootStep()
 	stepMap := make(map[string]*Step)
 	for _, s := range steps {
 		stp := &Step{
-			id:    s.ID,
+			id:    s.Code,
 			saga:  t,
 			name:  s.Name,
 			state: s.State,
@@ -263,6 +276,10 @@ func (t *TransSaga) buildRootStep(opts ...StepOption) *Step {
 		},
 		compensate: Caller{
 			fn: func(context.Context, []byte) error {
+				ctx := context.Background()
+				if err := t.changeExecuteStateCompleted(ctx); err != nil {
+					logx.Errorf(ctx, "update branch execute state fail, when fail: %v", err)
+				}
 				t.close()
 				return nil
 			},
@@ -279,6 +296,10 @@ func (t *TransSaga) buildRootStep(opts ...StepOption) *Step {
 	return root
 }
 
+func (t *TransSaga) changeExecuteStateCompleted(ctx context.Context) error {
+	return t.storage.UpdateTransExecuteState(ctx, t.id, "completed")
+}
+
 func (t *TransSaga) close() {
 	for _, stp := range t.steps {
 		close(stp.closed)
@@ -289,7 +310,7 @@ func (t *TransSaga) close() {
 }
 
 type Step struct {
-	id                 int
+	id                 string
 	saga               *TransSaga
 	action             Caller
 	compensate         Caller
