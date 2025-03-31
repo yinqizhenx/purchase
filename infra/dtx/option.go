@@ -2,11 +2,11 @@ package dtx
 
 type Option func(*TransSaga)
 
-// func WithTimeout(d time.Duration) Option {
-// 	return func(t *TransSaga) {
-// 		t.timeout = d
-// 	}
-// }
+func WithStrictCompensate() Option {
+	return func(t *TransSaga) {
+		t.strictCompensate = true
+	}
+}
 
 type StepOption func(*Step)
 

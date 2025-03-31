@@ -25,16 +25,15 @@ func NewTransSaga() *TransSaga {
 }
 
 type TransSaga struct {
-	id    int
-	root  *Step
-	steps []*Step
-	// order   map[string][]string
-	state   atomic.Int32 // 0 - 执行中， 1 - 失败， 2 - 成功
-	errCh   chan error   // 正向执行的错误channel，容量为1
-	storage TransStorage
-	// timeout  time.Duration
-	done     chan struct{}
-	isFromDB bool
+	id               int
+	root             *Step
+	steps            []*Step
+	state            atomic.Int32 // 0 - 执行中， 1 - 失败， 2 - 成功
+	errCh            chan error   // 正向执行的错误channel，容量为1
+	storage          TransStorage
+	done             chan struct{}
+	isFromDB         bool
+	strictCompensate bool // 回滚执行失败时，是否进行下游回滚，true代表不进行下游回滚，直接退出
 }
 
 func (t *TransSaga) Exec(ctx context.Context) error {
@@ -565,7 +564,13 @@ func (s *Step) onCompensateSuccess(ctx context.Context) {
 func (s *Step) onCompensateFail(ctx context.Context) {
 	s.changeState(ctx, StepCompensateFail)
 	logx.Errorf(ctx, "step[%s] compensate done fail状态变更完成，阻塞住了", s.name)
-	// todo 更新db任务状态，人工介入, 其他回滚是否要继续执行
+	if s.saga.strictCompensate {
+		s.saga.close() // 直接退出
+		return
+	}
+	for _, stp := range s.compensateNext {
+		stp.compensateCh <- s.name
+	}
 }
 
 func (s *Step) changeState(ctx context.Context, state StepStatus) {
@@ -605,4 +610,24 @@ type Caller struct {
 
 func (c *Caller) run(ctx context.Context) error {
 	return c.fn(ctx, c.payload)
+}
+
+type CompensateError struct {
+	error
+}
+
+func (c CompensateError) Error() string {
+	return c.error.Error()
+}
+
+func NewCompensateError(e error) error {
+	return CompensateError{
+		error: e,
+	}
+}
+
+func IsCompensateError(e error) bool {
+	var compensateError CompensateError
+	ok := errors.Is(e, &compensateError)
+	return ok
 }
