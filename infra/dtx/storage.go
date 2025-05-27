@@ -14,15 +14,15 @@ func NewBranch(name string) *Branch {
 }
 
 type Trans struct {
-	ID           int
-	Name         string
-	State        string
-	ExecuteState string
-	FinishedAt   time.Time
-	CreatedAt    time.Time
-	CreatedBy    string
-	UpdatedAt    time.Time
-	UpdatedBy    string
+	ID         int
+	Name       string
+	State      string
+	IsFinished bool
+	FinishedAt time.Time
+	CreatedAt  time.Time
+	CreatedBy  string
+	UpdatedAt  time.Time
+	UpdatedBy  string
 }
 
 type Branch struct {
@@ -55,7 +55,7 @@ type TransStorage interface {
 	SaveTrans(ctx context.Context, tx *Trans) (int, error)
 	SaveBranch(ctx context.Context, branchList []*Branch) error
 	UpdateTransState(ctx context.Context, transID int, newState string) error
-	UpdateTransExecuteStateDone(ctx context.Context, transID int, newState string) error
+	UpdateTransExecuteStateFinished(ctx context.Context, transID int) error
 	UpdateBranchState(ctx context.Context, code, newState string) error
 	GetExecutingTrans(ctx context.Context) (map[int]*Trans, error)
 	MustGetBranchesByTransIDList(ctx context.Context, transIDList []int) (map[int][]*Branch, error)

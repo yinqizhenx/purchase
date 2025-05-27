@@ -3618,7 +3618,7 @@ type TransMutation struct {
 	typ           string
 	id            *int
 	state         *string
-	execute_state *string
+	is_finished   *bool
 	name          *string
 	finished_at   *time.Time
 	created_at    *time.Time
@@ -3765,40 +3765,40 @@ func (m *TransMutation) ResetState() {
 	m.state = nil
 }
 
-// SetExecuteState sets the "execute_state" field.
-func (m *TransMutation) SetExecuteState(s string) {
-	m.execute_state = &s
+// SetIsFinished sets the "is_finished" field.
+func (m *TransMutation) SetIsFinished(b bool) {
+	m.is_finished = &b
 }
 
-// ExecuteState returns the value of the "execute_state" field in the mutation.
-func (m *TransMutation) ExecuteState() (r string, exists bool) {
-	v := m.execute_state
+// IsFinished returns the value of the "is_finished" field in the mutation.
+func (m *TransMutation) IsFinished() (r bool, exists bool) {
+	v := m.is_finished
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldExecuteState returns the old "execute_state" field's value of the Trans entity.
+// OldIsFinished returns the old "is_finished" field's value of the Trans entity.
 // If the Trans object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TransMutation) OldExecuteState(ctx context.Context) (v string, err error) {
+func (m *TransMutation) OldIsFinished(ctx context.Context) (v bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldExecuteState is only allowed on UpdateOne operations")
+		return v, errors.New("OldIsFinished is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldExecuteState requires an ID field in the mutation")
+		return v, errors.New("OldIsFinished requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldExecuteState: %w", err)
+		return v, fmt.Errorf("querying old value for OldIsFinished: %w", err)
 	}
-	return oldValue.ExecuteState, nil
+	return oldValue.IsFinished, nil
 }
 
-// ResetExecuteState resets all changes to the "execute_state" field.
-func (m *TransMutation) ResetExecuteState() {
-	m.execute_state = nil
+// ResetIsFinished resets all changes to the "is_finished" field.
+func (m *TransMutation) ResetIsFinished() {
+	m.is_finished = nil
 }
 
 // SetName sets the "name" field.
@@ -4055,8 +4055,8 @@ func (m *TransMutation) Fields() []string {
 	if m.state != nil {
 		fields = append(fields, trans.FieldState)
 	}
-	if m.execute_state != nil {
-		fields = append(fields, trans.FieldExecuteState)
+	if m.is_finished != nil {
+		fields = append(fields, trans.FieldIsFinished)
 	}
 	if m.name != nil {
 		fields = append(fields, trans.FieldName)
@@ -4086,8 +4086,8 @@ func (m *TransMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case trans.FieldState:
 		return m.State()
-	case trans.FieldExecuteState:
-		return m.ExecuteState()
+	case trans.FieldIsFinished:
+		return m.IsFinished()
 	case trans.FieldName:
 		return m.Name()
 	case trans.FieldFinishedAt:
@@ -4111,8 +4111,8 @@ func (m *TransMutation) OldField(ctx context.Context, name string) (ent.Value, e
 	switch name {
 	case trans.FieldState:
 		return m.OldState(ctx)
-	case trans.FieldExecuteState:
-		return m.OldExecuteState(ctx)
+	case trans.FieldIsFinished:
+		return m.OldIsFinished(ctx)
 	case trans.FieldName:
 		return m.OldName(ctx)
 	case trans.FieldFinishedAt:
@@ -4141,12 +4141,12 @@ func (m *TransMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetState(v)
 		return nil
-	case trans.FieldExecuteState:
-		v, ok := value.(string)
+	case trans.FieldIsFinished:
+		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetExecuteState(v)
+		m.SetIsFinished(v)
 		return nil
 	case trans.FieldName:
 		v, ok := value.(string)
@@ -4242,8 +4242,8 @@ func (m *TransMutation) ResetField(name string) error {
 	case trans.FieldState:
 		m.ResetState()
 		return nil
-	case trans.FieldExecuteState:
-		m.ResetExecuteState()
+	case trans.FieldIsFinished:
+		m.ResetIsFinished()
 		return nil
 	case trans.FieldName:
 		m.ResetName()

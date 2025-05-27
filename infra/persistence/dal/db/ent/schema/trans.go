@@ -17,7 +17,7 @@ type Trans struct {
 func (Trans) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("state"),
-		field.String("execute_state"),
+		field.Bool("is_finished"),
 		field.String("name"),
 		field.Time("finished_at").
 			Default(time.Now).SchemaType(map[string]string{

@@ -28,9 +28,9 @@ func (tc *TransCreate) SetState(s string) *TransCreate {
 	return tc
 }
 
-// SetExecuteState sets the "execute_state" field.
-func (tc *TransCreate) SetExecuteState(s string) *TransCreate {
-	tc.mutation.SetExecuteState(s)
+// SetIsFinished sets the "is_finished" field.
+func (tc *TransCreate) SetIsFinished(b bool) *TransCreate {
+	tc.mutation.SetIsFinished(b)
 	return tc
 }
 
@@ -148,8 +148,8 @@ func (tc *TransCreate) check() error {
 	if _, ok := tc.mutation.State(); !ok {
 		return &ValidationError{Name: "state", err: errors.New(`ent: missing required field "Trans.state"`)}
 	}
-	if _, ok := tc.mutation.ExecuteState(); !ok {
-		return &ValidationError{Name: "execute_state", err: errors.New(`ent: missing required field "Trans.execute_state"`)}
+	if _, ok := tc.mutation.IsFinished(); !ok {
+		return &ValidationError{Name: "is_finished", err: errors.New(`ent: missing required field "Trans.is_finished"`)}
 	}
 	if _, ok := tc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Trans.name"`)}
@@ -200,9 +200,9 @@ func (tc *TransCreate) createSpec() (*Trans, *sqlgraph.CreateSpec) {
 		_spec.SetField(trans.FieldState, field.TypeString, value)
 		_node.State = value
 	}
-	if value, ok := tc.mutation.ExecuteState(); ok {
-		_spec.SetField(trans.FieldExecuteState, field.TypeString, value)
-		_node.ExecuteState = value
+	if value, ok := tc.mutation.IsFinished(); ok {
+		_spec.SetField(trans.FieldIsFinished, field.TypeBool, value)
+		_node.IsFinished = value
 	}
 	if value, ok := tc.mutation.Name(); ok {
 		_spec.SetField(trans.FieldName, field.TypeString, value)
@@ -292,15 +292,15 @@ func (u *TransUpsert) UpdateState() *TransUpsert {
 	return u
 }
 
-// SetExecuteState sets the "execute_state" field.
-func (u *TransUpsert) SetExecuteState(v string) *TransUpsert {
-	u.Set(trans.FieldExecuteState, v)
+// SetIsFinished sets the "is_finished" field.
+func (u *TransUpsert) SetIsFinished(v bool) *TransUpsert {
+	u.Set(trans.FieldIsFinished, v)
 	return u
 }
 
-// UpdateExecuteState sets the "execute_state" field to the value that was provided on create.
-func (u *TransUpsert) UpdateExecuteState() *TransUpsert {
-	u.SetExcluded(trans.FieldExecuteState)
+// UpdateIsFinished sets the "is_finished" field to the value that was provided on create.
+func (u *TransUpsert) UpdateIsFinished() *TransUpsert {
+	u.SetExcluded(trans.FieldIsFinished)
 	return u
 }
 
@@ -430,17 +430,17 @@ func (u *TransUpsertOne) UpdateState() *TransUpsertOne {
 	})
 }
 
-// SetExecuteState sets the "execute_state" field.
-func (u *TransUpsertOne) SetExecuteState(v string) *TransUpsertOne {
+// SetIsFinished sets the "is_finished" field.
+func (u *TransUpsertOne) SetIsFinished(v bool) *TransUpsertOne {
 	return u.Update(func(s *TransUpsert) {
-		s.SetExecuteState(v)
+		s.SetIsFinished(v)
 	})
 }
 
-// UpdateExecuteState sets the "execute_state" field to the value that was provided on create.
-func (u *TransUpsertOne) UpdateExecuteState() *TransUpsertOne {
+// UpdateIsFinished sets the "is_finished" field to the value that was provided on create.
+func (u *TransUpsertOne) UpdateIsFinished() *TransUpsertOne {
 	return u.Update(func(s *TransUpsert) {
-		s.UpdateExecuteState()
+		s.UpdateIsFinished()
 	})
 }
 
@@ -746,17 +746,17 @@ func (u *TransUpsertBulk) UpdateState() *TransUpsertBulk {
 	})
 }
 
-// SetExecuteState sets the "execute_state" field.
-func (u *TransUpsertBulk) SetExecuteState(v string) *TransUpsertBulk {
+// SetIsFinished sets the "is_finished" field.
+func (u *TransUpsertBulk) SetIsFinished(v bool) *TransUpsertBulk {
 	return u.Update(func(s *TransUpsert) {
-		s.SetExecuteState(v)
+		s.SetIsFinished(v)
 	})
 }
 
-// UpdateExecuteState sets the "execute_state" field to the value that was provided on create.
-func (u *TransUpsertBulk) UpdateExecuteState() *TransUpsertBulk {
+// UpdateIsFinished sets the "is_finished" field to the value that was provided on create.
+func (u *TransUpsertBulk) UpdateIsFinished() *TransUpsertBulk {
 	return u.Update(func(s *TransUpsert) {
-		s.UpdateExecuteState()
+		s.UpdateIsFinished()
 	})
 }
 

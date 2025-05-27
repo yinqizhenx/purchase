@@ -19,8 +19,8 @@ type Trans struct {
 	ID int `json:"id,omitempty"`
 	// State holds the value of the "state" field.
 	State string `json:"state,omitempty"`
-	// ExecuteState holds the value of the "execute_state" field.
-	ExecuteState string `json:"execute_state,omitempty"`
+	// IsFinished holds the value of the "is_finished" field.
+	IsFinished bool `json:"is_finished,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// FinishedAt holds the value of the "finished_at" field.
@@ -41,9 +41,11 @@ func (*Trans) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case trans.FieldIsFinished:
+			values[i] = new(sql.NullBool)
 		case trans.FieldID:
 			values[i] = new(sql.NullInt64)
-		case trans.FieldState, trans.FieldExecuteState, trans.FieldName, trans.FieldUpdatedBy, trans.FieldCreatedBy:
+		case trans.FieldState, trans.FieldName, trans.FieldUpdatedBy, trans.FieldCreatedBy:
 			values[i] = new(sql.NullString)
 		case trans.FieldFinishedAt, trans.FieldCreatedAt, trans.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -74,11 +76,11 @@ func (t *Trans) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				t.State = value.String
 			}
-		case trans.FieldExecuteState:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field execute_state", values[i])
+		case trans.FieldIsFinished:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_finished", values[i])
 			} else if value.Valid {
-				t.ExecuteState = value.String
+				t.IsFinished = value.Bool
 			}
 		case trans.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -155,8 +157,8 @@ func (t *Trans) String() string {
 	builder.WriteString("state=")
 	builder.WriteString(t.State)
 	builder.WriteString(", ")
-	builder.WriteString("execute_state=")
-	builder.WriteString(t.ExecuteState)
+	builder.WriteString("is_finished=")
+	builder.WriteString(fmt.Sprintf("%v", t.IsFinished))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(t.Name)

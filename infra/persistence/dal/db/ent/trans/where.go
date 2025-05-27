@@ -59,9 +59,9 @@ func State(v string) predicate.Trans {
 	return predicate.Trans(sql.FieldEQ(FieldState, v))
 }
 
-// ExecuteState applies equality check predicate on the "execute_state" field. It's identical to ExecuteStateEQ.
-func ExecuteState(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldEQ(FieldExecuteState, v))
+// IsFinished applies equality check predicate on the "is_finished" field. It's identical to IsFinishedEQ.
+func IsFinished(v bool) predicate.Trans {
+	return predicate.Trans(sql.FieldEQ(FieldIsFinished, v))
 }
 
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
@@ -159,69 +159,14 @@ func StateContainsFold(v string) predicate.Trans {
 	return predicate.Trans(sql.FieldContainsFold(FieldState, v))
 }
 
-// ExecuteStateEQ applies the EQ predicate on the "execute_state" field.
-func ExecuteStateEQ(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldEQ(FieldExecuteState, v))
+// IsFinishedEQ applies the EQ predicate on the "is_finished" field.
+func IsFinishedEQ(v bool) predicate.Trans {
+	return predicate.Trans(sql.FieldEQ(FieldIsFinished, v))
 }
 
-// ExecuteStateNEQ applies the NEQ predicate on the "execute_state" field.
-func ExecuteStateNEQ(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldNEQ(FieldExecuteState, v))
-}
-
-// ExecuteStateIn applies the In predicate on the "execute_state" field.
-func ExecuteStateIn(vs ...string) predicate.Trans {
-	return predicate.Trans(sql.FieldIn(FieldExecuteState, vs...))
-}
-
-// ExecuteStateNotIn applies the NotIn predicate on the "execute_state" field.
-func ExecuteStateNotIn(vs ...string) predicate.Trans {
-	return predicate.Trans(sql.FieldNotIn(FieldExecuteState, vs...))
-}
-
-// ExecuteStateGT applies the GT predicate on the "execute_state" field.
-func ExecuteStateGT(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldGT(FieldExecuteState, v))
-}
-
-// ExecuteStateGTE applies the GTE predicate on the "execute_state" field.
-func ExecuteStateGTE(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldGTE(FieldExecuteState, v))
-}
-
-// ExecuteStateLT applies the LT predicate on the "execute_state" field.
-func ExecuteStateLT(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldLT(FieldExecuteState, v))
-}
-
-// ExecuteStateLTE applies the LTE predicate on the "execute_state" field.
-func ExecuteStateLTE(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldLTE(FieldExecuteState, v))
-}
-
-// ExecuteStateContains applies the Contains predicate on the "execute_state" field.
-func ExecuteStateContains(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldContains(FieldExecuteState, v))
-}
-
-// ExecuteStateHasPrefix applies the HasPrefix predicate on the "execute_state" field.
-func ExecuteStateHasPrefix(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldHasPrefix(FieldExecuteState, v))
-}
-
-// ExecuteStateHasSuffix applies the HasSuffix predicate on the "execute_state" field.
-func ExecuteStateHasSuffix(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldHasSuffix(FieldExecuteState, v))
-}
-
-// ExecuteStateEqualFold applies the EqualFold predicate on the "execute_state" field.
-func ExecuteStateEqualFold(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldEqualFold(FieldExecuteState, v))
-}
-
-// ExecuteStateContainsFold applies the ContainsFold predicate on the "execute_state" field.
-func ExecuteStateContainsFold(v string) predicate.Trans {
-	return predicate.Trans(sql.FieldContainsFold(FieldExecuteState, v))
+// IsFinishedNEQ applies the NEQ predicate on the "is_finished" field.
+func IsFinishedNEQ(v bool) predicate.Trans {
+	return predicate.Trans(sql.FieldNEQ(FieldIsFinished, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.

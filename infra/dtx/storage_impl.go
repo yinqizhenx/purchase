@@ -48,7 +48,7 @@ func (s *StorageImpl) SaveTrans(ctx context.Context, t *Trans) (int, error) {
 	tran, err := s.getTransClient(ctx).Create().
 		SetName(t.Name).
 		SetState(t.State).
-		SetExecuteState(t.ExecuteState).
+		SetIsFinished(t.IsFinished).
 		SetFinishedAt(t.FinishedAt).
 		SetCreatedAt(t.CreatedAt).
 		SetCreatedBy(t.CreatedBy).
@@ -99,9 +99,9 @@ func (s *StorageImpl) UpdateTransState(ctx context.Context, transID int, newStat
 	return err
 }
 
-func (s *StorageImpl) UpdateTransExecuteStateDone(ctx context.Context, transID int, newState string) error {
+func (s *StorageImpl) UpdateTransExecuteStateFinished(ctx context.Context, transID int) error {
 	err := s.getTransClient(ctx).Update().
-		SetExecuteState(newState).
+		SetIsFinished(true).
 		SetFinishedAt(time.Now()).
 		Where(trans.ID(transID)).
 		Exec(ctx)
@@ -117,7 +117,7 @@ func (s *StorageImpl) UpdateBranchState(ctx context.Context, code, newState stri
 }
 
 func (s *StorageImpl) GetExecutingTrans(ctx context.Context) (map[int]*Trans, error) {
-	transList, err := s.getTransClient(ctx).Query().Where(trans.ExecuteState("executing")).All(ctx)
+	transList, err := s.getTransClient(ctx).Query().Where(trans.IsFinished(false)).All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -147,13 +147,13 @@ func (s *StorageImpl) MustGetBranchesByTransIDList(ctx context.Context, transIDL
 
 func ConvertTrans(t *ent.Trans) *Trans {
 	return &Trans{
-		ID:           t.ID,
-		Name:         t.Name,
-		State:        t.State,
-		ExecuteState: t.ExecuteState,
-		FinishedAt:   t.FinishedAt,
-		CreatedAt:    t.CreatedAt,
-		CreatedBy:    t.CreatedBy,
+		ID:         t.ID,
+		Name:       t.Name,
+		State:      t.State,
+		IsFinished: t.IsFinished,
+		FinishedAt: t.FinishedAt,
+		CreatedAt:  t.CreatedAt,
+		CreatedBy:  t.CreatedBy,
 	}
 }
 

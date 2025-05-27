@@ -78,14 +78,14 @@ func (t *TransSaga) AsyncExec() {
 
 func (t *TransSaga) sync(ctx context.Context) error {
 	tx := &Trans{
-		Name:         t.name,
-		State:        string(SagaStateExecuting),
-		ExecuteState: "executing",
-		FinishedAt:   time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
-		CreatedAt:    time.Now(),
-		CreatedBy:    "yinqizhen",
-		UpdatedBy:    "dd",
-		UpdatedAt:    time.Now(),
+		Name:  t.name,
+		State: string(SagaStateExecuting),
+		// IsFinished: "executing",
+		FinishedAt: time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
+		CreatedAt:  time.Now(),
+		CreatedBy:  "yinqizhen",
+		UpdatedBy:  "dd",
+		UpdatedAt:  time.Now(),
 	}
 
 	tranID, err := t.storage.SaveTrans(ctx, tx)
@@ -152,7 +152,7 @@ func (t *TransSaga) tryUpdateSuccess(ctx context.Context) {
 	if err := t.syncStateChange(ctx); err != nil {
 		logx.Errorf(ctx, "update branch state fail: %v", err)
 	}
-	if err := t.changeExecuteStateCompleted(ctx); err != nil {
+	if err := t.changeExecuteStateFinished(ctx); err != nil {
 		logx.Errorf(ctx, "update branch execute state fail, when success: %v", err)
 	}
 
@@ -160,7 +160,7 @@ func (t *TransSaga) tryUpdateSuccess(ctx context.Context) {
 }
 
 func (t *TransSaga) syncStateChange(ctx context.Context) error {
-	return t.storage.UpdateTransState(ctx, t.id, t.state.Load().(string))
+	return t.storage.UpdateTransState(ctx, t.id, string(t.state.Load().(SagaState)))
 }
 
 func (t *TransSaga) isFailed() bool {
@@ -255,7 +255,7 @@ func (t *TransSaga) buildRootStep(opts ...StepOption) *Step {
 		compensate: Caller{
 			fn: func(context.Context, []byte) error {
 				ctx := context.Background()
-				if err := t.changeExecuteStateCompleted(ctx); err != nil {
+				if err := t.changeExecuteStateFinished(ctx); err != nil {
 					logx.Errorf(ctx, "update branch execute state fail, when fail: %v", err)
 				}
 				t.close()
@@ -274,8 +274,8 @@ func (t *TransSaga) buildRootStep(opts ...StepOption) *Step {
 	return root
 }
 
-func (t *TransSaga) changeExecuteStateCompleted(ctx context.Context) error {
-	return t.storage.UpdateTransExecuteStateDone(ctx, t.id, "completed")
+func (t *TransSaga) changeExecuteStateFinished(ctx context.Context) error {
+	return t.storage.UpdateTransExecuteStateFinished(ctx, t.id)
 }
 
 func (t *TransSaga) close() {
