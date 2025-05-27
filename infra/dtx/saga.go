@@ -78,13 +78,12 @@ func (t *TransSaga) AsyncExec() {
 
 func (t *TransSaga) sync(ctx context.Context) error {
 	tx := &Trans{
-		Name:  t.name,
-		State: string(SagaStateExecuting),
-		// IsFinished: "executing",
+		Name:       t.name,
+		State:      string(SagaStateExecuting),
 		FinishedAt: time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
 		CreatedAt:  time.Now(),
-		CreatedBy:  "yinqizhen",
-		UpdatedBy:  "dd",
+		CreatedBy:  utils.GetCurrentUser(ctx),
+		UpdatedBy:  utils.GetCurrentUser(ctx),
 		UpdatedAt:  time.Now(),
 	}
 
@@ -125,8 +124,8 @@ func (t *TransSaga) sync(ctx context.Context) error {
 			CompensateDepend:  compensateDepend,
 			IsDead:            false,
 			CreatedAt:         time.Now(),
-			CreatedBy:         "uy",
-			UpdatedBy:         "dd",
+			CreatedBy:         utils.GetCurrentUser(ctx),
+			UpdatedBy:         utils.GetCurrentUser(ctx),
 			UpdatedAt:         time.Now(),
 		}
 		branchList = append(branchList, branch)
@@ -256,7 +255,7 @@ func (t *TransSaga) buildRootStep(opts ...StepOption) *Step {
 			fn: func(context.Context, []byte) error {
 				ctx := context.Background()
 				if err := t.changeExecuteStateFinished(ctx); err != nil {
-					logx.Errorf(ctx, "update branch execute state fail, when fail: %v", err)
+					logx.Errorf(ctx, "changeExecuteStateFinished fail: %v", err)
 				}
 				t.close()
 				return nil

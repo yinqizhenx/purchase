@@ -183,14 +183,14 @@ func (s *Step) onActionFail(ctx context.Context, err error) {
 	if err := s.saga.syncStateChange(ctx); err != nil {
 		logx.Errorf(ctx, "update branch state fail: %v", err)
 	}
-	logx.Infof(ctx, "step[%s] action done fail状态变更完成， 开始回滚", s.name)
+	logx.Infof(ctx, "step[%s] action fail状态变更完成，开始回滚", s.name)
 	s.compensateCh <- s.name // 开始回滚
 }
 
 func (s *Step) syncStateChange(ctx context.Context) {
 	err := s.saga.storage.UpdateBranchState(ctx, s.id, s.state.String())
 	if err != nil {
-		logx.Errorf(ctx, "sync branch state change fail, err:%v", err)
+		logx.Errorf(ctx, "sync branch state to db fail, err:%v", err)
 	}
 }
 
@@ -240,7 +240,7 @@ func (s *Step) runCompensate(ctx context.Context) {
 
 func (s *Step) onCompensateSuccess(ctx context.Context) {
 	s.changeState(ctx, StepCompensateSuccess)
-	logx.Infof(ctx, "step[%s] compensate done success状态变更完成，通知上有回滚", s.name)
+	logx.Infof(ctx, "step[%s] compensate success状态变更完成，通知上有回滚", s.name)
 	for _, stp := range s.compensateNext {
 		stp.compensateCh <- s.name
 	}
@@ -248,7 +248,7 @@ func (s *Step) onCompensateSuccess(ctx context.Context) {
 
 func (s *Step) onCompensateFail(ctx context.Context) {
 	s.changeState(ctx, StepCompensateFail)
-	logx.Errorf(ctx, "step[%s] compensate done fail状态变更完成，阻塞住了", s.name)
+	logx.Errorf(ctx, "step[%s] compensate fail状态变更完成，阻塞住了", s.name)
 	if s.saga.strictCompensate {
 		s.saga.close() // 直接退出
 		return
