@@ -42,8 +42,7 @@ func (t *TransSaga) Exec(ctx context.Context) error {
 func (t *TransSaga) AsyncExec() {
 	ctx := context.Background()
 	utils.SafeGo(ctx, func() {
-		// ctx, cancel := context.WithTimeout(context.Background(), t.timeout)
-		// defer cancel()
+		t.state.Store(SagaStateExecuting)
 
 		if !t.isFromDB {
 			err := t.sync(ctx)
@@ -71,8 +70,6 @@ func (t *TransSaga) AsyncExec() {
 		t.root.actionCh <- ""
 
 		select {
-		// case <-ctx.Done():
-		// 	fmt.Println("context done 退出AsyncExec")
 		case <-t.done:
 			logx.Info(ctx, "执行完成 退出AsyncExec")
 		}
@@ -116,9 +113,8 @@ func (t *TransSaga) sync(ctx context.Context) error {
 		stepID := fmt.Sprintf("%d_%s", tranID, stp.name)
 		stp.id = stepID
 		branch := &Branch{
-			Code:    stepID,
-			TransID: tranID,
-			// Type:             "action",
+			Code:              stepID,
+			TransID:           tranID,
 			State:             StepPending,
 			Name:              stp.name,
 			Action:            stp.action.name,
@@ -245,15 +241,11 @@ func (t *TransSaga) build(steps []*Branch, handlers map[string]func(context.Cont
 		opt(t)
 	}
 
-	// if t.timeout == 0 {
-	// 	t.timeout = defaultTimeout
-	// }
 	return t, nil
 }
 
 func (t *TransSaga) buildRootStep(opts ...StepOption) *Step {
 	root := &Step{
-		// id:    uuid.NewString(),
 		saga:  t,
 		name:  rootStepName,
 		state: StepPending,
