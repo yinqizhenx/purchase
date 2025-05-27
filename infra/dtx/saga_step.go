@@ -152,6 +152,7 @@ func (s *Step) handleCompensate(ctx context.Context) {
 			s.onCompensateSuccess(ctx)
 		}
 	case StepActionFail:
+		// action 执行失败了，默认看作不需要回滚
 		s.changeState(ctx, StepCompensateSuccess)
 		for _, stp := range s.compensateNext {
 			stp.compensateCh <- s.name
