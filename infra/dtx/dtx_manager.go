@@ -48,9 +48,9 @@ func (txm *DistributeTxManager) NewTx(ctx context.Context) *TransSaga {
 	return nil
 }
 
-func (txm *DistributeTxManager) NewTransSaga(steps []*TransSagaStep, opts ...Option) (*TransSaga, error) {
+func (txm *DistributeTxManager) NewTransSaga(name string, steps []*TransSagaStep, opts ...Option) (*TransSaga, error) {
 	trans := &TransSaga{
-		// id:      uuid.NewString(),
+		name:    name,
 		storage: txm.storage,
 		errCh:   make(chan error, 1),
 		done:    make(chan struct{}),
