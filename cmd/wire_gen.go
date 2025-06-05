@@ -59,7 +59,7 @@ func initApp() (*App, func(), error) {
 	assemblerAssembler := assembler.NewAssembler()
 	transactionManager := tx.NewTransactionManager(client)
 	transStorage := dtx.NewTransStorage(client)
-	distributeTxManager := dtx.NewDistributeTxManager(transStorage)
+	distributeTxManager := dtx.NewDistributeTxManager(transStorage, transactionManager)
 	paymentCenterAppService := app.NewPaymentCenterAppService(paDomainService, paymentCenterRepo, assemblerAssembler, transactionManager, pcFactory, distributeTxManager)
 	paymentCenterHandler := rpc.NewPaymentCenterHandler(paymentCenterAppService)
 	rpcServer := rpc.NewPurchaseServer(paymentCenterHandler)
