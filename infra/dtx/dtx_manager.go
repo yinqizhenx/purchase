@@ -205,14 +205,14 @@ func registerForTest(txm *DistributeTxManager) {
 		return nil
 	})
 	txm.RegisterHandler("step3_rollback", func(ctx context.Context, payload []byte) error {
-		// time.Sleep(16 * time.Second)
+		time.Sleep(3 * time.Second)
 		fmt.Println("run step3_rollback")
 		return nil
 	})
 	txm.RegisterHandler("step4_action", func(ctx context.Context, payload []byte) error {
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 		fmt.Println("run step4_action")
-		return errors.New("ssccc")
+		return errors.New("step4 error")
 	})
 	txm.RegisterHandler("step4_rollback", func(ctx context.Context, payload []byte) error {
 		fmt.Println("run step4_rollback")
@@ -220,7 +220,8 @@ func registerForTest(txm *DistributeTxManager) {
 	})
 	txm.RegisterHandler("step5_action", func(ctx context.Context, payload []byte) error {
 		fmt.Println("run step5_action")
-		return nil
+		time.Sleep(3 * time.Second)
+		return errors.New("step5 error")
 	})
 	txm.RegisterHandler("step5_rollback", func(ctx context.Context, payload []byte) error {
 		fmt.Println("run step5_rollback")

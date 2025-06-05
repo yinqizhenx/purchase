@@ -101,6 +101,7 @@ func (s *Step) handleAction(ctx context.Context) {
 }
 
 // executeActionWithIdempotent 执行action, 保证幂等性
+// 极端场景：如果action业务逻辑执行成功（包含rpc请求），但是在提交数据库事务之前，服务挂了，这个时候没有幂等键插入，但是实际已经执行了，会导致重复执行
 func (s *Step) executeActionWithIdempotent(ctx context.Context) error {
 	return s.saga.dtm.tx.Transaction(ctx, func(ctx context.Context) error {
 		if !s.isRoot() {
