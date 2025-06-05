@@ -5,6 +5,7 @@ package ent
 import (
 	"purchase/infra/persistence/dal/db/ent/asynctask"
 	"purchase/infra/persistence/dal/db/ent/branch"
+	"purchase/infra/persistence/dal/db/ent/idempotent"
 	"purchase/infra/persistence/dal/db/ent/pahead"
 	"purchase/infra/persistence/dal/db/ent/parow"
 	"purchase/infra/persistence/dal/db/ent/schema"
@@ -36,6 +37,16 @@ func init() {
 	branchDescUpdatedAt := branchFields[13].Descriptor()
 	// branch.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	branch.DefaultUpdatedAt = branchDescUpdatedAt.Default.(func() time.Time)
+	idempotentFields := schema.Idempotent{}.Fields()
+	_ = idempotentFields
+	// idempotentDescCreatedAt is the schema descriptor for created_at field.
+	idempotentDescCreatedAt := idempotentFields[3].Descriptor()
+	// idempotent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	idempotent.DefaultCreatedAt = idempotentDescCreatedAt.Default.(func() time.Time)
+	// idempotentDescUpdatedAt is the schema descriptor for updated_at field.
+	idempotentDescUpdatedAt := idempotentFields[4].Descriptor()
+	// idempotent.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	idempotent.DefaultUpdatedAt = idempotentDescUpdatedAt.Default.(func() time.Time)
 	paheadFields := schema.PAHead{}.Fields()
 	_ = paheadFields
 	// paheadDescCreatedAt is the schema descriptor for created_at field.

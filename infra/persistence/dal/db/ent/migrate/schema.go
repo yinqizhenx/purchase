@@ -54,6 +54,27 @@ var (
 		Columns:    BranchesColumns,
 		PrimaryKey: []*schema.Column{BranchesColumns[0]},
 	}
+	// TIdempotentColumns holds the columns for the "t_idempotent" table.
+	TIdempotentColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "type", Type: field.TypeString},
+		{Name: "key", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+	}
+	// TIdempotentTable holds the schema information for the "t_idempotent" table.
+	TIdempotentTable = &schema.Table{
+		Name:       "t_idempotent",
+		Columns:    TIdempotentColumns,
+		PrimaryKey: []*schema.Column{TIdempotentColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "idx_type_key",
+				Unique:  true,
+				Columns: []*schema.Column{TIdempotentColumns[1], TIdempotentColumns[2]},
+			},
+		},
+	}
 	// PaHeadsColumns holds the columns for the "pa_heads" table.
 	PaHeadsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -115,6 +136,7 @@ var (
 	Tables = []*schema.Table{
 		TAsyncTaskTable,
 		BranchesTable,
+		TIdempotentTable,
 		PaHeadsTable,
 		PaRowsTable,
 		TransTable,
@@ -124,5 +146,8 @@ var (
 func init() {
 	TAsyncTaskTable.Annotation = &entsql.Annotation{
 		Table: "t_async_task",
+	}
+	TIdempotentTable.Annotation = &entsql.Annotation{
+		Table: "t_idempotent",
 	}
 }

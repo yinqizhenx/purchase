@@ -32,6 +32,18 @@ func (f BranchFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BranchMutation", m)
 }
 
+// The IdempotentFunc type is an adapter to allow the use of ordinary
+// function as Idempotent mutator.
+type IdempotentFunc func(context.Context, *ent.IdempotentMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f IdempotentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.IdempotentMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IdempotentMutation", m)
+}
+
 // The PAHeadFunc type is an adapter to allow the use of ordinary
 // function as PAHead mutator.
 type PAHeadFunc func(context.Context, *ent.PAHeadMutation) (ent.Value, error)

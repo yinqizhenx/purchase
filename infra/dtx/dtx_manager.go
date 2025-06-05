@@ -5,16 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"purchase/infra/persistence/tx"
 )
 
 const (
 	rootStepName = "root"
 )
 
-func NewDistributeTxManager(s TransStorage) *DistributeTxManager {
+func NewDistributeTxManager(s TransStorage, tx *tx.TransactionManager) *DistributeTxManager {
 	txm := &DistributeTxManager{
 		storage:  s,
 		handlers: make(map[string]func(context.Context, []byte) error),
+		tx:       tx,
 	}
 	registerForTest(txm)
 	return txm
@@ -24,6 +27,7 @@ type DistributeTxManager struct {
 	trans    []*TransSaga
 	storage  TransStorage
 	handlers map[string]func(context.Context, []byte) error
+	tx       *tx.TransactionManager
 }
 
 func (txm *DistributeTxManager) Start(ctx context.Context) error {
@@ -54,6 +58,7 @@ func (txm *DistributeTxManager) NewTransSaga(name string, steps []*TransSagaStep
 		storage: txm.storage,
 		errCh:   make(chan error, 1),
 		done:    make(chan struct{}),
+		dtm:     txm,
 	}
 	branches := make([]*Branch, 0, len(steps))
 	for _, stp := range steps {
@@ -106,6 +111,9 @@ func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch, opt
 		errCh:    make(chan error, 1),
 		done:     make(chan struct{}),
 		isFromDB: true,
+	}
+	for _, b := range branches {
+		b.State = StepPending
 	}
 	return trans.build(branches, txm.handlers, opts...)
 }

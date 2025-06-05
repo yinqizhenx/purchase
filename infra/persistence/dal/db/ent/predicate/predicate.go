@@ -12,6 +12,9 @@ type AsyncTask func(*sql.Selector)
 // Branch is the predicate function for branch builders.
 type Branch func(*sql.Selector)
 
+// Idempotent is the predicate function for idempotent builders.
+type Idempotent func(*sql.Selector)
+
 // PAHead is the predicate function for pahead builders.
 type PAHead func(*sql.Selector)
 

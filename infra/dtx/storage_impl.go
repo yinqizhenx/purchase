@@ -44,6 +44,14 @@ func (s *StorageImpl) getBranchClient(ctx context.Context) *ent.BranchClient {
 	return s.db.Branch
 }
 
+func (s *StorageImpl) getIdempotentClient(ctx context.Context) *ent.IdempotentClient {
+	txCtx, ok := ctx.(*tx.TransactionContext)
+	if ok {
+		return txCtx.Tx().Idempotent
+	}
+	return s.db.Idempotent
+}
+
 func (s *StorageImpl) SaveTrans(ctx context.Context, t *Trans) (int, error) {
 	tran, err := s.getTransClient(ctx).Create().
 		SetName(t.Name).
@@ -143,6 +151,14 @@ func (s *StorageImpl) MustGetBranchesByTransIDList(ctx context.Context, transIDL
 		}
 	}
 	return branchMap, nil
+}
+
+func (s *StorageImpl) InsertIdempotentKey(ctx context.Context, typ, key string) error {
+	_, err := s.getIdempotentClient(ctx).Create().
+		SetType(typ).
+		SetKey(key).
+		Save(ctx)
+	return err
 }
 
 func ConvertTrans(t *ent.Trans) *Trans {

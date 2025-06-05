@@ -13,6 +13,7 @@ import (
 
 	"purchase/infra/persistence/dal/db/ent/asynctask"
 	"purchase/infra/persistence/dal/db/ent/branch"
+	"purchase/infra/persistence/dal/db/ent/idempotent"
 	"purchase/infra/persistence/dal/db/ent/pahead"
 	"purchase/infra/persistence/dal/db/ent/parow"
 	"purchase/infra/persistence/dal/db/ent/trans"
@@ -33,6 +34,8 @@ type Client struct {
 	AsyncTask *AsyncTaskClient
 	// Branch is the client for interacting with the Branch builders.
 	Branch *BranchClient
+	// Idempotent is the client for interacting with the Idempotent builders.
+	Idempotent *IdempotentClient
 	// PAHead is the client for interacting with the PAHead builders.
 	PAHead *PAHeadClient
 	// PARow is the client for interacting with the PARow builders.
@@ -52,6 +55,7 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.AsyncTask = NewAsyncTaskClient(c.config)
 	c.Branch = NewBranchClient(c.config)
+	c.Idempotent = NewIdempotentClient(c.config)
 	c.PAHead = NewPAHeadClient(c.config)
 	c.PARow = NewPARowClient(c.config)
 	c.Trans = NewTransClient(c.config)
@@ -145,13 +149,14 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:       ctx,
-		config:    cfg,
-		AsyncTask: NewAsyncTaskClient(cfg),
-		Branch:    NewBranchClient(cfg),
-		PAHead:    NewPAHeadClient(cfg),
-		PARow:     NewPARowClient(cfg),
-		Trans:     NewTransClient(cfg),
+		ctx:        ctx,
+		config:     cfg,
+		AsyncTask:  NewAsyncTaskClient(cfg),
+		Branch:     NewBranchClient(cfg),
+		Idempotent: NewIdempotentClient(cfg),
+		PAHead:     NewPAHeadClient(cfg),
+		PARow:      NewPARowClient(cfg),
+		Trans:      NewTransClient(cfg),
 	}, nil
 }
 
@@ -169,13 +174,14 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:       ctx,
-		config:    cfg,
-		AsyncTask: NewAsyncTaskClient(cfg),
-		Branch:    NewBranchClient(cfg),
-		PAHead:    NewPAHeadClient(cfg),
-		PARow:     NewPARowClient(cfg),
-		Trans:     NewTransClient(cfg),
+		ctx:        ctx,
+		config:     cfg,
+		AsyncTask:  NewAsyncTaskClient(cfg),
+		Branch:     NewBranchClient(cfg),
+		Idempotent: NewIdempotentClient(cfg),
+		PAHead:     NewPAHeadClient(cfg),
+		PARow:      NewPARowClient(cfg),
+		Trans:      NewTransClient(cfg),
 	}, nil
 }
 
@@ -204,21 +210,21 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.AsyncTask.Use(hooks...)
-	c.Branch.Use(hooks...)
-	c.PAHead.Use(hooks...)
-	c.PARow.Use(hooks...)
-	c.Trans.Use(hooks...)
+	for _, n := range []interface{ Use(...Hook) }{
+		c.AsyncTask, c.Branch, c.Idempotent, c.PAHead, c.PARow, c.Trans,
+	} {
+		n.Use(hooks...)
+	}
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.AsyncTask.Intercept(interceptors...)
-	c.Branch.Intercept(interceptors...)
-	c.PAHead.Intercept(interceptors...)
-	c.PARow.Intercept(interceptors...)
-	c.Trans.Intercept(interceptors...)
+	for _, n := range []interface{ Intercept(...Interceptor) }{
+		c.AsyncTask, c.Branch, c.Idempotent, c.PAHead, c.PARow, c.Trans,
+	} {
+		n.Intercept(interceptors...)
+	}
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -228,6 +234,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.AsyncTask.mutate(ctx, m)
 	case *BranchMutation:
 		return c.Branch.mutate(ctx, m)
+	case *IdempotentMutation:
+		return c.Idempotent.mutate(ctx, m)
 	case *PAHeadMutation:
 		return c.PAHead.mutate(ctx, m)
 	case *PARowMutation:
@@ -502,6 +510,139 @@ func (c *BranchClient) mutate(ctx context.Context, m *BranchMutation) (Value, er
 		return (&BranchDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Branch mutation op: %q", m.Op())
+	}
+}
+
+// IdempotentClient is a client for the Idempotent schema.
+type IdempotentClient struct {
+	config
+}
+
+// NewIdempotentClient returns a client for the Idempotent from the given config.
+func NewIdempotentClient(c config) *IdempotentClient {
+	return &IdempotentClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `idempotent.Hooks(f(g(h())))`.
+func (c *IdempotentClient) Use(hooks ...Hook) {
+	c.hooks.Idempotent = append(c.hooks.Idempotent, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `idempotent.Intercept(f(g(h())))`.
+func (c *IdempotentClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Idempotent = append(c.inters.Idempotent, interceptors...)
+}
+
+// Create returns a builder for creating a Idempotent entity.
+func (c *IdempotentClient) Create() *IdempotentCreate {
+	mutation := newIdempotentMutation(c.config, OpCreate)
+	return &IdempotentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Idempotent entities.
+func (c *IdempotentClient) CreateBulk(builders ...*IdempotentCreate) *IdempotentCreateBulk {
+	return &IdempotentCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *IdempotentClient) MapCreateBulk(slice any, setFunc func(*IdempotentCreate, int)) *IdempotentCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &IdempotentCreateBulk{err: fmt.Errorf("calling to IdempotentClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*IdempotentCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &IdempotentCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Idempotent.
+func (c *IdempotentClient) Update() *IdempotentUpdate {
+	mutation := newIdempotentMutation(c.config, OpUpdate)
+	return &IdempotentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *IdempotentClient) UpdateOne(i *Idempotent) *IdempotentUpdateOne {
+	mutation := newIdempotentMutation(c.config, OpUpdateOne, withIdempotent(i))
+	return &IdempotentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *IdempotentClient) UpdateOneID(id int64) *IdempotentUpdateOne {
+	mutation := newIdempotentMutation(c.config, OpUpdateOne, withIdempotentID(id))
+	return &IdempotentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Idempotent.
+func (c *IdempotentClient) Delete() *IdempotentDelete {
+	mutation := newIdempotentMutation(c.config, OpDelete)
+	return &IdempotentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *IdempotentClient) DeleteOne(i *Idempotent) *IdempotentDeleteOne {
+	return c.DeleteOneID(i.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *IdempotentClient) DeleteOneID(id int64) *IdempotentDeleteOne {
+	builder := c.Delete().Where(idempotent.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &IdempotentDeleteOne{builder}
+}
+
+// Query returns a query builder for Idempotent.
+func (c *IdempotentClient) Query() *IdempotentQuery {
+	return &IdempotentQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeIdempotent},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Idempotent entity by its id.
+func (c *IdempotentClient) Get(ctx context.Context, id int64) (*Idempotent, error) {
+	return c.Query().Where(idempotent.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *IdempotentClient) GetX(ctx context.Context, id int64) *Idempotent {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *IdempotentClient) Hooks() []Hook {
+	return c.hooks.Idempotent
+}
+
+// Interceptors returns the client interceptors.
+func (c *IdempotentClient) Interceptors() []Interceptor {
+	return c.inters.Idempotent
+}
+
+func (c *IdempotentClient) mutate(ctx context.Context, m *IdempotentMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&IdempotentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&IdempotentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&IdempotentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&IdempotentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Idempotent mutation op: %q", m.Op())
 	}
 }
 
@@ -907,10 +1048,10 @@ func (c *TransClient) mutate(ctx context.Context, m *TransMutation) (Value, erro
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		AsyncTask, Branch, PAHead, PARow, Trans []ent.Hook
+		AsyncTask, Branch, Idempotent, PAHead, PARow, Trans []ent.Hook
 	}
 	inters struct {
-		AsyncTask, Branch, PAHead, PARow, Trans []ent.Interceptor
+		AsyncTask, Branch, Idempotent, PAHead, PARow, Trans []ent.Interceptor
 	}
 )
 

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"purchase/infra/persistence/dal/db/ent/asynctask"
 	"purchase/infra/persistence/dal/db/ent/branch"
+	"purchase/infra/persistence/dal/db/ent/idempotent"
 	"purchase/infra/persistence/dal/db/ent/pahead"
 	"purchase/infra/persistence/dal/db/ent/parow"
 	"purchase/infra/persistence/dal/db/ent/trans"
@@ -77,11 +78,12 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			asynctask.Table: asynctask.ValidColumn,
-			branch.Table:    branch.ValidColumn,
-			pahead.Table:    pahead.ValidColumn,
-			parow.Table:     parow.ValidColumn,
-			trans.Table:     trans.ValidColumn,
+			asynctask.Table:  asynctask.ValidColumn,
+			branch.Table:     branch.ValidColumn,
+			idempotent.Table: idempotent.ValidColumn,
+			pahead.Table:     pahead.ValidColumn,
+			parow.Table:      parow.ValidColumn,
+			trans.Table:      trans.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

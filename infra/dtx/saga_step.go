@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
+
 	"purchase/infra/logx"
 	"purchase/pkg/retry"
 )
@@ -31,6 +33,10 @@ type Step struct {
 
 func (s *Step) isSuccess() bool {
 	return s.state == StepActionSuccess
+}
+
+func (s *Step) isRoot() bool {
+	return s.name == rootStepName
 }
 
 // IsReadyToRunAction 是否前序依赖都action完成了
@@ -73,11 +79,7 @@ func (s *Step) runAction(ctx context.Context) {
 				break
 			}
 
-			if s.saga.isFromDB {
-				s.handleDBAction(ctx)
-			} else {
-				s.handleAction(ctx)
-			}
+			s.handleAction(ctx)
 		}
 	}
 }
@@ -89,7 +91,7 @@ func (s *Step) handleAction(ctx context.Context) {
 	}
 
 	s.changeState(ctx, StepInAction)
-	err := s.action.run(ctx)
+	err := s.executeActionWithIdempotent(ctx)
 	if err != nil {
 		logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
 		s.onActionFail(ctx, err)
@@ -98,44 +100,21 @@ func (s *Step) handleAction(ctx context.Context) {
 	}
 }
 
-func (s *Step) handleDBAction(ctx context.Context) {
-	switch s.state {
-	case StepPending:
-		s.changeState(ctx, StepInAction)
-		err := s.action.run(ctx)
-		if err != nil {
-			logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
-			s.onActionFail(ctx, err)
-		} else {
-			s.onActionSuccess(ctx)
+// executeActionWithIdempotent 执行action, 保证幂等性
+func (s *Step) executeActionWithIdempotent(ctx context.Context) error {
+	return s.saga.dtm.tx.Transaction(ctx, func(ctx context.Context) error {
+		if !s.isRoot() {
+			err := s.saga.storage.InsertIdempotentKey(ctx, "dtx", s.id)
+			if err != nil {
+				if IsMysqlDuplicateErr(err) {
+					logx.Infof(ctx, "分布式事务执行Action[%s]，重复", s.id)
+					return nil
+				}
+				return err
+			}
 		}
-	case StepInAction: // 需要action保持幂等
-		err := s.action.run(ctx)
-		if err != nil {
-			logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
-			s.onActionFail(ctx, err)
-		} else {
-			s.onActionSuccess(ctx)
-		}
-	case StepActionSuccess:
-		s.onActionSuccess(ctx)
-	case StepActionFail:
-		s.onActionFail(ctx, errors.New("unknown error"))
-	case StepInCompensate: // 需要Compensate保持幂等
-		err := retry.Run(func() error {
-			return s.compensate.run(ctx)
-		}, 2)
-		if err != nil {
-			logx.Errorf(ctx, "step[%s] run compensate fail after retry 2 times: %v", s.name, err)
-			s.onCompensateFail(ctx)
-		} else {
-			s.onCompensateSuccess(ctx)
-		}
-	case StepCompensateSuccess:
-		s.onCompensateSuccess(ctx)
-	case StepCompensateFail:
-		s.onCompensateFail(ctx)
-	}
+		return s.action.run(ctx)
+	})
 }
 
 func (s *Step) handleCompensate(ctx context.Context) {
@@ -143,7 +122,7 @@ func (s *Step) handleCompensate(ctx context.Context) {
 	case StepActionSuccess:
 		s.changeState(ctx, StepInCompensate)
 		err := retry.Run(func() error {
-			return s.compensate.run(ctx)
+			return s.executeCompensateWithIdempotent(ctx)
 		}, 2)
 		if err != nil {
 			logx.Errorf(ctx, "step[%s] run compensate fail after retry 2 times: %v", s.name, err)
@@ -238,6 +217,23 @@ func (s *Step) runCompensate(ctx context.Context) {
 	}
 }
 
+// executeCompensateWithIdempotent 执行Compensate, 保证幂等性
+func (s *Step) executeCompensateWithIdempotent(ctx context.Context) error {
+	return s.saga.dtm.tx.Transaction(ctx, func(ctx context.Context) error {
+		if !s.isRoot() {
+			err := s.saga.storage.InsertIdempotentKey(ctx, "dtx", s.id)
+			if err != nil {
+				if IsMysqlDuplicateErr(err) {
+					logx.Infof(ctx, "分布式事务执行Compensate[%s]，重复", s.id)
+					return nil
+				}
+				return err
+			}
+		}
+		return s.compensate.run(ctx)
+	})
+}
+
 func (s *Step) onCompensateSuccess(ctx context.Context) {
 	s.changeState(ctx, StepCompensateSuccess)
 	logx.Infof(ctx, "step[%s] compensate success状态变更完成，通知上有回滚", s.name)
@@ -315,4 +311,15 @@ func IsCompensateError(e error) bool {
 	var compensateError CompensateError
 	ok := errors.Is(e, &compensateError)
 	return ok
+}
+
+func IsMysqlDuplicateErr(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) {
+		// MySQL错误码1062: ER_DUP_ENTRY
+		if mysqlErr.Number == 1062 {
+			return true
+		}
+	}
+	return false
 }
