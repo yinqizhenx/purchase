@@ -95,7 +95,7 @@ func (txm *DistributeTxManager) loadExecutingTrans(ctx context.Context) ([]*Tran
 	result := make([]*TransSaga, 0, len(transMap))
 	for id, t := range transMap {
 		branches := branchesMap[id]
-		saga, err := txm.buildTransSaga(t, branches)
+		saga, err := txm.buildTransSagaFromDB(t, branches)
 		if err != nil {
 			return nil, err
 		}
@@ -104,14 +104,16 @@ func (txm *DistributeTxManager) loadExecutingTrans(ctx context.Context) ([]*Tran
 	return result, nil
 }
 
-func (txm *DistributeTxManager) buildTransSaga(t *Trans, branches []*Branch, opts ...Option) (*TransSaga, error) {
+func (txm *DistributeTxManager) buildTransSagaFromDB(t *Trans, branches []*Branch, opts ...Option) (*TransSaga, error) {
 	trans := &TransSaga{
 		id:       t.ID,
 		storage:  txm.storage,
 		errCh:    make(chan error, 1),
 		done:     make(chan struct{}),
 		isFromDB: true,
+		dtm:      txm,
 	}
+	// 将状态全变为pending
 	for _, b := range branches {
 		b.State = StepPending
 	}
