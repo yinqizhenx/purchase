@@ -118,10 +118,11 @@ func (s *Step) executeActionWithIdempotent(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		// 如果状态处于执行中，直接让事务失败，先人工确定是否已执行（可以提供一个查询接口），再重新执行事务
 		if state == idempotent.Pending {
 			logx.Errorf(ctx, "已存在待处理的重复Action[%s]", key)
+			return fmt.Errorf("exists pending compensate task [%s]", key)
 		}
-		return nil
 	}
 	err = s.action.run(ctx)
 	if err != nil {
@@ -244,8 +245,8 @@ func (s *Step) executeCompensateWithIdempotent(ctx context.Context) error {
 		}
 		if state == idempotent.Pending {
 			logx.Errorf(ctx, "已存在待处理的重复Compensate[%s]", key)
+			return fmt.Errorf("exists pending compensate task[%s]", key)
 		}
-		return nil
 	}
 	err = s.compensate.run(ctx)
 	if err != nil {
