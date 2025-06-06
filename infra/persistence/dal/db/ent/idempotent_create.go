@@ -22,15 +22,15 @@ type IdempotentCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetType sets the "type" field.
-func (ic *IdempotentCreate) SetType(s string) *IdempotentCreate {
-	ic.mutation.SetType(s)
-	return ic
-}
-
 // SetKey sets the "key" field.
 func (ic *IdempotentCreate) SetKey(s string) *IdempotentCreate {
 	ic.mutation.SetKey(s)
+	return ic
+}
+
+// SetState sets the "state" field.
+func (ic *IdempotentCreate) SetState(s string) *IdempotentCreate {
+	ic.mutation.SetState(s)
 	return ic
 }
 
@@ -115,11 +115,11 @@ func (ic *IdempotentCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ic *IdempotentCreate) check() error {
-	if _, ok := ic.mutation.GetType(); !ok {
-		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "Idempotent.type"`)}
-	}
 	if _, ok := ic.mutation.Key(); !ok {
 		return &ValidationError{Name: "key", err: errors.New(`ent: missing required field "Idempotent.key"`)}
+	}
+	if _, ok := ic.mutation.State(); !ok {
+		return &ValidationError{Name: "state", err: errors.New(`ent: missing required field "Idempotent.state"`)}
 	}
 	if _, ok := ic.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Idempotent.created_at"`)}
@@ -160,13 +160,13 @@ func (ic *IdempotentCreate) createSpec() (*Idempotent, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := ic.mutation.GetType(); ok {
-		_spec.SetField(idempotent.FieldType, field.TypeString, value)
-		_node.Type = value
-	}
 	if value, ok := ic.mutation.Key(); ok {
 		_spec.SetField(idempotent.FieldKey, field.TypeString, value)
 		_node.Key = value
+	}
+	if value, ok := ic.mutation.State(); ok {
+		_spec.SetField(idempotent.FieldState, field.TypeString, value)
+		_node.State = value
 	}
 	if value, ok := ic.mutation.CreatedAt(); ok {
 		_spec.SetField(idempotent.FieldCreatedAt, field.TypeTime, value)
@@ -183,7 +183,7 @@ func (ic *IdempotentCreate) createSpec() (*Idempotent, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Idempotent.Create().
-//		SetType(v).
+//		SetKey(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -192,7 +192,7 @@ func (ic *IdempotentCreate) createSpec() (*Idempotent, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.IdempotentUpsert) {
-//			SetType(v+v).
+//			SetKey(v+v).
 //		}).
 //		Exec(ctx)
 func (ic *IdempotentCreate) OnConflict(opts ...sql.ConflictOption) *IdempotentUpsertOne {
@@ -228,18 +228,6 @@ type (
 	}
 )
 
-// SetType sets the "type" field.
-func (u *IdempotentUpsert) SetType(v string) *IdempotentUpsert {
-	u.Set(idempotent.FieldType, v)
-	return u
-}
-
-// UpdateType sets the "type" field to the value that was provided on create.
-func (u *IdempotentUpsert) UpdateType() *IdempotentUpsert {
-	u.SetExcluded(idempotent.FieldType)
-	return u
-}
-
 // SetKey sets the "key" field.
 func (u *IdempotentUpsert) SetKey(v string) *IdempotentUpsert {
 	u.Set(idempotent.FieldKey, v)
@@ -249,6 +237,18 @@ func (u *IdempotentUpsert) SetKey(v string) *IdempotentUpsert {
 // UpdateKey sets the "key" field to the value that was provided on create.
 func (u *IdempotentUpsert) UpdateKey() *IdempotentUpsert {
 	u.SetExcluded(idempotent.FieldKey)
+	return u
+}
+
+// SetState sets the "state" field.
+func (u *IdempotentUpsert) SetState(v string) *IdempotentUpsert {
+	u.Set(idempotent.FieldState, v)
+	return u
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *IdempotentUpsert) UpdateState() *IdempotentUpsert {
+	u.SetExcluded(idempotent.FieldState)
 	return u
 }
 
@@ -324,20 +324,6 @@ func (u *IdempotentUpsertOne) Update(set func(*IdempotentUpsert)) *IdempotentUps
 	return u
 }
 
-// SetType sets the "type" field.
-func (u *IdempotentUpsertOne) SetType(v string) *IdempotentUpsertOne {
-	return u.Update(func(s *IdempotentUpsert) {
-		s.SetType(v)
-	})
-}
-
-// UpdateType sets the "type" field to the value that was provided on create.
-func (u *IdempotentUpsertOne) UpdateType() *IdempotentUpsertOne {
-	return u.Update(func(s *IdempotentUpsert) {
-		s.UpdateType()
-	})
-}
-
 // SetKey sets the "key" field.
 func (u *IdempotentUpsertOne) SetKey(v string) *IdempotentUpsertOne {
 	return u.Update(func(s *IdempotentUpsert) {
@@ -349,6 +335,20 @@ func (u *IdempotentUpsertOne) SetKey(v string) *IdempotentUpsertOne {
 func (u *IdempotentUpsertOne) UpdateKey() *IdempotentUpsertOne {
 	return u.Update(func(s *IdempotentUpsert) {
 		s.UpdateKey()
+	})
+}
+
+// SetState sets the "state" field.
+func (u *IdempotentUpsertOne) SetState(v string) *IdempotentUpsertOne {
+	return u.Update(func(s *IdempotentUpsert) {
+		s.SetState(v)
+	})
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *IdempotentUpsertOne) UpdateState() *IdempotentUpsertOne {
+	return u.Update(func(s *IdempotentUpsert) {
+		s.UpdateState()
 	})
 }
 
@@ -515,7 +515,7 @@ func (icb *IdempotentCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.IdempotentUpsert) {
-//			SetType(v+v).
+//			SetKey(v+v).
 //		}).
 //		Exec(ctx)
 func (icb *IdempotentCreateBulk) OnConflict(opts ...sql.ConflictOption) *IdempotentUpsertBulk {
@@ -594,20 +594,6 @@ func (u *IdempotentUpsertBulk) Update(set func(*IdempotentUpsert)) *IdempotentUp
 	return u
 }
 
-// SetType sets the "type" field.
-func (u *IdempotentUpsertBulk) SetType(v string) *IdempotentUpsertBulk {
-	return u.Update(func(s *IdempotentUpsert) {
-		s.SetType(v)
-	})
-}
-
-// UpdateType sets the "type" field to the value that was provided on create.
-func (u *IdempotentUpsertBulk) UpdateType() *IdempotentUpsertBulk {
-	return u.Update(func(s *IdempotentUpsert) {
-		s.UpdateType()
-	})
-}
-
 // SetKey sets the "key" field.
 func (u *IdempotentUpsertBulk) SetKey(v string) *IdempotentUpsertBulk {
 	return u.Update(func(s *IdempotentUpsert) {
@@ -619,6 +605,20 @@ func (u *IdempotentUpsertBulk) SetKey(v string) *IdempotentUpsertBulk {
 func (u *IdempotentUpsertBulk) UpdateKey() *IdempotentUpsertBulk {
 	return u.Update(func(s *IdempotentUpsert) {
 		s.UpdateKey()
+	})
+}
+
+// SetState sets the "state" field.
+func (u *IdempotentUpsertBulk) SetState(v string) *IdempotentUpsertBulk {
+	return u.Update(func(s *IdempotentUpsert) {
+		s.SetState(v)
+	})
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *IdempotentUpsertBulk) UpdateState() *IdempotentUpsertBulk {
+	return u.Update(func(s *IdempotentUpsert) {
+		s.UpdateState()
 	})
 }
 

@@ -1979,8 +1979,8 @@ type IdempotentMutation struct {
 	op            Op
 	typ           string
 	id            *int64
-	_type         *string
 	key           *string
+	state         *string
 	created_at    *time.Time
 	updated_at    *time.Time
 	clearedFields map[string]struct{}
@@ -2093,42 +2093,6 @@ func (m *IdempotentMutation) IDs(ctx context.Context) ([]int64, error) {
 	}
 }
 
-// SetType sets the "type" field.
-func (m *IdempotentMutation) SetType(s string) {
-	m._type = &s
-}
-
-// GetType returns the value of the "type" field in the mutation.
-func (m *IdempotentMutation) GetType() (r string, exists bool) {
-	v := m._type
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldType returns the old "type" field's value of the Idempotent entity.
-// If the Idempotent object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *IdempotentMutation) OldType(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldType is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldType requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldType: %w", err)
-	}
-	return oldValue.Type, nil
-}
-
-// ResetType resets all changes to the "type" field.
-func (m *IdempotentMutation) ResetType() {
-	m._type = nil
-}
-
 // SetKey sets the "key" field.
 func (m *IdempotentMutation) SetKey(s string) {
 	m.key = &s
@@ -2163,6 +2127,42 @@ func (m *IdempotentMutation) OldKey(ctx context.Context) (v string, err error) {
 // ResetKey resets all changes to the "key" field.
 func (m *IdempotentMutation) ResetKey() {
 	m.key = nil
+}
+
+// SetState sets the "state" field.
+func (m *IdempotentMutation) SetState(s string) {
+	m.state = &s
+}
+
+// State returns the value of the "state" field in the mutation.
+func (m *IdempotentMutation) State() (r string, exists bool) {
+	v := m.state
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldState returns the old "state" field's value of the Idempotent entity.
+// If the Idempotent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IdempotentMutation) OldState(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldState is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldState requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldState: %w", err)
+	}
+	return oldValue.State, nil
+}
+
+// ResetState resets all changes to the "state" field.
+func (m *IdempotentMutation) ResetState() {
+	m.state = nil
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -2272,11 +2272,11 @@ func (m *IdempotentMutation) Type() string {
 // AddedFields().
 func (m *IdempotentMutation) Fields() []string {
 	fields := make([]string, 0, 4)
-	if m._type != nil {
-		fields = append(fields, idempotent.FieldType)
-	}
 	if m.key != nil {
 		fields = append(fields, idempotent.FieldKey)
+	}
+	if m.state != nil {
+		fields = append(fields, idempotent.FieldState)
 	}
 	if m.created_at != nil {
 		fields = append(fields, idempotent.FieldCreatedAt)
@@ -2292,10 +2292,10 @@ func (m *IdempotentMutation) Fields() []string {
 // schema.
 func (m *IdempotentMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case idempotent.FieldType:
-		return m.GetType()
 	case idempotent.FieldKey:
 		return m.Key()
+	case idempotent.FieldState:
+		return m.State()
 	case idempotent.FieldCreatedAt:
 		return m.CreatedAt()
 	case idempotent.FieldUpdatedAt:
@@ -2309,10 +2309,10 @@ func (m *IdempotentMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *IdempotentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case idempotent.FieldType:
-		return m.OldType(ctx)
 	case idempotent.FieldKey:
 		return m.OldKey(ctx)
+	case idempotent.FieldState:
+		return m.OldState(ctx)
 	case idempotent.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case idempotent.FieldUpdatedAt:
@@ -2326,19 +2326,19 @@ func (m *IdempotentMutation) OldField(ctx context.Context, name string) (ent.Val
 // type.
 func (m *IdempotentMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case idempotent.FieldType:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetType(v)
-		return nil
 	case idempotent.FieldKey:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetKey(v)
+		return nil
+	case idempotent.FieldState:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetState(v)
 		return nil
 	case idempotent.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -2403,11 +2403,11 @@ func (m *IdempotentMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *IdempotentMutation) ResetField(name string) error {
 	switch name {
-	case idempotent.FieldType:
-		m.ResetType()
-		return nil
 	case idempotent.FieldKey:
 		m.ResetKey()
+		return nil
+	case idempotent.FieldState:
+		m.ResetState()
 		return nil
 	case idempotent.FieldCreatedAt:
 		m.ResetCreatedAt()

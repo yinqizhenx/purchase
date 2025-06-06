@@ -28,20 +28,6 @@ func (iu *IdempotentUpdate) Where(ps ...predicate.Idempotent) *IdempotentUpdate 
 	return iu
 }
 
-// SetType sets the "type" field.
-func (iu *IdempotentUpdate) SetType(s string) *IdempotentUpdate {
-	iu.mutation.SetType(s)
-	return iu
-}
-
-// SetNillableType sets the "type" field if the given value is not nil.
-func (iu *IdempotentUpdate) SetNillableType(s *string) *IdempotentUpdate {
-	if s != nil {
-		iu.SetType(*s)
-	}
-	return iu
-}
-
 // SetKey sets the "key" field.
 func (iu *IdempotentUpdate) SetKey(s string) *IdempotentUpdate {
 	iu.mutation.SetKey(s)
@@ -52,6 +38,20 @@ func (iu *IdempotentUpdate) SetKey(s string) *IdempotentUpdate {
 func (iu *IdempotentUpdate) SetNillableKey(s *string) *IdempotentUpdate {
 	if s != nil {
 		iu.SetKey(*s)
+	}
+	return iu
+}
+
+// SetState sets the "state" field.
+func (iu *IdempotentUpdate) SetState(s string) *IdempotentUpdate {
+	iu.mutation.SetState(s)
+	return iu
+}
+
+// SetNillableState sets the "state" field if the given value is not nil.
+func (iu *IdempotentUpdate) SetNillableState(s *string) *IdempotentUpdate {
+	if s != nil {
+		iu.SetState(*s)
 	}
 	return iu
 }
@@ -125,11 +125,11 @@ func (iu *IdempotentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := iu.mutation.GetType(); ok {
-		_spec.SetField(idempotent.FieldType, field.TypeString, value)
-	}
 	if value, ok := iu.mutation.Key(); ok {
 		_spec.SetField(idempotent.FieldKey, field.TypeString, value)
+	}
+	if value, ok := iu.mutation.State(); ok {
+		_spec.SetField(idempotent.FieldState, field.TypeString, value)
 	}
 	if value, ok := iu.mutation.CreatedAt(); ok {
 		_spec.SetField(idempotent.FieldCreatedAt, field.TypeTime, value)
@@ -157,20 +157,6 @@ type IdempotentUpdateOne struct {
 	mutation *IdempotentMutation
 }
 
-// SetType sets the "type" field.
-func (iuo *IdempotentUpdateOne) SetType(s string) *IdempotentUpdateOne {
-	iuo.mutation.SetType(s)
-	return iuo
-}
-
-// SetNillableType sets the "type" field if the given value is not nil.
-func (iuo *IdempotentUpdateOne) SetNillableType(s *string) *IdempotentUpdateOne {
-	if s != nil {
-		iuo.SetType(*s)
-	}
-	return iuo
-}
-
 // SetKey sets the "key" field.
 func (iuo *IdempotentUpdateOne) SetKey(s string) *IdempotentUpdateOne {
 	iuo.mutation.SetKey(s)
@@ -181,6 +167,20 @@ func (iuo *IdempotentUpdateOne) SetKey(s string) *IdempotentUpdateOne {
 func (iuo *IdempotentUpdateOne) SetNillableKey(s *string) *IdempotentUpdateOne {
 	if s != nil {
 		iuo.SetKey(*s)
+	}
+	return iuo
+}
+
+// SetState sets the "state" field.
+func (iuo *IdempotentUpdateOne) SetState(s string) *IdempotentUpdateOne {
+	iuo.mutation.SetState(s)
+	return iuo
+}
+
+// SetNillableState sets the "state" field if the given value is not nil.
+func (iuo *IdempotentUpdateOne) SetNillableState(s *string) *IdempotentUpdateOne {
+	if s != nil {
+		iuo.SetState(*s)
 	}
 	return iuo
 }
@@ -284,11 +284,11 @@ func (iuo *IdempotentUpdateOne) sqlSave(ctx context.Context) (_node *Idempotent,
 			}
 		}
 	}
-	if value, ok := iuo.mutation.GetType(); ok {
-		_spec.SetField(idempotent.FieldType, field.TypeString, value)
-	}
 	if value, ok := iuo.mutation.Key(); ok {
 		_spec.SetField(idempotent.FieldKey, field.TypeString, value)
+	}
+	if value, ok := iuo.mutation.State(); ok {
+		_spec.SetField(idempotent.FieldState, field.TypeString, value)
 	}
 	if value, ok := iuo.mutation.CreatedAt(); ok {
 		_spec.SetField(idempotent.FieldCreatedAt, field.TypeTime, value)

@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"purchase/infra/idempotent"
 	"purchase/infra/utils"
 
 	"purchase/infra/logx"
@@ -32,7 +33,7 @@ type TransSaga struct {
 	done             chan struct{}
 	isFromDB         bool
 	strictCompensate bool // 回滚执行失败时，是否进行下游回滚，true代表不进行下游回滚，直接退出
-	dtm              *DistributeTxManager
+	idempotentSrv    idempotent.Idempotent
 }
 
 func (t *TransSaga) Exec(ctx context.Context) error {

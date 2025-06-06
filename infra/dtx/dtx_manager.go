@@ -6,28 +6,28 @@ import (
 	"fmt"
 	"time"
 
-	"purchase/infra/persistence/tx"
+	"purchase/infra/idempotent"
 )
 
 const (
 	rootStepName = "root"
 )
 
-func NewDistributeTxManager(s TransStorage, tx *tx.TransactionManager) *DistributeTxManager {
+func NewDistributeTxManager(s TransStorage, idempotentSrv idempotent.Idempotent) *DistributeTxManager {
 	txm := &DistributeTxManager{
-		storage:  s,
-		handlers: make(map[string]func(context.Context, []byte) error),
-		tx:       tx,
+		storage:       s,
+		handlers:      make(map[string]func(context.Context, []byte) error),
+		idempotentSrv: idempotentSrv,
 	}
 	registerForTest(txm)
 	return txm
 }
 
 type DistributeTxManager struct {
-	trans    []*TransSaga
-	storage  TransStorage
-	handlers map[string]func(context.Context, []byte) error
-	tx       *tx.TransactionManager
+	trans         []*TransSaga
+	storage       TransStorage
+	handlers      map[string]func(context.Context, []byte) error
+	idempotentSrv idempotent.Idempotent
 }
 
 func (txm *DistributeTxManager) Start(ctx context.Context) error {
@@ -54,11 +54,11 @@ func (txm *DistributeTxManager) NewTx(ctx context.Context) *TransSaga {
 
 func (txm *DistributeTxManager) NewTransSaga(name string, steps []*TransSagaStep, opts ...Option) (*TransSaga, error) {
 	trans := &TransSaga{
-		name:    name,
-		storage: txm.storage,
-		errCh:   make(chan error, 1),
-		done:    make(chan struct{}),
-		dtm:     txm,
+		name:          name,
+		storage:       txm.storage,
+		errCh:         make(chan error, 1),
+		done:          make(chan struct{}),
+		idempotentSrv: txm.idempotentSrv,
 	}
 	branches := make([]*Branch, 0, len(steps))
 	for _, stp := range steps {
@@ -106,12 +106,12 @@ func (txm *DistributeTxManager) loadExecutingTrans(ctx context.Context) ([]*Tran
 
 func (txm *DistributeTxManager) buildTransSagaFromDB(t *Trans, branches []*Branch, opts ...Option) (*TransSaga, error) {
 	trans := &TransSaga{
-		id:       t.ID,
-		storage:  txm.storage,
-		errCh:    make(chan error, 1),
-		done:     make(chan struct{}),
-		isFromDB: true,
-		dtm:      txm,
+		id:            t.ID,
+		storage:       txm.storage,
+		errCh:         make(chan error, 1),
+		done:          make(chan struct{}),
+		isFromDB:      true,
+		idempotentSrv: txm.idempotentSrv,
 	}
 	// 将状态全变为pending
 	for _, b := range branches {

@@ -13,10 +13,10 @@ const (
 	Label = "idempotent"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldType holds the string denoting the type field in the database.
-	FieldType = "type"
 	// FieldKey holds the string denoting the key field in the database.
 	FieldKey = "key"
+	// FieldState holds the string denoting the state field in the database.
+	FieldState = "state"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -28,8 +28,8 @@ const (
 // Columns holds all SQL columns for idempotent fields.
 var Columns = []string{
 	FieldID,
-	FieldType,
 	FieldKey,
+	FieldState,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
@@ -59,14 +59,14 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByType orders the results by the type field.
-func ByType(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldType, opts...).ToFunc()
-}
-
 // ByKey orders the results by the key field.
 func ByKey(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldKey, opts...).ToFunc()
+}
+
+// ByState orders the results by the state field.
+func ByState(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldState, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

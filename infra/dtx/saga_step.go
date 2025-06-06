@@ -3,11 +3,11 @@ package dtx
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
-
+	"purchase/infra/idempotent"
 	"purchase/infra/logx"
 	"purchase/pkg/retry"
 )
@@ -101,21 +101,33 @@ func (s *Step) handleAction(ctx context.Context) {
 }
 
 // executeActionWithIdempotent 执行action, 保证幂等性
+// 方式1: 插入一条幂等数据，成功则执行业务逻辑，整个操作在事务里执行，业务逻辑成功才提交数据库事务
 // 极端场景：如果action业务逻辑执行成功（包含rpc请求），但是在提交数据库事务之前，服务挂了，这个时候没有幂等键插入，但是实际已经执行了，会导致重复执行
+// 方式2: 先插入一条幂等数据状态pending，然后执行业务逻辑，成功则修改状态为done, 失败则删除幂等key， 整个操作都是独立的，不在同一个事务里
+// 业务逻辑开始执行后，服务挂了，无法判断业务逻辑是否执行成功，服务重启后会看作已执行，需要人工介入
+// 若修改状态为done失败或删除幂等key失败， 则告警，人工介入， 可避免重复执行的问题
+// 采用方式2
 func (s *Step) executeActionWithIdempotent(ctx context.Context) error {
-	return s.saga.dtm.tx.Transaction(ctx, func(ctx context.Context) error {
-		if !s.isRoot() {
-			err := s.saga.storage.InsertIdempotentKey(ctx, "dtx", s.id)
-			if err != nil {
-				if IsMysqlDuplicateErr(err) {
-					logx.Infof(ctx, "分布式事务执行Action[%s]，重复", s.id)
-					return nil
-				}
-				return err
-			}
+	key := fmt.Sprintf("dtx_%s", s.id)
+	exist, err := s.saga.idempotentSrv.SetKeyPendingWithDDL(ctx, key, 0)
+	if err != nil {
+		return err
+	}
+	if exist {
+		state, err := s.saga.idempotentSrv.GetKeyState(ctx, key)
+		if err != nil {
+			return err
 		}
-		return s.action.run(ctx)
-	})
+		if state == idempotent.Pending {
+			logx.Errorf(ctx, "已存在待处理的重复Action[%s]", key)
+		}
+		return nil
+	}
+	err = s.action.run(ctx)
+	if err != nil {
+		return s.saga.idempotentSrv.RemoveFailKey(ctx, key)
+	}
+	return s.saga.idempotentSrv.UpdateKeyDone(ctx, key)
 }
 
 func (s *Step) handleCompensate(ctx context.Context) {
@@ -220,19 +232,26 @@ func (s *Step) runCompensate(ctx context.Context) {
 
 // executeCompensateWithIdempotent 执行Compensate, 保证幂等性
 func (s *Step) executeCompensateWithIdempotent(ctx context.Context) error {
-	return s.saga.dtm.tx.Transaction(ctx, func(ctx context.Context) error {
-		if !s.isRoot() {
-			err := s.saga.storage.InsertIdempotentKey(ctx, "dtx", s.id)
-			if err != nil {
-				if IsMysqlDuplicateErr(err) {
-					logx.Infof(ctx, "分布式事务执行Compensate[%s]，重复", s.id)
-					return nil
-				}
-				return err
-			}
+	key := fmt.Sprintf("dtx_%s", s.id)
+	ok, err := s.saga.idempotentSrv.SetKeyPendingWithDDL(ctx, key, 0)
+	if err != nil {
+		return err
+	}
+	if ok {
+		state, err := s.saga.idempotentSrv.GetKeyState(ctx, key)
+		if err != nil {
+			return err
 		}
-		return s.compensate.run(ctx)
-	})
+		if state == idempotent.Pending {
+			logx.Errorf(ctx, "已存在待处理的重复Compensate[%s]", key)
+		}
+		return nil
+	}
+	err = s.compensate.run(ctx)
+	if err != nil {
+		return s.saga.idempotentSrv.RemoveFailKey(ctx, key)
+	}
+	return s.saga.idempotentSrv.UpdateKeyDone(ctx, key)
 }
 
 func (s *Step) onCompensateSuccess(ctx context.Context) {
@@ -312,15 +331,4 @@ func IsCompensateError(e error) bool {
 	var compensateError CompensateError
 	ok := errors.Is(e, &compensateError)
 	return ok
-}
-
-func IsMysqlDuplicateErr(err error) bool {
-	var mysqlErr *mysql.MySQLError
-	if errors.As(err, &mysqlErr) {
-		// MySQL错误码1062: ER_DUP_ENTRY
-		if mysqlErr.Number == 1062 {
-			return true
-		}
-	}
-	return false
 }

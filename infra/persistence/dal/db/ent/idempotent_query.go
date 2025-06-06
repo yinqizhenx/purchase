@@ -263,12 +263,12 @@ func (iq *IdempotentQuery) Clone() *IdempotentQuery {
 // Example:
 //
 //	var v []struct {
-//		Type string `json:"type,omitempty"`
+//		Key string `json:"key,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Idempotent.Query().
-//		GroupBy(idempotent.FieldType).
+//		GroupBy(idempotent.FieldKey).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (iq *IdempotentQuery) GroupBy(field string, fields ...string) *IdempotentGroupBy {
@@ -286,11 +286,11 @@ func (iq *IdempotentQuery) GroupBy(field string, fields ...string) *IdempotentGr
 // Example:
 //
 //	var v []struct {
-//		Type string `json:"type,omitempty"`
+//		Key string `json:"key,omitempty"`
 //	}
 //
 //	client.Idempotent.Query().
-//		Select(idempotent.FieldType).
+//		Select(idempotent.FieldKey).
 //		Scan(ctx, &v)
 func (iq *IdempotentQuery) Select(fields ...string) *IdempotentSelect {
 	iq.ctx.Fields = append(iq.ctx.Fields, fields...)

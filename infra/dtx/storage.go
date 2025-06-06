@@ -59,5 +59,4 @@ type TransStorage interface {
 	UpdateBranchState(ctx context.Context, code, newState string) error
 	GetExecutingTrans(ctx context.Context) (map[int]*Trans, error)
 	MustGetBranchesByTransIDList(ctx context.Context, transIDList []int) (map[int][]*Branch, error)
-	InsertIdempotentKey(ctx context.Context, typ, key string) error
 }

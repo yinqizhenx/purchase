@@ -17,10 +17,10 @@ type Idempotent struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int64 `json:"id,omitempty"`
-	// Type holds the value of the "type" field.
-	Type string `json:"type,omitempty"`
 	// Key holds the value of the "key" field.
 	Key string `json:"key,omitempty"`
+	// State holds the value of the "state" field.
+	State string `json:"state,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -35,7 +35,7 @@ func (*Idempotent) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case idempotent.FieldID:
 			values[i] = new(sql.NullInt64)
-		case idempotent.FieldType, idempotent.FieldKey:
+		case idempotent.FieldKey, idempotent.FieldState:
 			values[i] = new(sql.NullString)
 		case idempotent.FieldCreatedAt, idempotent.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -60,17 +60,17 @@ func (i *Idempotent) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			i.ID = int64(value.Int64)
-		case idempotent.FieldType:
-			if value, ok := values[j].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field type", values[j])
-			} else if value.Valid {
-				i.Type = value.String
-			}
 		case idempotent.FieldKey:
 			if value, ok := values[j].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field key", values[j])
 			} else if value.Valid {
 				i.Key = value.String
+			}
+		case idempotent.FieldState:
+			if value, ok := values[j].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field state", values[j])
+			} else if value.Valid {
+				i.State = value.String
 			}
 		case idempotent.FieldCreatedAt:
 			if value, ok := values[j].(*sql.NullTime); !ok {
@@ -120,11 +120,11 @@ func (i *Idempotent) String() string {
 	var builder strings.Builder
 	builder.WriteString("Idempotent(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", i.ID))
-	builder.WriteString("type=")
-	builder.WriteString(i.Type)
-	builder.WriteString(", ")
 	builder.WriteString("key=")
 	builder.WriteString(i.Key)
+	builder.WriteString(", ")
+	builder.WriteString("state=")
+	builder.WriteString(i.State)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(i.CreatedAt.Format(time.ANSIC))

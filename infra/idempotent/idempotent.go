@@ -21,4 +21,4 @@ type Idempotent interface {
 	RemoveFailKey(ctx context.Context, key string) error
 }
 
-var ProviderSet = wire.NewSet(NewIdempotentImpl)
+var ProviderSet = wire.NewSet(NewIdempotentImpl, NewMysqlIdempotentImpl)

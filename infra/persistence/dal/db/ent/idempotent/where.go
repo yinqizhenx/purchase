@@ -54,14 +54,14 @@ func IDLTE(id int64) predicate.Idempotent {
 	return predicate.Idempotent(sql.FieldLTE(FieldID, id))
 }
 
-// Type applies equality check predicate on the "type" field. It's identical to TypeEQ.
-func Type(v string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldEQ(FieldType, v))
-}
-
 // Key applies equality check predicate on the "key" field. It's identical to KeyEQ.
 func Key(v string) predicate.Idempotent {
 	return predicate.Idempotent(sql.FieldEQ(FieldKey, v))
+}
+
+// State applies equality check predicate on the "state" field. It's identical to StateEQ.
+func State(v string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldEQ(FieldState, v))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
@@ -72,71 +72,6 @@ func CreatedAt(v time.Time) predicate.Idempotent {
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
 func UpdatedAt(v time.Time) predicate.Idempotent {
 	return predicate.Idempotent(sql.FieldEQ(FieldUpdatedAt, v))
-}
-
-// TypeEQ applies the EQ predicate on the "type" field.
-func TypeEQ(v string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldEQ(FieldType, v))
-}
-
-// TypeNEQ applies the NEQ predicate on the "type" field.
-func TypeNEQ(v string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldNEQ(FieldType, v))
-}
-
-// TypeIn applies the In predicate on the "type" field.
-func TypeIn(vs ...string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldIn(FieldType, vs...))
-}
-
-// TypeNotIn applies the NotIn predicate on the "type" field.
-func TypeNotIn(vs ...string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldNotIn(FieldType, vs...))
-}
-
-// TypeGT applies the GT predicate on the "type" field.
-func TypeGT(v string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldGT(FieldType, v))
-}
-
-// TypeGTE applies the GTE predicate on the "type" field.
-func TypeGTE(v string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldGTE(FieldType, v))
-}
-
-// TypeLT applies the LT predicate on the "type" field.
-func TypeLT(v string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldLT(FieldType, v))
-}
-
-// TypeLTE applies the LTE predicate on the "type" field.
-func TypeLTE(v string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldLTE(FieldType, v))
-}
-
-// TypeContains applies the Contains predicate on the "type" field.
-func TypeContains(v string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldContains(FieldType, v))
-}
-
-// TypeHasPrefix applies the HasPrefix predicate on the "type" field.
-func TypeHasPrefix(v string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldHasPrefix(FieldType, v))
-}
-
-// TypeHasSuffix applies the HasSuffix predicate on the "type" field.
-func TypeHasSuffix(v string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldHasSuffix(FieldType, v))
-}
-
-// TypeEqualFold applies the EqualFold predicate on the "type" field.
-func TypeEqualFold(v string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldEqualFold(FieldType, v))
-}
-
-// TypeContainsFold applies the ContainsFold predicate on the "type" field.
-func TypeContainsFold(v string) predicate.Idempotent {
-	return predicate.Idempotent(sql.FieldContainsFold(FieldType, v))
 }
 
 // KeyEQ applies the EQ predicate on the "key" field.
@@ -202,6 +137,71 @@ func KeyEqualFold(v string) predicate.Idempotent {
 // KeyContainsFold applies the ContainsFold predicate on the "key" field.
 func KeyContainsFold(v string) predicate.Idempotent {
 	return predicate.Idempotent(sql.FieldContainsFold(FieldKey, v))
+}
+
+// StateEQ applies the EQ predicate on the "state" field.
+func StateEQ(v string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldEQ(FieldState, v))
+}
+
+// StateNEQ applies the NEQ predicate on the "state" field.
+func StateNEQ(v string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldNEQ(FieldState, v))
+}
+
+// StateIn applies the In predicate on the "state" field.
+func StateIn(vs ...string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldIn(FieldState, vs...))
+}
+
+// StateNotIn applies the NotIn predicate on the "state" field.
+func StateNotIn(vs ...string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldNotIn(FieldState, vs...))
+}
+
+// StateGT applies the GT predicate on the "state" field.
+func StateGT(v string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldGT(FieldState, v))
+}
+
+// StateGTE applies the GTE predicate on the "state" field.
+func StateGTE(v string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldGTE(FieldState, v))
+}
+
+// StateLT applies the LT predicate on the "state" field.
+func StateLT(v string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldLT(FieldState, v))
+}
+
+// StateLTE applies the LTE predicate on the "state" field.
+func StateLTE(v string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldLTE(FieldState, v))
+}
+
+// StateContains applies the Contains predicate on the "state" field.
+func StateContains(v string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldContains(FieldState, v))
+}
+
+// StateHasPrefix applies the HasPrefix predicate on the "state" field.
+func StateHasPrefix(v string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldHasPrefix(FieldState, v))
+}
+
+// StateHasSuffix applies the HasSuffix predicate on the "state" field.
+func StateHasSuffix(v string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldHasSuffix(FieldState, v))
+}
+
+// StateEqualFold applies the EqualFold predicate on the "state" field.
+func StateEqualFold(v string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldEqualFold(FieldState, v))
+}
+
+// StateContainsFold applies the ContainsFold predicate on the "state" field.
+func StateContainsFold(v string) predicate.Idempotent {
+	return predicate.Idempotent(sql.FieldContainsFold(FieldState, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

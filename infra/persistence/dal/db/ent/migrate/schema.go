@@ -57,8 +57,8 @@ var (
 	// TIdempotentColumns holds the columns for the "t_idempotent" table.
 	TIdempotentColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
-		{Name: "type", Type: field.TypeString},
-		{Name: "key", Type: field.TypeString},
+		{Name: "key", Type: field.TypeString, Unique: true},
+		{Name: "state", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 	}
@@ -67,13 +67,6 @@ var (
 		Name:       "t_idempotent",
 		Columns:    TIdempotentColumns,
 		PrimaryKey: []*schema.Column{TIdempotentColumns[0]},
-		Indexes: []*schema.Index{
-			{
-				Name:    "idx_type_key",
-				Unique:  true,
-				Columns: []*schema.Column{TIdempotentColumns[1], TIdempotentColumns[2]},
-			},
-		},
 	}
 	// PaHeadsColumns holds the columns for the "pa_heads" table.
 	PaHeadsColumns = []*schema.Column{
