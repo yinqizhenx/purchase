@@ -109,11 +109,11 @@ func (s *Step) handleAction(ctx context.Context) {
 // 采用方式2
 func (s *Step) executeActionWithIdempotent(ctx context.Context) error {
 	key := fmt.Sprintf("dtx_%s", s.id)
-	exist, err := s.saga.idempotentSrv.SetKeyPendingWithDDL(ctx, key, 0)
+	ok, err := s.saga.idempotentSrv.SetKeyPendingWithDDL(ctx, key, 0)
 	if err != nil {
 		return err
 	}
-	if exist {
+	if !ok {
 		state, err := s.saga.idempotentSrv.GetKeyState(ctx, key)
 		if err != nil {
 			return err
@@ -238,7 +238,7 @@ func (s *Step) executeCompensateWithIdempotent(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if ok {
+	if !ok {
 		state, err := s.saga.idempotentSrv.GetKeyState(ctx, key)
 		if err != nil {
 			return err
