@@ -110,28 +110,31 @@ func (w *GroupWorker) Stop(ctx context.Context) error {
 		close(taskDone)
 	}()
 
-	// 等待任务完成或超时
+	// 等待所有组件退出，或超时
+	// 需要同时等待 listenDone 和 taskDone 都完成
+	allDone := make(chan struct{})
+	go func() {
+		// 等待 Listen goroutine 退出
+		<-listenDone
+		logx.Info(ctx, "listen goroutine stopped",
+			slog.String("group", string(w.GetGroup())))
+
+		// 等待所有正在执行的任务完成
+		<-taskDone
+		logx.Info(ctx, "all running tasks completed",
+			slog.String("group", string(w.GetGroup())))
+
+		close(allDone)
+	}()
+
 	select {
 	case <-ctx.Done():
 		logx.Warn(ctx, "shutdown timeout, some tasks may still be running",
 			slog.String("group", string(w.GetGroup())))
 		return ctx.Err()
-	case <-listenDone:
-		logx.Info(ctx, "listen goroutine stopped",
+	case <-allDone:
+		logx.Info(ctx, "all components stopped successfully",
 			slog.String("group", string(w.GetGroup())))
-	case <-taskDone:
-		logx.Info(ctx, "all running tasks completed",
-			slog.String("group", string(w.GetGroup())))
-	}
-
-	// 确保 Listen goroutine 已退出
-	select {
-	case <-ctx.Done():
-		logx.Warn(ctx, "final wait timeout",
-			slog.String("group", string(w.GetGroup())))
-		return ctx.Err()
-	case <-listenDone:
-		// 已退出
 	}
 
 	// 3. 关闭 channel

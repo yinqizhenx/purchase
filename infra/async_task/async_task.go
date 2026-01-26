@@ -124,6 +124,20 @@ func (m *AsyncTaskMux) Stop(ctx context.Context) error {
 	}()
 
 	// 等待所有组件退出，或超时
+	// 需要同时等待 listenDone 和 workerDone 都完成
+	allDone := make(chan struct{})
+	go func() {
+		// 等待 Listen goroutine 退出
+		<-listenDone
+		logx.Info(ctx, "listen goroutine stopped")
+
+		// 等待所有 GroupWorker 退出
+		<-workerDone
+		logx.Info(ctx, "all group workers stopped")
+
+		close(allDone)
+	}()
+
 	select {
 	case <-shutdownCtx.Done():
 		logx.Warn(ctx, "shutdown timeout exceeded, forcing stop",
@@ -133,19 +147,8 @@ func (m *AsyncTaskMux) Stop(ctx context.Context) error {
 			gw.ForceStop()
 		}
 		return shutdownCtx.Err()
-	case <-listenDone:
-		logx.Info(ctx, "listen goroutine stopped")
-	case <-workerDone:
-		logx.Info(ctx, "all group workers stopped")
-	}
-
-	// 确保所有 goroutine 都已退出
-	select {
-	case <-shutdownCtx.Done():
-		logx.Warn(ctx, "final wait timeout exceeded")
-		return shutdownCtx.Err()
-	case <-listenDone:
-		// 已退出
+	case <-allDone:
+		logx.Info(ctx, "all components stopped successfully")
 	}
 
 	logx.Info(ctx, "async task mux stopped gracefully")
