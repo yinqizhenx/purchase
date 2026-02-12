@@ -163,12 +163,15 @@ func (m *AsyncTaskMux) Listen(ctx context.Context) {
 				return
 			}
 			go func() {
+				// ctx 取消后不再查询数据库
+				if ctx.Err() != nil {
+					return
+				}
 				task, err := m.mustGetPendingTask(ctx, taskID)
 				if err != nil {
 					logx.Errorf(ctx, "find one task fail:%s, err :%s", taskID, err)
 					return
 				}
-
 				m.distribute(ctx, task)
 			}()
 		}
@@ -227,7 +230,7 @@ func (m *AsyncTaskMux) RegisterHandler(key string, group vo.AsyncTaskGroup, hand
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.groupWorkers[group] == nil {
-		gw := NewGroupWorker(m.pub, m.dal, m.txm)
+		gw := NewGroupWorker(m.pub, m.dal, m.txm, m.concurrency, m.mdw)
 		gw.SetGroup(group)
 		m.groupWorkers[group] = gw
 	}

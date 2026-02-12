@@ -3,6 +3,7 @@ package async_task
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"sync"
 	"sync/atomic"
@@ -26,7 +27,7 @@ type GroupWorker struct {
 	sem         chan struct{}
 	concurrency int
 	cancel      func()
-	cancel2     func()
+	cancelChan  func() // 关闭 unbounded channel
 	mdw         []Middleware
 	mu          sync.Mutex
 	taskGroup   vo.AsyncTaskGroup // 任务组标识
@@ -37,16 +38,17 @@ type GroupWorker struct {
 	listenWg     sync.WaitGroup // 等待 Listen goroutine 退出
 }
 
-func NewGroupWorker(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.TransactionManager) *GroupWorker {
-	ch, cancel := NewTaskChan()
+func NewGroupWorker(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.TransactionManager, concurrency int, mdw []Middleware) *GroupWorker {
+	ch, cancelChan := NewTaskChan()
 	w := &GroupWorker{
 		pub:         pub,
 		handlers:    make(map[string]Handler),
 		ch:          ch,
 		dal:         dal,
 		txm:         txm,
-		concurrency: defaultConcurrency, // default 5 worker max
-		cancel2:     cancel,
+		concurrency: concurrency,
+		cancelChan:  cancelChan,
+		mdw:         mdw,
 	}
 	w.sem = make(chan struct{}, w.concurrency)
 	return w
@@ -144,8 +146,8 @@ func (w *GroupWorker) Stop(ctx context.Context) error {
 	}
 
 	// 3. 关闭 channel
-	if w.cancel2 != nil {
-		w.cancel2()
+	if w.cancelChan != nil {
+		w.cancelChan()
 	}
 
 	logx.Info(ctx, "group worker stopped gracefully",
@@ -159,8 +161,8 @@ func (w *GroupWorker) ForceStop() {
 	if w.cancel != nil {
 		w.cancel()
 	}
-	if w.cancel2 != nil {
-		w.cancel2()
+	if w.cancelChan != nil {
+		w.cancelChan()
 	}
 }
 
@@ -265,14 +267,15 @@ func (w *GroupWorker) tryLockTask(ctx context.Context, task *async_task.AsyncTas
 }
 
 func (w *GroupWorker) ProcessTask(ctx context.Context, task *async_task.AsyncTask) error {
-	if handler, ok := w.handlers[task.TaskName]; ok {
-		h := handler
-		for i := len(w.mdw) - 1; i >= 0; i-- {
-			h = w.mdw[i](h)
-		}
-		return h(ctx, []byte(task.TaskData))
+	handler, ok := w.handlers[task.TaskName]
+	if !ok {
+		return fmt.Errorf("no handler registered for task: %s", task.TaskName)
 	}
-	return nil
+	h := handler
+	for i := len(w.mdw) - 1; i >= 0; i-- {
+		h = w.mdw[i](h)
+	}
+	return h(ctx, []byte(task.TaskData))
 }
 
 func (w *GroupWorker) SendMessage(ctx context.Context, task *async_task.AsyncTask) error {
