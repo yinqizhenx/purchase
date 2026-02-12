@@ -27,9 +27,7 @@ const defaultShutdownTimeout = 30 * time.Second
 type Handler func(ctx context.Context, payload []byte) error
 
 type AsyncTaskMux struct {
-	pub mq.Publisher
-	// handles 涉及到数据库变动的，需要在事务里执行
-	handlers        map[string]Handler
+	pub             mq.Publisher
 	ch              *chanx.UnboundedChan[string]
 	cron            *cron.Cron
 	dal             *dal.AsyncTaskDal
@@ -42,13 +40,11 @@ type AsyncTaskMux struct {
 	mu              sync.Mutex
 	groupWorkers    map[vo.AsyncTaskGroup]*GroupWorker
 	listenWg        sync.WaitGroup // 等待 Listen goroutine 退出
-	stopping        int32          // 使用 atomic 标记是否正在关闭
 }
 
 func NewAsyncTaskMux(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.TransactionManager, ch *chanx.UnboundedChan[string], opts ...Option) *AsyncTaskMux {
 	h := &AsyncTaskMux{
 		pub:             pub,
-		handlers:        make(map[string]Handler),
 		ch:              ch,
 		cron:            cron.New(),
 		dal:             dal,
@@ -74,7 +70,7 @@ func (m *AsyncTaskMux) Start(ctx context.Context) error {
 	}
 	for _, gw := range m.groupWorkers {
 		worker := gw
-		go worker.Start(ctx)
+		go worker.Start(nctx)
 	}
 	m.listenWg.Add(1)
 	go func() {
@@ -230,10 +226,10 @@ func (m *AsyncTaskMux) mustGetPendingTask(ctx context.Context, taskID string) (*
 func (m *AsyncTaskMux) RegisterHandler(key string, group vo.AsyncTaskGroup, handler Handler) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.handlers[key] = handler
 	if m.groupWorkers[group] == nil {
 		gw := NewGroupWorker(m.pub, m.dal, m.txm)
 		gw.SetGroup(group)
 		m.groupWorkers[group] = gw
 	}
+	m.groupWorkers[group].RegisterHandler(key, handler)
 }

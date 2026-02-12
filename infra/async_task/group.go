@@ -13,7 +13,6 @@ import (
 	"purchase/infra/mq"
 	"purchase/infra/persistence/dal"
 	"purchase/infra/persistence/tx"
-	"purchase/infra/utils"
 	"purchase/pkg/chanx"
 )
 
@@ -51,6 +50,13 @@ func NewGroupWorker(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.Transaction
 	}
 	w.sem = make(chan struct{}, w.concurrency)
 	return w
+}
+
+// RegisterHandler 注册任务处理器到当前 GroupWorker
+func (w *GroupWorker) RegisterHandler(key string, handler Handler) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.handlers[key] = handler
 }
 
 // SetGroup 设置任务组标识
@@ -230,30 +236,19 @@ func (w *GroupWorker) onHandleFail(ctx context.Context, task *async_task.AsyncTa
 	return err
 }
 
-func (w *GroupWorker) handleTask(ctx context.Context, taskList ...*async_task.AsyncTask) {
-	wg := &sync.WaitGroup{}
-	for _, task := range taskList {
-		wg.Add(1)
-		t := task
-		fn := func(context.Context) (err error) {
-			defer func() {
-				wg.Done()
-			}()
-			err = w.Handle(ctx, t)
-			if err != nil {
-				logx.Error(ctx, "handle task fail", slog.String("task", t.TaskID), slog.Any("error", err))
-				return w.onHandleFail(ctx, t)
-			}
-			return w.onHandleSuccess(ctx, t)
+func (w *GroupWorker) handleTask(ctx context.Context, task *async_task.AsyncTask) {
+	fn := func(txCtx context.Context) error {
+		err := w.Handle(txCtx, task)
+		if err != nil {
+			logx.Error(txCtx, "handle task fail", slog.String("task", task.TaskID), slog.Any("error", err))
+			return w.onHandleFail(txCtx, task)
 		}
-		utils.SafeGo(ctx, func() {
-			err := w.txm.Transaction(ctx, fn)
-			if err != nil {
-				logx.Error(ctx, "handle task fail", slog.String("task", t.TaskID), slog.Any("error", err))
-			}
-		})
+		return w.onHandleSuccess(txCtx, task)
 	}
-	wg.Wait()
+	err := w.txm.Transaction(ctx, fn)
+	if err != nil {
+		logx.Error(ctx, "handle task transaction fail", slog.String("task", task.TaskID), slog.Any("error", err))
+	}
 }
 
 // tryLockTask 先锁再查
