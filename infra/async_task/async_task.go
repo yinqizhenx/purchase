@@ -26,20 +26,25 @@ const defaultShutdownTimeout = 30 * time.Second
 
 type Handler func(ctx context.Context, payload []byte) error
 
+// deduplicateTTL 控制任务去重的有效期，在此时间内相同 taskID 不会重复分发。
+// 设为 cron 间隔的 2 倍，既能有效去重，又不会影响 cron 兜底重试。
+const deduplicateTTL = 10 * time.Second
+
 type AsyncTaskMux struct {
-	pub             mq.Publisher
-	ch              *chanx.UnboundedChan[string]
-	cron            *cron.Cron
-	dal             *dal.AsyncTaskDal
-	txm             *tx.TransactionManager
-	concurrency     int
-	maxTaskLoad     int
-	shutdownTimeout time.Duration
-	cancel          func()
-	mdw             []Middleware
-	mu              sync.Mutex
-	groupWorkers    map[vo.AsyncTaskGroup]*GroupWorker
-	listenWg        sync.WaitGroup // 等待 Listen goroutine 退出
+	pub              mq.Publisher
+	ch               *chanx.UnboundedChan[string]
+	cron             *cron.Cron
+	dal              *dal.AsyncTaskDal
+	txm              *tx.TransactionManager
+	concurrency      int
+	maxTaskLoad      int
+	shutdownTimeout  time.Duration
+	cancel           func()
+	mdw              []Middleware
+	mu               sync.Mutex
+	groupWorkers     map[vo.AsyncTaskGroup]*GroupWorker
+	listenWg         sync.WaitGroup // 等待 Listen goroutine 退出
+	recentDispatched sync.Map       // taskID -> dispatchTime，用于分发去重
 }
 
 func NewAsyncTaskMux(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.TransactionManager, ch *chanx.UnboundedChan[string], opts ...Option) *AsyncTaskMux {
@@ -77,7 +82,34 @@ func (m *AsyncTaskMux) Start(ctx context.Context) error {
 		defer m.listenWg.Done()
 		m.Listen(nctx)
 	}()
+	// 启动去重记录定期清理
+	go m.cleanupDedup(nctx)
 	return nil
+}
+
+// cleanupDedup 定期清理过期的去重记录，防止内存泄漏
+func (m *AsyncTaskMux) cleanupDedup(ctx context.Context) {
+	ticker := time.NewTicker(deduplicateTTL)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			now := time.Now()
+			m.recentDispatched.Range(func(key, value any) bool {
+				if now.Sub(value.(time.Time)) > deduplicateTTL {
+					m.recentDispatched.Delete(key)
+				}
+				return true
+			})
+		}
+	}
+}
+
+// clearDispatched 任务执行完成后清除去重记录，允许后续重新分发（如任务失败需要重试）
+func (m *AsyncTaskMux) clearDispatched(taskID string) {
+	m.recentDispatched.Delete(taskID)
 }
 
 // Stop 优雅关闭异步任务处理器
@@ -202,6 +234,16 @@ func (m *AsyncTaskMux) buildCronHandler(ctx context.Context) func() {
 }
 
 func (m *AsyncTaskMux) distribute(ctx context.Context, task *async_task.AsyncTask) {
+	// 去重：短时间内相同 taskID 不重复分发
+	if v, loaded := m.recentDispatched.LoadOrStore(task.TaskID, time.Now()); loaded {
+		dispatchTime := v.(time.Time)
+		if time.Since(dispatchTime) < deduplicateTTL {
+			return
+		}
+		// 已过期，更新时间戳并继续分发
+		m.recentDispatched.Store(task.TaskID, time.Now())
+	}
+
 	gw := m.groupWorkers[task.TaskGroup]
 	if gw == nil {
 		logx.Errorf(ctx, "unknown task group: %s", task.TaskGroup)
@@ -232,6 +274,7 @@ func (m *AsyncTaskMux) RegisterHandler(key string, group vo.AsyncTaskGroup, hand
 	if m.groupWorkers[group] == nil {
 		gw := NewGroupWorker(m.pub, m.dal, m.txm, m.concurrency, m.mdw)
 		gw.SetGroup(group)
+		gw.onTaskDone = m.clearDispatched
 		m.groupWorkers[group] = gw
 	}
 	m.groupWorkers[group].RegisterHandler(key, handler)

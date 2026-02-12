@@ -30,7 +30,8 @@ type GroupWorker struct {
 	cancelChan  func() // 关闭 unbounded channel
 	mdw         []Middleware
 	mu          sync.Mutex
-	taskGroup   vo.AsyncTaskGroup // 任务组标识
+	taskGroup   vo.AsyncTaskGroup   // 任务组标识
+	onTaskDone  func(taskID string) // 任务执行完成后的回调（用于清理去重记录）
 
 	// 优雅关闭相关
 	runningTasks sync.WaitGroup // 跟踪正在执行的任务
@@ -239,6 +240,12 @@ func (w *GroupWorker) onHandleFail(ctx context.Context, task *async_task.AsyncTa
 }
 
 func (w *GroupWorker) handleTask(ctx context.Context, task *async_task.AsyncTask) {
+	defer func() {
+		// 任务执行完成后清理去重记录
+		if w.onTaskDone != nil {
+			w.onTaskDone(task.TaskID)
+		}
+	}()
 	fn := func(txCtx context.Context) error {
 		err := w.Handle(txCtx, task)
 		if err != nil {
