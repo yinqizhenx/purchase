@@ -2,15 +2,14 @@ package kafka_sa
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/google/wire"
-	"github.com/segmentio/kafka-go"
 
+	"purchase/infra/logx"
 	"purchase/infra/mq"
 )
 
@@ -25,54 +24,19 @@ const HeaderPropertyKey = "props"
 var ProviderSet = wire.NewSet(NewKafkaPublisher, NewKafkaSubscriber)
 
 type kafkaPublisher struct {
-	writer sarama.SyncProducer
-	idg    mq.IDGenFunc
+	writer    sarama.SyncProducer
+	marshaler MessageMarshaler
 }
 
 func (s *kafkaPublisher) Publish(ctx context.Context, msg *mq.Message) error {
 	msg.SetDeliveryTime(time.Now())
-	kmsg, err := s.buildKafkaMessage(msg)
+	kmsg, err := s.marshaler.Marshal(ctx, msg)
 	if err != nil {
 		return err
 	}
-	fmt.Println(fmt.Sprintf("发送消息bizCode:%s到topic：%s", msg.BizCode(), kmsg.Topic))
+	logx.Info(ctx, "publish message", slog.String("bizCode", msg.BizCode()), slog.String("topic", kmsg.Topic))
 	_, _, err = s.writer.SendMessage(kmsg)
 	return err
-}
-
-func (s *kafkaPublisher) buildKafkaMessage(m *mq.Message) (*sarama.ProducerMessage, error) {
-	header := make([]sarama.RecordHeader, 0)
-	header = append(header, sarama.RecordHeader{
-		Key:   []byte(mq.MessageID),
-		Value: []byte(s.idg()),
-	})
-
-	p, err := json.Marshal(m.Header())
-	if err != nil {
-		return nil, err
-	}
-	header = append(header, sarama.RecordHeader{
-		Key:   []byte(HeaderPropertyKey),
-		Value: p,
-	})
-
-	kmsg := &sarama.ProducerMessage{
-		Key:     sarama.StringEncoder(m.BizCode()),
-		Value:   sarama.ByteEncoder(m.Body),
-		Topic:   m.EventName(),
-		Headers: header,
-	}
-
-	// 重投的消息
-	if m.RetryTopic() != "" {
-		kmsg.Topic = m.RetryTopic()
-	}
-
-	// 死信消息
-	if m.DeadTopic() != "" {
-		kmsg.Topic = m.DeadTopic()
-	}
-	return kmsg, nil
 }
 
 func (s *kafkaPublisher) Close() error {
@@ -95,37 +59,8 @@ func NewKafkaPublisher(c config.Config, idg mq.IDGenFunc) (mq.Publisher, error) 
 	if err != nil {
 		return nil, err
 	}
-	return &kafkaPublisher{writer: producer, idg: idg}, nil
-}
-
-func SetMessageHeader(m *kafka.Message, k string, v interface{}) error {
-	val, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-	// 存在重复key，直接覆盖
-	for i, header := range m.Headers {
-		if header.Key == k {
-			m.Headers[i] = kafka.Header{
-				Key:   k,
-				Value: val,
-			}
-			return nil
-		}
-	}
-	m.Headers = append(m.Headers, kafka.Header{
-		Key:   k,
-		Value: val,
-	})
-	return nil
-}
-
-// GetMessageHeader 获取消息header值， val需为指针
-func GetMessageHeader(m kafka.Message, k string, val interface{}) error {
-	for _, header := range m.Headers {
-		if header.Key == k {
-			return json.Unmarshal(header.Value, val)
-		}
-	}
-	return nil
+	return &kafkaPublisher{
+		writer:    producer,
+		marshaler: NewMessageMarshaler(idg),
+	}, nil
 }

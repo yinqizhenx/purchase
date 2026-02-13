@@ -2,7 +2,6 @@ package kafka_sa
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -41,20 +40,24 @@ func retryBackoff(n int) time.Duration {
 	return 60 * time.Second
 }
 
+func genRetryTopic(d time.Duration) string {
+	return retryTopic[d]
+}
+
 type kafkaSubscriber struct {
 	client sarama.Client
 	// event is topic, handler is consumer group
-	handlers map[domainEvent.Event][]domainEvent.Handler
-	// address   []string
+	handlers  map[domainEvent.Event][]domainEvent.Handler
 	idp       idempotent.Idempotent
 	consumers []*Consumer
 	pub       mq.Publisher
-	rlq       *retryRouter
-	dlq       *dlqRouter
+	rlq       *messageRouter
+	dlq       *messageRouter
 	conf      *sarama.Config
+	marshaler MessageMarshaler
 }
 
-func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator, pub mq.Publisher) (mq.Subscriber, error) {
+func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator, pub mq.Publisher, idg mq.IDGenFunc) (mq.Subscriber, error) {
 	address := make([]string, 0)
 	err := cfg.Value("kafka.address").Scan(&address)
 	if err != nil {
@@ -74,12 +77,12 @@ func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg
 	}
 
 	s := &kafkaSubscriber{
-		client:   client,
-		handlers: handlerAgg.Build(),
-		// address:  address,
-		idp:  idp,
-		pub:  pub,
-		conf: conf,
+		client:    client,
+		handlers:  handlerAgg.Build(),
+		idp:       idp,
+		pub:       pub,
+		conf:      conf,
+		marshaler: NewMessageMarshaler(idg),
 	}
 	return s, nil
 }
@@ -123,9 +126,14 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 		go c.Run(ctx)
 	}
 
-	s.rlq = newRetryRouter(s.pub)
+	s.rlq = newMessageRouter("retryRouter", s.pub, func(msg *RetryMessage) {
+		rtyTopic := genRetryTopic(msg.DelayTime())
+		msg.SetRetryTopic(rtyTopic)
+	})
 
-	s.dlq = newDlqRouter(s.pub)
+	s.dlq = newMessageRouter("dlqRouter", s.pub, func(msg *RetryMessage) {
+		msg.SetDeadTopic(defaultDeadTopic)
+	})
 
 	s.consumeRetryTopic(ctx)
 }
@@ -135,10 +143,16 @@ func (s *kafkaSubscriber) registerConsumer(c *Consumer) {
 }
 
 func (s *kafkaSubscriber) Close() error {
+	if s.rlq != nil {
+		s.rlq.close()
+	}
+	if s.dlq != nil {
+		s.dlq.close()
+	}
 	for _, c := range s.consumers {
 		c.Close()
 	}
-	return nil
+	return s.client.Close()
 }
 
 func NewConsumer(sub *kafkaSubscriber, topics []string, consumerGroup string, handler mq.Handler, isConsumeRlq bool) (*Consumer, error) {
@@ -245,30 +259,10 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 	if err != nil {
 		logx.Error(ctx, "consumer ack fail after retry 2 times", slog.Any("error", err), slog.Any("message", m))
 	}
-	return
 }
 
-func (c *Consumer) buildMessage(m *sarama.ConsumerMessage) (*mq.Message, error) {
-	msg := &mq.Message{
-		Body: m.Value,
-	}
-	msg.SetPartition(m.Partition)
-	for _, header := range m.Headers {
-		if string(header.Key) == mq.MessageID {
-			msg.ID = string(header.Value)
-		}
-		if string(header.Key) == HeaderPropertyKey {
-			props := &mq.Header{}
-			err := json.Unmarshal(header.Value, props)
-			if err != nil {
-				return nil, err
-			}
-			msg.SetHeader(*props)
-		}
-	}
-	msg.SetRawMessage(m)
-
-	return msg, nil
+func (c *Consumer) buildMessage(ctx context.Context, m *sarama.ConsumerMessage) (*mq.Message, error) {
+	return c.sub.marshaler.Unmarshal(ctx, m)
 }
 
 // commitMessage 使用指定的 session 提交消息，避免并发竞争
@@ -283,12 +277,8 @@ func (c *Consumer) commitMessage(ctx context.Context, sess sarama.ConsumerGroupS
 }
 
 func (c *Consumer) Close() error {
-	err := c.cg.Close()
-	fmt.Print("close kafka reader")
-	if err != nil {
-		return err
-	}
-	return nil
+	logx.Info(c.ctx, "closing kafka consumer", slog.Any("topics", c.topics))
+	return c.cg.Close()
 }
 
 func (c *Consumer) Setup(_ sarama.ConsumerGroupSession) error { return nil }
@@ -297,8 +287,8 @@ func (c *Consumer) Cleanup(_ sarama.ConsumerGroupSession) error { return nil }
 
 func (c *Consumer) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		m, err := c.buildMessage(msg)
-		fmt.Println(fmt.Sprintf("收到消息topic=%s, partition=%d, offset=%d", msg.Topic, msg.Partition, msg.Offset))
+		logx.Info(c.ctx, "received message", slog.String("topic", msg.Topic), slog.Int("partition", int(msg.Partition)), slog.Int64("offset", msg.Offset))
+		m, err := c.buildMessage(c.ctx, msg)
 		if err != nil {
 			logx.Error(c.ctx, "buildMessage fail", slog.Any("error", err))
 			continue
@@ -332,31 +322,47 @@ func (s *kafkaSubscriber) consumeRetryTopic(ctx context.Context) {
 }
 
 func (c *Consumer) redelivery(ctx context.Context, sess sarama.ConsumerGroupSession, m *mq.Message) error {
-	// 未到消费时间，sleep, 此处应该调用kafka的pause和resume api，不然会导致重平衡，但是此kafka client不支持
+	// 未到消费时间，pause partition 并等待
 	now := time.Now()
 	if expTime := m.DeliveryTime().Add(m.DelayTime()); expTime.After(now) {
 		partitions := map[string][]int32{
 			m.RetryTopic(): {m.Partition()},
 		}
 		c.cg.Pause(partitions)
-		fmt.Println(fmt.Sprintf("bizCODE: %s, TOPIC:%s,  PARTITION:%d, 开始pause: %v, 持续%v ", m.BizCode(), m.RetryTopic(), m.Partition(), time.Now(), expTime.Sub(now)))
-		time.Sleep(expTime.Sub(now))
+		waitDuration := expTime.Sub(now)
+		logx.Info(ctx, "pause partition for redelivery",
+			slog.String("bizCode", m.BizCode()),
+			slog.String("retryTopic", m.RetryTopic()),
+			slog.Int("partition", int(m.Partition())),
+			slog.Duration("waitDuration", waitDuration),
+		)
+		time.Sleep(waitDuration)
 		c.cg.Resume(partitions)
-		fmt.Println(fmt.Sprintf("bizCODE: %s, TOPIC:%s,  PARTITION:%d, resume: %v", m.BizCode(), m.RetryTopic(), m.Partition(), time.Now()))
+		logx.Info(ctx, "resume partition after redelivery wait",
+			slog.String("bizCode", m.BizCode()),
+			slog.String("retryTopic", m.RetryTopic()),
+			slog.Int("partition", int(m.Partition())),
+		)
 	}
-	// 清空死信topic和重投topic
-	// 让消息发送到原始topic里
+	// 清空死信topic和重投topic，让消息发送到原始topic里
 	m.SetDeadTopic("")
 	m.SetRetryTopic("")
-	fmt.Println(fmt.Sprintf("bizCODE: %s发送消息到topic:%s", m.BizCode(), m.EventName()))
+	logx.Info(ctx, "redelivery message to original topic",
+		slog.String("bizCode", m.BizCode()),
+		slog.String("topic", m.EventName()),
+	)
 	err := c.sub.pub.Publish(ctx, m)
 	if err != nil {
-		logx.Error(ctx, fmt.Sprintf("retry message ,bizCODE: %s发送消息到topic:%s", m.BizCode(), m.EventName()), slog.Any("error", err))
+		logx.Error(ctx, "redelivery publish fail",
+			slog.Any("error", err),
+			slog.String("bizCode", m.BizCode()),
+			slog.String("topic", m.EventName()),
+		)
 		return err
 	}
 	err = c.commitMessage(ctx, sess, m)
 	if err != nil {
-		logx.Error(ctx, "retry message consumer ack fail", slog.Any("error", err))
+		logx.Error(ctx, "redelivery commit fail", slog.Any("error", err))
 	}
 	return err
 }
