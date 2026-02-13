@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -210,6 +211,12 @@ func (m *AsyncTaskMux) Listen(ctx context.Context) {
 				if ctx.Err() != nil {
 					return
 				}
+				// 先检查去重，如果该 taskID 近期已分发过，跳过 DB 查询
+				if v, loaded := m.recentDispatched.Load(taskID); loaded {
+					if time.Since(v.(time.Time)) < deduplicateTTL {
+						return
+					}
+				}
 				task, err := m.mustGetPendingTask(ctx, taskID)
 				if err != nil {
 					logx.Errorf(ctx, "find one task fail:%s, err :%s", taskID, err)
@@ -238,6 +245,10 @@ func (m *AsyncTaskMux) RunCron(ctx context.Context) error {
 
 func (m *AsyncTaskMux) buildCronHandler(ctx context.Context) func() {
 	return func() {
+		// 随机抖动 0~2s，错开多实例的查询时间，减少同时查同一批数据
+		jitter := time.Duration(rand.Int63n(int64(2 * time.Second)))
+		time.Sleep(jitter)
+
 		taskList, err := m.getPendingTaskWithLimit(ctx, m.maxTaskLoad)
 		if err != nil {
 			logx.Error(ctx, "batch load task fail", slog.Any("error", err))
