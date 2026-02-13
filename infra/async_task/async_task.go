@@ -261,6 +261,11 @@ func (m *AsyncTaskMux) buildCronHandler(ctx context.Context) func() {
 }
 
 func (m *AsyncTaskMux) distribute(ctx context.Context, task *async_task.AsyncTask) {
+	// 延期执行：如果任务尚未到达 scheduled_at，跳过本次分发，等待下次 cron 轮询
+	if !task.ScheduledAt.IsZero() && task.ScheduledAt.After(time.Now()) {
+		return
+	}
+
 	// 去重：短时间内相同 taskID 不重复分发
 	if v, loaded := m.recentDispatched.LoadOrStore(task.TaskID, time.Now()); loaded {
 		dispatchTime := v.(time.Time)
@@ -291,6 +296,10 @@ func (m *AsyncTaskMux) mustGetPendingTask(ctx context.Context, taskID string) (*
 	}
 	if task.State != vo.AsyncTaskStatePending {
 		return nil, errors.New("task is not pending state")
+	}
+	// 延期执行：如果任务尚未到达 scheduled_at，视为暂不可执行
+	if !task.ScheduledAt.IsZero() && task.ScheduledAt.After(time.Now()) {
+		return nil, fmt.Errorf("task %s is scheduled for %s, not yet due", taskID, task.ScheduledAt.Format(time.RFC3339))
 	}
 	return task, nil
 }

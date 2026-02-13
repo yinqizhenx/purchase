@@ -20,6 +20,7 @@ var (
 		{Name: "task_data", Type: field.TypeString},
 		{Name: "task_state", Type: field.TypeString},
 		{Name: "retry_count", Type: field.TypeInt, Default: 0},
+		{Name: "scheduled_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 	}

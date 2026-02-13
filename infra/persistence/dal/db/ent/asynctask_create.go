@@ -78,6 +78,20 @@ func (atc *AsyncTaskCreate) SetNillableRetryCount(i *int) *AsyncTaskCreate {
 	return atc
 }
 
+// SetScheduledAt sets the "scheduled_at" field.
+func (atc *AsyncTaskCreate) SetScheduledAt(t time.Time) *AsyncTaskCreate {
+	atc.mutation.SetScheduledAt(t)
+	return atc
+}
+
+// SetNillableScheduledAt sets the "scheduled_at" field if the given value is not nil.
+func (atc *AsyncTaskCreate) SetNillableScheduledAt(t *time.Time) *AsyncTaskCreate {
+	if t != nil {
+		atc.SetScheduledAt(*t)
+	}
+	return atc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (atc *AsyncTaskCreate) SetCreatedAt(t time.Time) *AsyncTaskCreate {
 	atc.mutation.SetCreatedAt(t)
@@ -151,6 +165,10 @@ func (atc *AsyncTaskCreate) defaults() {
 		v := asynctask.DefaultRetryCount
 		atc.mutation.SetRetryCount(v)
 	}
+	if _, ok := atc.mutation.ScheduledAt(); !ok {
+		v := asynctask.DefaultScheduledAt()
+		atc.mutation.SetScheduledAt(v)
+	}
 	if _, ok := atc.mutation.CreatedAt(); !ok {
 		v := asynctask.DefaultCreatedAt()
 		atc.mutation.SetCreatedAt(v)
@@ -186,6 +204,9 @@ func (atc *AsyncTaskCreate) check() error {
 	}
 	if _, ok := atc.mutation.RetryCount(); !ok {
 		return &ValidationError{Name: "retry_count", err: errors.New(`ent: missing required field "AsyncTask.retry_count"`)}
+	}
+	if _, ok := atc.mutation.ScheduledAt(); !ok {
+		return &ValidationError{Name: "scheduled_at", err: errors.New(`ent: missing required field "AsyncTask.scheduled_at"`)}
 	}
 	if _, ok := atc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "AsyncTask.created_at"`)}
@@ -257,6 +278,10 @@ func (atc *AsyncTaskCreate) createSpec() (*AsyncTask, *sqlgraph.CreateSpec) {
 	if value, ok := atc.mutation.RetryCount(); ok {
 		_spec.SetField(asynctask.FieldRetryCount, field.TypeInt, value)
 		_node.RetryCount = value
+	}
+	if value, ok := atc.mutation.ScheduledAt(); ok {
+		_spec.SetField(asynctask.FieldScheduledAt, field.TypeTime, value)
+		_node.ScheduledAt = value
 	}
 	if value, ok := atc.mutation.CreatedAt(); ok {
 		_spec.SetField(asynctask.FieldCreatedAt, field.TypeTime, value)
@@ -417,6 +442,18 @@ func (u *AsyncTaskUpsert) UpdateRetryCount() *AsyncTaskUpsert {
 // AddRetryCount adds v to the "retry_count" field.
 func (u *AsyncTaskUpsert) AddRetryCount(v int) *AsyncTaskUpsert {
 	u.Add(asynctask.FieldRetryCount, v)
+	return u
+}
+
+// SetScheduledAt sets the "scheduled_at" field.
+func (u *AsyncTaskUpsert) SetScheduledAt(v time.Time) *AsyncTaskUpsert {
+	u.Set(asynctask.FieldScheduledAt, v)
+	return u
+}
+
+// UpdateScheduledAt sets the "scheduled_at" field to the value that was provided on create.
+func (u *AsyncTaskUpsert) UpdateScheduledAt() *AsyncTaskUpsert {
+	u.SetExcluded(asynctask.FieldScheduledAt)
 	return u
 }
 
@@ -608,6 +645,20 @@ func (u *AsyncTaskUpsertOne) AddRetryCount(v int) *AsyncTaskUpsertOne {
 func (u *AsyncTaskUpsertOne) UpdateRetryCount() *AsyncTaskUpsertOne {
 	return u.Update(func(s *AsyncTaskUpsert) {
 		s.UpdateRetryCount()
+	})
+}
+
+// SetScheduledAt sets the "scheduled_at" field.
+func (u *AsyncTaskUpsertOne) SetScheduledAt(v time.Time) *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetScheduledAt(v)
+	})
+}
+
+// UpdateScheduledAt sets the "scheduled_at" field to the value that was provided on create.
+func (u *AsyncTaskUpsertOne) UpdateScheduledAt() *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateScheduledAt()
 	})
 }
 
@@ -969,6 +1020,20 @@ func (u *AsyncTaskUpsertBulk) AddRetryCount(v int) *AsyncTaskUpsertBulk {
 func (u *AsyncTaskUpsertBulk) UpdateRetryCount() *AsyncTaskUpsertBulk {
 	return u.Update(func(s *AsyncTaskUpsert) {
 		s.UpdateRetryCount()
+	})
+}
+
+// SetScheduledAt sets the "scheduled_at" field.
+func (u *AsyncTaskUpsertBulk) SetScheduledAt(v time.Time) *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetScheduledAt(v)
+	})
+}
+
+// UpdateScheduledAt sets the "scheduled_at" field to the value that was provided on create.
+func (u *AsyncTaskUpsertBulk) UpdateScheduledAt() *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateScheduledAt()
 	})
 }
 

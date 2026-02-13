@@ -52,6 +52,7 @@ type AsyncTaskMutation struct {
 	state          *string
 	retry_count    *int
 	addretry_count *int
+	scheduled_at   *time.Time
 	created_at     *time.Time
 	updated_at     *time.Time
 	clearedFields  map[string]struct{}
@@ -472,6 +473,42 @@ func (m *AsyncTaskMutation) ResetRetryCount() {
 	m.addretry_count = nil
 }
 
+// SetScheduledAt sets the "scheduled_at" field.
+func (m *AsyncTaskMutation) SetScheduledAt(t time.Time) {
+	m.scheduled_at = &t
+}
+
+// ScheduledAt returns the value of the "scheduled_at" field in the mutation.
+func (m *AsyncTaskMutation) ScheduledAt() (r time.Time, exists bool) {
+	v := m.scheduled_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScheduledAt returns the old "scheduled_at" field's value of the AsyncTask entity.
+// If the AsyncTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AsyncTaskMutation) OldScheduledAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScheduledAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScheduledAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScheduledAt: %w", err)
+	}
+	return oldValue.ScheduledAt, nil
+}
+
+// ResetScheduledAt resets all changes to the "scheduled_at" field.
+func (m *AsyncTaskMutation) ResetScheduledAt() {
+	m.scheduled_at = nil
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (m *AsyncTaskMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -578,7 +615,7 @@ func (m *AsyncTaskMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AsyncTaskMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.task_id != nil {
 		fields = append(fields, asynctask.FieldTaskID)
 	}
@@ -602,6 +639,9 @@ func (m *AsyncTaskMutation) Fields() []string {
 	}
 	if m.retry_count != nil {
 		fields = append(fields, asynctask.FieldRetryCount)
+	}
+	if m.scheduled_at != nil {
+		fields = append(fields, asynctask.FieldScheduledAt)
 	}
 	if m.created_at != nil {
 		fields = append(fields, asynctask.FieldCreatedAt)
@@ -633,6 +673,8 @@ func (m *AsyncTaskMutation) Field(name string) (ent.Value, bool) {
 		return m.State()
 	case asynctask.FieldRetryCount:
 		return m.RetryCount()
+	case asynctask.FieldScheduledAt:
+		return m.ScheduledAt()
 	case asynctask.FieldCreatedAt:
 		return m.CreatedAt()
 	case asynctask.FieldUpdatedAt:
@@ -662,6 +704,8 @@ func (m *AsyncTaskMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldState(ctx)
 	case asynctask.FieldRetryCount:
 		return m.OldRetryCount(ctx)
+	case asynctask.FieldScheduledAt:
+		return m.OldScheduledAt(ctx)
 	case asynctask.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case asynctask.FieldUpdatedAt:
@@ -730,6 +774,13 @@ func (m *AsyncTaskMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRetryCount(v)
+		return nil
+	case asynctask.FieldScheduledAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScheduledAt(v)
 		return nil
 	case asynctask.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -832,6 +883,9 @@ func (m *AsyncTaskMutation) ResetField(name string) error {
 		return nil
 	case asynctask.FieldRetryCount:
 		m.ResetRetryCount()
+		return nil
+	case asynctask.FieldScheduledAt:
+		m.ResetScheduledAt()
 		return nil
 	case asynctask.FieldCreatedAt:
 		m.ResetCreatedAt()

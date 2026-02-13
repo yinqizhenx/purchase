@@ -94,6 +94,11 @@ func RetryCount(v int) predicate.AsyncTask {
 	return predicate.AsyncTask(sql.FieldEQ(FieldRetryCount, v))
 }
 
+// ScheduledAt applies equality check predicate on the "scheduled_at" field. It's identical to ScheduledAtEQ.
+func ScheduledAt(v time.Time) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldEQ(FieldScheduledAt, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.AsyncTask {
 	return predicate.AsyncTask(sql.FieldEQ(FieldCreatedAt, v))
@@ -597,6 +602,46 @@ func RetryCountLT(v int) predicate.AsyncTask {
 // RetryCountLTE applies the LTE predicate on the "retry_count" field.
 func RetryCountLTE(v int) predicate.AsyncTask {
 	return predicate.AsyncTask(sql.FieldLTE(FieldRetryCount, v))
+}
+
+// ScheduledAtEQ applies the EQ predicate on the "scheduled_at" field.
+func ScheduledAtEQ(v time.Time) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldEQ(FieldScheduledAt, v))
+}
+
+// ScheduledAtNEQ applies the NEQ predicate on the "scheduled_at" field.
+func ScheduledAtNEQ(v time.Time) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldNEQ(FieldScheduledAt, v))
+}
+
+// ScheduledAtIn applies the In predicate on the "scheduled_at" field.
+func ScheduledAtIn(vs ...time.Time) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldIn(FieldScheduledAt, vs...))
+}
+
+// ScheduledAtNotIn applies the NotIn predicate on the "scheduled_at" field.
+func ScheduledAtNotIn(vs ...time.Time) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldNotIn(FieldScheduledAt, vs...))
+}
+
+// ScheduledAtGT applies the GT predicate on the "scheduled_at" field.
+func ScheduledAtGT(v time.Time) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldGT(FieldScheduledAt, v))
+}
+
+// ScheduledAtGTE applies the GTE predicate on the "scheduled_at" field.
+func ScheduledAtGTE(v time.Time) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldGTE(FieldScheduledAt, v))
+}
+
+// ScheduledAtLT applies the LT predicate on the "scheduled_at" field.
+func ScheduledAtLT(v time.Time) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldLT(FieldScheduledAt, v))
+}
+
+// ScheduledAtLTE applies the LTE predicate on the "scheduled_at" field.
+func ScheduledAtLTE(v time.Time) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldLTE(FieldScheduledAt, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

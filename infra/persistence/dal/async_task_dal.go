@@ -35,13 +35,16 @@ func (dal *AsyncTaskDal) getClient(ctx context.Context) *ent.AsyncTaskClient {
 }
 
 func (dal *AsyncTaskDal) AddTask(ctx context.Context, task *async_task.AsyncTask) error {
-	err := dal.getClient(ctx).Create().
+	c := dal.getClient(ctx).Create().
 		SetTaskID(task.TaskID).
 		SetTaskType(string(task.TaskType)).
 		SetTaskGroup(string(task.TaskGroup)).
-		SetTaskData(task.TaskData).
-		Exec(ctx)
-	return err
+		SetTaskData(task.TaskData)
+	// 如果设置了延期执行时间，则使用该时间；否则使用默认值（立即执行）
+	if !task.ScheduledAt.IsZero() {
+		c = c.SetScheduledAt(task.ScheduledAt)
+	}
+	return c.Exec(ctx)
 }
 
 func (dal *AsyncTaskDal) BatchAddTask(ctx context.Context, taskList ...*async_task.AsyncTask) error {
@@ -54,6 +57,10 @@ func (dal *AsyncTaskDal) BatchAddTask(ctx context.Context, taskList ...*async_ta
 			SetBizID(task.EntityID).
 			SetTaskType(string(task.TaskType)).
 			SetTaskData(task.TaskData)
+		// 如果设置了延期执行时间，则使用该时间；否则使用默认值（立即执行）
+		if !task.ScheduledAt.IsZero() {
+			c = c.SetScheduledAt(task.ScheduledAt)
+		}
 		taskAddList = append(taskAddList, c)
 	}
 	return dal.db.AsyncTask.CreateBulk(taskAddList...).Exec(ctx)
@@ -101,8 +108,13 @@ func (dal *AsyncTaskDal) FindAllPending(ctx context.Context, taskIDList []string
 }
 
 func (dal *AsyncTaskDal) FindAllPendingWithLimit(ctx context.Context, n int) ([]*async_task.AsyncTask, error) {
-	// default limit 5
-	res, err := dal.getClient(ctx).Query().Where(eTask.State(string(vo.AsyncTaskStatePending))).Order(ent.Asc(eTask.FieldCreatedAt)).Limit(n).All(ctx)
+	// 只查询 state=pending 且 scheduled_at <= now() 的任务（已到达执行时间）
+	res, err := dal.getClient(ctx).Query().
+		Where(eTask.State(string(vo.AsyncTaskStatePending))).
+		Where(eTask.ScheduledAtLTE(time.Now())).
+		Order(ent.Asc(eTask.FieldScheduledAt)).
+		Limit(n).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}

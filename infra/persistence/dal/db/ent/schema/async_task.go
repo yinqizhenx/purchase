@@ -34,6 +34,12 @@ func (AsyncTask) Fields() []ent.Field {
 		field.String("task_data"),
 		field.String("state").StorageKey("task_state"),
 		field.Int("retry_count").Default(0),
+		field.Time("scheduled_at").
+			Default(time.Now).
+			Comment("任务最早可执行时间，默认立即执行").
+			SchemaType(map[string]string{
+				dialect.MySQL: "datetime",
+			}),
 		field.Time("created_at").
 			Default(time.Now).SchemaType(map[string]string{
 			dialect.MySQL: "datetime",

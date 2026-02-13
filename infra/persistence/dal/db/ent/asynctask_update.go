@@ -147,6 +147,20 @@ func (atu *AsyncTaskUpdate) AddRetryCount(i int) *AsyncTaskUpdate {
 	return atu
 }
 
+// SetScheduledAt sets the "scheduled_at" field.
+func (atu *AsyncTaskUpdate) SetScheduledAt(t time.Time) *AsyncTaskUpdate {
+	atu.mutation.SetScheduledAt(t)
+	return atu
+}
+
+// SetNillableScheduledAt sets the "scheduled_at" field if the given value is not nil.
+func (atu *AsyncTaskUpdate) SetNillableScheduledAt(t *time.Time) *AsyncTaskUpdate {
+	if t != nil {
+		atu.SetScheduledAt(*t)
+	}
+	return atu
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (atu *AsyncTaskUpdate) SetCreatedAt(t time.Time) *AsyncTaskUpdate {
 	atu.mutation.SetCreatedAt(t)
@@ -242,6 +256,9 @@ func (atu *AsyncTaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := atu.mutation.AddedRetryCount(); ok {
 		_spec.AddField(asynctask.FieldRetryCount, field.TypeInt, value)
+	}
+	if value, ok := atu.mutation.ScheduledAt(); ok {
+		_spec.SetField(asynctask.FieldScheduledAt, field.TypeTime, value)
 	}
 	if value, ok := atu.mutation.CreatedAt(); ok {
 		_spec.SetField(asynctask.FieldCreatedAt, field.TypeTime, value)
@@ -388,6 +405,20 @@ func (atuo *AsyncTaskUpdateOne) AddRetryCount(i int) *AsyncTaskUpdateOne {
 	return atuo
 }
 
+// SetScheduledAt sets the "scheduled_at" field.
+func (atuo *AsyncTaskUpdateOne) SetScheduledAt(t time.Time) *AsyncTaskUpdateOne {
+	atuo.mutation.SetScheduledAt(t)
+	return atuo
+}
+
+// SetNillableScheduledAt sets the "scheduled_at" field if the given value is not nil.
+func (atuo *AsyncTaskUpdateOne) SetNillableScheduledAt(t *time.Time) *AsyncTaskUpdateOne {
+	if t != nil {
+		atuo.SetScheduledAt(*t)
+	}
+	return atuo
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (atuo *AsyncTaskUpdateOne) SetCreatedAt(t time.Time) *AsyncTaskUpdateOne {
 	atuo.mutation.SetCreatedAt(t)
@@ -513,6 +544,9 @@ func (atuo *AsyncTaskUpdateOne) sqlSave(ctx context.Context) (_node *AsyncTask, 
 	}
 	if value, ok := atuo.mutation.AddedRetryCount(); ok {
 		_spec.AddField(asynctask.FieldRetryCount, field.TypeInt, value)
+	}
+	if value, ok := atuo.mutation.ScheduledAt(); ok {
+		_spec.SetField(asynctask.FieldScheduledAt, field.TypeTime, value)
 	}
 	if value, ok := atuo.mutation.CreatedAt(); ok {
 		_spec.SetField(asynctask.FieldCreatedAt, field.TypeTime, value)

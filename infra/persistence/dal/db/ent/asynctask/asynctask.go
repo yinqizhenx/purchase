@@ -29,6 +29,8 @@ const (
 	FieldState = "task_state"
 	// FieldRetryCount holds the string denoting the retry_count field in the database.
 	FieldRetryCount = "retry_count"
+	// FieldScheduledAt holds the string denoting the scheduled_at field in the database.
+	FieldScheduledAt = "scheduled_at"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -48,6 +50,7 @@ var Columns = []string{
 	FieldTaskData,
 	FieldState,
 	FieldRetryCount,
+	FieldScheduledAt,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
@@ -65,6 +68,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultRetryCount holds the default value on creation for the "retry_count" field.
 	DefaultRetryCount int
+	// DefaultScheduledAt holds the default value on creation for the "scheduled_at" field.
+	DefaultScheduledAt func() time.Time
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
@@ -117,6 +122,11 @@ func ByState(opts ...sql.OrderTermOption) OrderOption {
 // ByRetryCount orders the results by the retry_count field.
 func ByRetryCount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRetryCount, opts...).ToFunc()
+}
+
+// ByScheduledAt orders the results by the scheduled_at field.
+func ByScheduledAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScheduledAt, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

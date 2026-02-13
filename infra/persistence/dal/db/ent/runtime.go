@@ -23,12 +23,16 @@ func init() {
 	asynctaskDescRetryCount := asynctaskFields[8].Descriptor()
 	// asynctask.DefaultRetryCount holds the default value on creation for the retry_count field.
 	asynctask.DefaultRetryCount = asynctaskDescRetryCount.Default.(int)
+	// asynctaskDescScheduledAt is the schema descriptor for scheduled_at field.
+	asynctaskDescScheduledAt := asynctaskFields[9].Descriptor()
+	// asynctask.DefaultScheduledAt holds the default value on creation for the scheduled_at field.
+	asynctask.DefaultScheduledAt = asynctaskDescScheduledAt.Default.(func() time.Time)
 	// asynctaskDescCreatedAt is the schema descriptor for created_at field.
-	asynctaskDescCreatedAt := asynctaskFields[9].Descriptor()
+	asynctaskDescCreatedAt := asynctaskFields[10].Descriptor()
 	// asynctask.DefaultCreatedAt holds the default value on creation for the created_at field.
 	asynctask.DefaultCreatedAt = asynctaskDescCreatedAt.Default.(func() time.Time)
 	// asynctaskDescUpdatedAt is the schema descriptor for updated_at field.
-	asynctaskDescUpdatedAt := asynctaskFields[10].Descriptor()
+	asynctaskDescUpdatedAt := asynctaskFields[11].Descriptor()
 	// asynctask.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	asynctask.DefaultUpdatedAt = asynctaskDescUpdatedAt.Default.(func() time.Time)
 	branchFields := schema.Branch{}.Fields()

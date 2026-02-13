@@ -33,6 +33,8 @@ type AsyncTask struct {
 	State string `json:"state,omitempty"`
 	// RetryCount holds the value of the "retry_count" field.
 	RetryCount int `json:"retry_count,omitempty"`
+	// 任务最早可执行时间，默认立即执行
+	ScheduledAt time.Time `json:"scheduled_at,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -49,7 +51,7 @@ func (*AsyncTask) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case asynctask.FieldTaskID, asynctask.FieldTaskType, asynctask.FieldTaskGroup, asynctask.FieldTaskName, asynctask.FieldBizID, asynctask.FieldTaskData, asynctask.FieldState:
 			values[i] = new(sql.NullString)
-		case asynctask.FieldCreatedAt, asynctask.FieldUpdatedAt:
+		case asynctask.FieldScheduledAt, asynctask.FieldCreatedAt, asynctask.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -119,6 +121,12 @@ func (at *AsyncTask) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field retry_count", values[i])
 			} else if value.Valid {
 				at.RetryCount = int(value.Int64)
+			}
+		case asynctask.FieldScheduledAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field scheduled_at", values[i])
+			} else if value.Valid {
+				at.ScheduledAt = value.Time
 			}
 		case asynctask.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -191,6 +199,9 @@ func (at *AsyncTask) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("retry_count=")
 	builder.WriteString(fmt.Sprintf("%v", at.RetryCount))
+	builder.WriteString(", ")
+	builder.WriteString("scheduled_at=")
+	builder.WriteString(at.ScheduledAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(at.CreatedAt.Format(time.ANSIC))
