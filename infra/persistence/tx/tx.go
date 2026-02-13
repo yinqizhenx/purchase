@@ -18,7 +18,7 @@ type TransactionPropagation int
 const (
 	PropagationRequired    TransactionPropagation = iota // 支持当前事务，如果当前没有事务，就新建一个事务
 	PropagationRequiresNew                               // 新建事务，如果当前存在事务，把当前事务挂起，两个事务互不影响
-	PropagationNested                                    // 支持当前事务，如果当前事务存在，则执行一个嵌套事务，如果当前没有事务，就新建一个事务, 在A事务里面嵌套B事务, B回滚不影响A, A回滚会让B回滚，A提交会让B提交
+	PropagationNested                                    // 支持当前事务，如果当前事务存在，则执行一个嵌套事务，如果当前没有事务，就新建一个事务, 在A事务里面嵌套B事务, B回滚不影响A, A回滚会让B回滚，A提交会让B提交, B提交并没有真正提交
 	PropagationNever                                     // 以非事务方式执行，如果当前存在事务，不在事务中执行
 )
 
