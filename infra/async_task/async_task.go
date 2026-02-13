@@ -227,8 +227,8 @@ func (m *AsyncTaskMux) RunCron(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// 每 30 秒检测一次卡住的任务
-	_, err = m.cron.AddFunc("@every 30s", m.buildStuckTaskChecker(ctx))
+	// 每 60 秒检测一次卡住的任务
+	_, err = m.cron.AddFunc("@every 60s", m.buildStuckTaskChecker(ctx))
 	if err != nil {
 		return err
 	}
@@ -294,7 +294,7 @@ func (m *AsyncTaskMux) buildStuckTaskChecker(ctx context.Context) func() {
 			return
 		}
 		for _, task := range stuckTasks {
-			logx.Warn(ctx, "task stuck in executing state for too long",
+			logx.Error(ctx, "task stuck in executing state for too long",
 				slog.String("task_id", task.TaskID),
 				slog.String("task_name", task.TaskName),
 				slog.String("task_group", string(task.TaskGroup)),
