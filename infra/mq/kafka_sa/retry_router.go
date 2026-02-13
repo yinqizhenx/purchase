@@ -49,13 +49,13 @@ func (r *retryRouter) run() {
 			fmt.Println(fmt.Sprintf("bizCODE: %s重试队列接受到消息到topic:%s\r\n", msg.BizCode(), rtyTopic))
 			err := r.pub.Publish(context.Background(), msg.Message)
 			if err != nil {
-				logx.Error(nil, "message send to retry queue fail", slog.Any("message", msg), slog.Any("error", err))
+				logx.Error(context.Background(), "message send to retry queue fail", slog.Any("message", msg), slog.Any("error", err))
 				break
 			}
 
 			err = msg.Commit(context.Background())
 			if err != nil {
-				logx.Error(nil, "commit message fail", slog.Any("message", msg), slog.Any("error", err))
+				logx.Error(context.Background(), "commit message fail", slog.Any("message", msg), slog.Any("error", err))
 			}
 
 		case <-r.closeCh:

@@ -94,36 +94,6 @@ func RetryCount(v int) predicate.AsyncTask {
 	return predicate.AsyncTask(sql.FieldEQ(FieldRetryCount, v))
 }
 
-// RetryCountEQ applies the EQ predicate on the "retry_count" field.
-func RetryCountEQ(v int) predicate.AsyncTask {
-	return predicate.AsyncTask(sql.FieldEQ(FieldRetryCount, v))
-}
-
-// RetryCountNEQ applies the NEQ predicate on the "retry_count" field.
-func RetryCountNEQ(v int) predicate.AsyncTask {
-	return predicate.AsyncTask(sql.FieldNEQ(FieldRetryCount, v))
-}
-
-// RetryCountLT applies the LT predicate on the "retry_count" field.
-func RetryCountLT(v int) predicate.AsyncTask {
-	return predicate.AsyncTask(sql.FieldLT(FieldRetryCount, v))
-}
-
-// RetryCountLTE applies the LTE predicate on the "retry_count" field.
-func RetryCountLTE(v int) predicate.AsyncTask {
-	return predicate.AsyncTask(sql.FieldLTE(FieldRetryCount, v))
-}
-
-// RetryCountGT applies the GT predicate on the "retry_count" field.
-func RetryCountGT(v int) predicate.AsyncTask {
-	return predicate.AsyncTask(sql.FieldGT(FieldRetryCount, v))
-}
-
-// RetryCountGTE applies the GTE predicate on the "retry_count" field.
-func RetryCountGTE(v int) predicate.AsyncTask {
-	return predicate.AsyncTask(sql.FieldGTE(FieldRetryCount, v))
-}
-
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.AsyncTask {
 	return predicate.AsyncTask(sql.FieldEQ(FieldCreatedAt, v))
@@ -587,6 +557,46 @@ func StateEqualFold(v string) predicate.AsyncTask {
 // StateContainsFold applies the ContainsFold predicate on the "state" field.
 func StateContainsFold(v string) predicate.AsyncTask {
 	return predicate.AsyncTask(sql.FieldContainsFold(FieldState, v))
+}
+
+// RetryCountEQ applies the EQ predicate on the "retry_count" field.
+func RetryCountEQ(v int) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldEQ(FieldRetryCount, v))
+}
+
+// RetryCountNEQ applies the NEQ predicate on the "retry_count" field.
+func RetryCountNEQ(v int) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldNEQ(FieldRetryCount, v))
+}
+
+// RetryCountIn applies the In predicate on the "retry_count" field.
+func RetryCountIn(vs ...int) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldIn(FieldRetryCount, vs...))
+}
+
+// RetryCountNotIn applies the NotIn predicate on the "retry_count" field.
+func RetryCountNotIn(vs ...int) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldNotIn(FieldRetryCount, vs...))
+}
+
+// RetryCountGT applies the GT predicate on the "retry_count" field.
+func RetryCountGT(v int) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldGT(FieldRetryCount, v))
+}
+
+// RetryCountGTE applies the GTE predicate on the "retry_count" field.
+func RetryCountGTE(v int) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldGTE(FieldRetryCount, v))
+}
+
+// RetryCountLT applies the LT predicate on the "retry_count" field.
+func RetryCountLT(v int) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldLT(FieldRetryCount, v))
+}
+
+// RetryCountLTE applies the LTE predicate on the "retry_count" field.
+func RetryCountLTE(v int) predicate.AsyncTask {
+	return predicate.AsyncTask(sql.FieldLTE(FieldRetryCount, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

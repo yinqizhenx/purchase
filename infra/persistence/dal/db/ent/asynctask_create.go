@@ -64,6 +64,20 @@ func (atc *AsyncTaskCreate) SetState(s string) *AsyncTaskCreate {
 	return atc
 }
 
+// SetRetryCount sets the "retry_count" field.
+func (atc *AsyncTaskCreate) SetRetryCount(i int) *AsyncTaskCreate {
+	atc.mutation.SetRetryCount(i)
+	return atc
+}
+
+// SetNillableRetryCount sets the "retry_count" field if the given value is not nil.
+func (atc *AsyncTaskCreate) SetNillableRetryCount(i *int) *AsyncTaskCreate {
+	if i != nil {
+		atc.SetRetryCount(*i)
+	}
+	return atc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (atc *AsyncTaskCreate) SetCreatedAt(t time.Time) *AsyncTaskCreate {
 	atc.mutation.SetCreatedAt(t)
@@ -133,6 +147,10 @@ func (atc *AsyncTaskCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (atc *AsyncTaskCreate) defaults() {
+	if _, ok := atc.mutation.RetryCount(); !ok {
+		v := asynctask.DefaultRetryCount
+		atc.mutation.SetRetryCount(v)
+	}
 	if _, ok := atc.mutation.CreatedAt(); !ok {
 		v := asynctask.DefaultCreatedAt()
 		atc.mutation.SetCreatedAt(v)
@@ -165,6 +183,9 @@ func (atc *AsyncTaskCreate) check() error {
 	}
 	if _, ok := atc.mutation.State(); !ok {
 		return &ValidationError{Name: "state", err: errors.New(`ent: missing required field "AsyncTask.state"`)}
+	}
+	if _, ok := atc.mutation.RetryCount(); !ok {
+		return &ValidationError{Name: "retry_count", err: errors.New(`ent: missing required field "AsyncTask.retry_count"`)}
 	}
 	if _, ok := atc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "AsyncTask.created_at"`)}
@@ -381,6 +402,24 @@ func (u *AsyncTaskUpsert) UpdateState() *AsyncTaskUpsert {
 	return u
 }
 
+// SetRetryCount sets the "retry_count" field.
+func (u *AsyncTaskUpsert) SetRetryCount(v int) *AsyncTaskUpsert {
+	u.Set(asynctask.FieldRetryCount, v)
+	return u
+}
+
+// UpdateRetryCount sets the "retry_count" field to the value that was provided on create.
+func (u *AsyncTaskUpsert) UpdateRetryCount() *AsyncTaskUpsert {
+	u.SetExcluded(asynctask.FieldRetryCount)
+	return u
+}
+
+// AddRetryCount adds v to the "retry_count" field.
+func (u *AsyncTaskUpsert) AddRetryCount(v int) *AsyncTaskUpsert {
+	u.Add(asynctask.FieldRetryCount, v)
+	return u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (u *AsyncTaskUpsert) SetCreatedAt(v time.Time) *AsyncTaskUpsert {
 	u.Set(asynctask.FieldCreatedAt, v)
@@ -548,6 +587,27 @@ func (u *AsyncTaskUpsertOne) SetState(v string) *AsyncTaskUpsertOne {
 func (u *AsyncTaskUpsertOne) UpdateState() *AsyncTaskUpsertOne {
 	return u.Update(func(s *AsyncTaskUpsert) {
 		s.UpdateState()
+	})
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (u *AsyncTaskUpsertOne) SetRetryCount(v int) *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetRetryCount(v)
+	})
+}
+
+// AddRetryCount adds v to the "retry_count" field.
+func (u *AsyncTaskUpsertOne) AddRetryCount(v int) *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.AddRetryCount(v)
+	})
+}
+
+// UpdateRetryCount sets the "retry_count" field to the value that was provided on create.
+func (u *AsyncTaskUpsertOne) UpdateRetryCount() *AsyncTaskUpsertOne {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateRetryCount()
 	})
 }
 
@@ -888,6 +948,27 @@ func (u *AsyncTaskUpsertBulk) SetState(v string) *AsyncTaskUpsertBulk {
 func (u *AsyncTaskUpsertBulk) UpdateState() *AsyncTaskUpsertBulk {
 	return u.Update(func(s *AsyncTaskUpsert) {
 		s.UpdateState()
+	})
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (u *AsyncTaskUpsertBulk) SetRetryCount(v int) *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.SetRetryCount(v)
+	})
+}
+
+// AddRetryCount adds v to the "retry_count" field.
+func (u *AsyncTaskUpsertBulk) AddRetryCount(v int) *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.AddRetryCount(v)
+	})
+}
+
+// UpdateRetryCount sets the "retry_count" field to the value that was provided on create.
+func (u *AsyncTaskUpsertBulk) UpdateRetryCount() *AsyncTaskUpsertBulk {
+	return u.Update(func(s *AsyncTaskUpsert) {
+		s.UpdateRetryCount()
 	})
 }
 

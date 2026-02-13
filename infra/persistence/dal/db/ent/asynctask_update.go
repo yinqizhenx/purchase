@@ -133,6 +133,14 @@ func (atu *AsyncTaskUpdate) SetRetryCount(i int) *AsyncTaskUpdate {
 	return atu
 }
 
+// SetNillableRetryCount sets the "retry_count" field if the given value is not nil.
+func (atu *AsyncTaskUpdate) SetNillableRetryCount(i *int) *AsyncTaskUpdate {
+	if i != nil {
+		atu.SetRetryCount(*i)
+	}
+	return atu
+}
+
 // AddRetryCount adds i to the "retry_count" field.
 func (atu *AsyncTaskUpdate) AddRetryCount(i int) *AsyncTaskUpdate {
 	atu.mutation.AddRetryCount(i)
@@ -359,6 +367,27 @@ func (atuo *AsyncTaskUpdateOne) SetNillableState(s *string) *AsyncTaskUpdateOne 
 	return atuo
 }
 
+// SetRetryCount sets the "retry_count" field.
+func (atuo *AsyncTaskUpdateOne) SetRetryCount(i int) *AsyncTaskUpdateOne {
+	atuo.mutation.ResetRetryCount()
+	atuo.mutation.SetRetryCount(i)
+	return atuo
+}
+
+// SetNillableRetryCount sets the "retry_count" field if the given value is not nil.
+func (atuo *AsyncTaskUpdateOne) SetNillableRetryCount(i *int) *AsyncTaskUpdateOne {
+	if i != nil {
+		atuo.SetRetryCount(*i)
+	}
+	return atuo
+}
+
+// AddRetryCount adds i to the "retry_count" field.
+func (atuo *AsyncTaskUpdateOne) AddRetryCount(i int) *AsyncTaskUpdateOne {
+	atuo.mutation.AddRetryCount(i)
+	return atuo
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (atuo *AsyncTaskUpdateOne) SetCreatedAt(t time.Time) *AsyncTaskUpdateOne {
 	atuo.mutation.SetCreatedAt(t)
@@ -478,6 +507,12 @@ func (atuo *AsyncTaskUpdateOne) sqlSave(ctx context.Context) (_node *AsyncTask, 
 	}
 	if value, ok := atuo.mutation.State(); ok {
 		_spec.SetField(asynctask.FieldState, field.TypeString, value)
+	}
+	if value, ok := atuo.mutation.RetryCount(); ok {
+		_spec.SetField(asynctask.FieldRetryCount, field.TypeInt, value)
+	}
+	if value, ok := atuo.mutation.AddedRetryCount(); ok {
+		_spec.AddField(asynctask.FieldRetryCount, field.TypeInt, value)
 	}
 	if value, ok := atuo.mutation.CreatedAt(); ok {
 		_spec.SetField(asynctask.FieldCreatedAt, field.TypeTime, value)

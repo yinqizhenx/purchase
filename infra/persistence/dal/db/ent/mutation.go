@@ -40,24 +40,24 @@ const (
 // AsyncTaskMutation represents an operation that mutates the AsyncTask nodes in the graph.
 type AsyncTaskMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int64
-	task_id       *string
-	task_type     *string
-	task_group    *string
-	task_name     *string
-	biz_id        *string
-	task_data     *string
-	state         *string
-	retry_count   *int
+	op             Op
+	typ            string
+	id             *int64
+	task_id        *string
+	task_type      *string
+	task_group     *string
+	task_name      *string
+	biz_id         *string
+	task_data      *string
+	state          *string
+	retry_count    *int
 	addretry_count *int
-	created_at    *time.Time
-	updated_at    *time.Time
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*AsyncTask, error)
-	predicates    []predicate.AsyncTask
+	created_at     *time.Time
+	updated_at     *time.Time
+	clearedFields  map[string]struct{}
+	done           bool
+	oldValue       func(context.Context) (*AsyncTask, error)
+	predicates     []predicate.AsyncTask
 }
 
 var _ ent.Mutation = (*AsyncTaskMutation)(nil)
@@ -431,6 +431,23 @@ func (m *AsyncTaskMutation) RetryCount() (r int, exists bool) {
 	return *v, true
 }
 
+// OldRetryCount returns the old "retry_count" field's value of the AsyncTask entity.
+// If the AsyncTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AsyncTaskMutation) OldRetryCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRetryCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRetryCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRetryCount: %w", err)
+	}
+	return oldValue.RetryCount, nil
+}
+
 // AddRetryCount adds i to the "retry_count" field.
 func (m *AsyncTaskMutation) AddRetryCount(i int) {
 	if m.addretry_count != nil {
@@ -561,7 +578,7 @@ func (m *AsyncTaskMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AsyncTaskMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.task_id != nil {
 		fields = append(fields, asynctask.FieldTaskID)
 	}
@@ -582,6 +599,9 @@ func (m *AsyncTaskMutation) Fields() []string {
 	}
 	if m.state != nil {
 		fields = append(fields, asynctask.FieldState)
+	}
+	if m.retry_count != nil {
+		fields = append(fields, asynctask.FieldRetryCount)
 	}
 	if m.created_at != nil {
 		fields = append(fields, asynctask.FieldCreatedAt)
@@ -611,6 +631,8 @@ func (m *AsyncTaskMutation) Field(name string) (ent.Value, bool) {
 		return m.TaskData()
 	case asynctask.FieldState:
 		return m.State()
+	case asynctask.FieldRetryCount:
+		return m.RetryCount()
 	case asynctask.FieldCreatedAt:
 		return m.CreatedAt()
 	case asynctask.FieldUpdatedAt:
@@ -638,6 +660,8 @@ func (m *AsyncTaskMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldTaskData(ctx)
 	case asynctask.FieldState:
 		return m.OldState(ctx)
+	case asynctask.FieldRetryCount:
+		return m.OldRetryCount(ctx)
 	case asynctask.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case asynctask.FieldUpdatedAt:
@@ -700,6 +724,13 @@ func (m *AsyncTaskMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetState(v)
 		return nil
+	case asynctask.FieldRetryCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRetryCount(v)
+		return nil
 	case asynctask.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -721,13 +752,21 @@ func (m *AsyncTaskMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *AsyncTaskMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addretry_count != nil {
+		fields = append(fields, asynctask.FieldRetryCount)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *AsyncTaskMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case asynctask.FieldRetryCount:
+		return m.AddedRetryCount()
+	}
 	return nil, false
 }
 
@@ -736,6 +775,13 @@ func (m *AsyncTaskMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *AsyncTaskMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case asynctask.FieldRetryCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRetryCount(v)
+		return nil
 	}
 	return fmt.Errorf("unknown AsyncTask numeric field %s", name)
 }
@@ -783,6 +829,9 @@ func (m *AsyncTaskMutation) ResetField(name string) error {
 		return nil
 	case asynctask.FieldState:
 		m.ResetState()
+		return nil
+	case asynctask.FieldRetryCount:
+		m.ResetRetryCount()
 		return nil
 	case asynctask.FieldCreatedAt:
 		m.ResetCreatedAt()
