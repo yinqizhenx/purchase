@@ -51,9 +51,14 @@ func (r *messageRouter) run() {
 				return r.pub.Publish(context.Background(), msg.Message)
 			}, r.maxRetries)
 			if err != nil {
-				logx.Error(context.Background(), r.name+" publish fail after retries",
+				// 发布失败，记录完整消息信息以便人工介入恢复
+				// 此时不 commit 原始消息的 offset，Kafka rebalance 后消息会被重新消费
+				logx.Error(context.Background(), r.name+" publish fail after retries, message may need manual recovery",
 					slog.Any("error", err),
 					slog.String("bizCode", msg.BizCode()),
+					slog.String("eventName", msg.EventName()),
+					slog.String("messageID", msg.ID),
+					slog.Int("reconsumeTime", msg.ReconsumeTimes()),
 				)
 				break
 			}

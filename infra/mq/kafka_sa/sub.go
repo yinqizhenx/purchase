@@ -198,31 +198,45 @@ func (c *Consumer) Run(ctx context.Context) {
 	}
 }
 
+// idempotentBackoff 幂等操作失败时的退避时间，避免热循环
+const idempotentBackoff = 3 * time.Second
+
 // handleMessage 幂等消费消息
 func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupSession, m *mq.Message, h mq.Handler) {
 	ok, err := c.sub.idp.SetKeyPendingWithDDL(ctx, m.ID, time.Second*time.Duration(10*60))
 	if err != nil {
 		logx.Error(ctx, "subscriber SetKeyPendingWithDDL fail", slog.Any("error", err), slog.String("key", m.ID), slog.Any("message", m))
+		// backoff 避免热循环：Redis/MySQL 短暂不可用时，不 commit 让 Kafka 重新投递，但需要降低重试频率
+		time.Sleep(idempotentBackoff)
 		return
 	}
-	// 已经消费过
+	// 已经消费过（key 已存在）
 	if !ok {
 		state, err := c.sub.idp.GetKeyState(ctx, m.ID)
 		if err != nil {
 			logx.Error(ctx, "subscriber GetKeyState fail", slog.Any("error", err), slog.String("key", m.ID), slog.Any("message", m))
+			// backoff 避免热循环
+			time.Sleep(idempotentBackoff)
 			return
 		}
-		if state == idempotent.Done {
-			// 已经消费过，且消费成功了, 即使提交失败了，只要后面的message能成功，之前的message都会被提交
+		switch state {
+		case idempotent.Done:
+			// 已经消费过，且消费成功了, 即使提交失败了，只要后面的 message 能成功，之前的 message 都会被提交
 			if err = c.commitMessage(ctx, sess, m); err != nil {
-				logx.Error(ctx, "failed to commit messages:", slog.Any("error", err), slog.Any("message", m))
+				logx.Error(ctx, "failed to commit messages", slog.Any("error", err), slog.String("key", m.ID), slog.Any("message", m))
 			}
-			return
-		}
-		// 消费重试队列里的消息，只是将消息推送到初始topic，理论不会失败，不要再往重试队列里投递，避免复杂化
-		if !c.isConsumeRlq {
-			// 已经消费过，但消费失败了
-			c.ReconsumeLater(sess, m)
+		case idempotent.Pending:
+			// 有另一个消费者正在处理这条消息，不做任何操作
+			// 不 commit：让 Kafka rebalance 后重新投递
+			// 不 ReconsumeLater：避免与正在处理的消费者产生重复消费
+			logx.Info(ctx, "message is being consumed by another consumer, skip",
+				slog.String("key", m.ID), slog.String("bizCode", m.BizCode()))
+		default:
+			// 未知状态，走重试逻辑
+			logx.Error(ctx, "unknown idempotent state", slog.String("state", state), slog.String("key", m.ID))
+			if !c.isConsumeRlq {
+				c.ReconsumeLater(sess, m)
+			}
 		}
 		return
 	}
@@ -231,10 +245,10 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 	// 消费失败
 	if err != nil {
 		logx.Error(ctx, "consume message fail", slog.Any("error", err), slog.Any("message", m))
-		// 消费失败, 清除掉幂等key
-		// 如果RemoveFailKey失败，ReconsumeLater成功，重会等到key过期删除，然后被消费
-		// 如果RemoveFailKey成功，ReconsumeLater失败，队列未提交ack（下一次offset提交成功，会把之前的offset一起提交），不会再次消费，需要人工介入resume
-		// 如果RemoveFailKey失败，ReconsumeLater失败，队列未提交ack，会等到key过期删除，不会再次被消费, 需要人工介入resume
+		// 消费失败, 清除掉幂等 key
+		// 如果 RemoveFailKey 失败，ReconsumeLater 成功，会等到 key 过期删除，然后被消费
+		// 如果 RemoveFailKey 成功，ReconsumeLater 失败，队列未提交 ack（下一次 offset 提交成功，会把之前的 offset 一起提交），不会再次消费，需要人工介入
+		// 如果 RemoveFailKey 失败，ReconsumeLater 失败，队列未提交 ack，会等到 key 过期删除，不会再次被消费，需要人工介入
 		err = retry.Run(func() error {
 			return c.sub.idp.RemoveFailKey(ctx, m.ID)
 		}, 2)
@@ -251,7 +265,10 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 		return c.sub.idp.UpdateKeyDone(ctx, m.ID)
 	}, 2)
 	if err != nil {
-		logx.Error(ctx, "UpdateKeyDone fail after retry 2 times", slog.Any("error", err), slog.String("key", m.ID))
+		// UpdateKeyDone 失败，key 状态仍为 Pending
+		// 由于上面 Pending 分支不会触发 ReconsumeLater，即使消息被重新投递也只会 skip，不会重复消费
+		logx.Error(ctx, "UpdateKeyDone fail after retry 2 times, message consumed but state not updated",
+			slog.Any("error", err), slog.String("key", m.ID))
 	}
 	err = retry.Run(func() error {
 		return c.commitMessage(ctx, sess, m)
@@ -351,18 +368,22 @@ func (c *Consumer) redelivery(ctx context.Context, sess sarama.ConsumerGroupSess
 		slog.String("bizCode", m.BizCode()),
 		slog.String("topic", m.EventName()),
 	)
-	err := c.sub.pub.Publish(ctx, m)
+	// 增加重试，避免瞬时网络抖动导致消息丢失
+	err := retry.Run(func() error {
+		return c.sub.pub.Publish(ctx, m)
+	}, 3)
 	if err != nil {
-		logx.Error(ctx, "redelivery publish fail",
+		logx.Error(ctx, "redelivery publish fail after retries",
 			slog.Any("error", err),
 			slog.String("bizCode", m.BizCode()),
 			slog.String("topic", m.EventName()),
+			slog.String("messageID", m.ID),
 		)
 		return err
 	}
 	err = c.commitMessage(ctx, sess, m)
 	if err != nil {
-		logx.Error(ctx, "redelivery commit fail", slog.Any("error", err))
+		logx.Error(ctx, "redelivery commit fail", slog.Any("error", err), slog.String("messageID", m.ID))
 	}
 	return err
 }

@@ -23,10 +23,17 @@ func NewMessageMarshaler(idGen mq.IDGenFunc) MessageMarshaler {
 }
 
 func (ms *MarshalerImpl) Marshal(ctx context.Context, m *mq.Message) (*sarama.ProducerMessage, error) {
+	// 保留原始消息 ID，只有首次发布（ID 为空）时才生成新 ID
+	// 重投/死信消息必须保持原始 ID，否则幂等机制会被绕过
+	msgID := m.ID
+	if msgID == "" {
+		msgID = ms.idg()
+	}
+
 	header := make([]sarama.RecordHeader, 0)
 	header = append(header, sarama.RecordHeader{
 		Key:   []byte(mq.MessageID),
-		Value: []byte(ms.idg()),
+		Value: []byte(msgID),
 	})
 
 	p, err := json.Marshal(m.Header())
