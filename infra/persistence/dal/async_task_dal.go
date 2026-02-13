@@ -164,8 +164,3 @@ func (dal *AsyncTaskDal) ResetTaskToPendingWithRetry(ctx context.Context, taskID
 		Where(eTask.StateEQ(currentState.String())).
 		Save(ctx)
 }
-
-// ResetFailedTaskToPending 将失败的任务重置为 pending 状态，并增加重试次数
-func (dal *AsyncTaskDal) ResetFailedTaskToPending(ctx context.Context, taskID string) (int, error) {
-	return dal.ResetTaskToPendingWithRetry(ctx, taskID, vo.AsyncTaskStateFail)
-}

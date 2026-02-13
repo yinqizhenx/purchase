@@ -233,39 +233,37 @@ func (w *GroupWorker) onHandleSuccess(ctx context.Context, task *async_task.Asyn
 	return err
 }
 
-func (w *GroupWorker) onHandleFail(ctx context.Context, task *async_task.AsyncTask) error {
-	err := w.dal.UpdateExecutingTaskFail(ctx, task.TaskID)
-	if err != nil {
-		logx.Error(ctx, "update task state fail fail", slog.String("task", task.TaskID), slog.Any("error", err))
-	}
-	return err
-}
-
-// autoRetryIfNeeded 任务失败后检查是否需要自动重试
-// 在事务外执行，确保 handler 的副作用已回滚
-func (w *GroupWorker) autoRetryIfNeeded(ctx context.Context, task *async_task.AsyncTask) {
-	if task.RetryCount+1 >= w.maxRetry {
-		logx.Error(ctx, "task failed, max retry reached",
-			slog.String("task_id", task.TaskID),
-			slog.String("task_name", task.TaskName),
-			slog.Int("retry_count", task.RetryCount),
-			slog.Int("max_retry", w.maxRetry))
+// onHandleFailWithRetry 业务 handler 失败后的统一处理（在事务外执行）
+// 如果未达到最大重试次数，直接 executing → pending（retry_count+1），省去 fail 中间态
+// 如果已达到最大重试次数，executing → fail，标记为最终失败
+func (w *GroupWorker) onHandleFailWithRetry(ctx context.Context, task *async_task.AsyncTask) {
+	if task.RetryCount+1 < w.maxRetry {
+		// 未达到重试上限，直接从 executing 重置为 pending，一次 DB 操作完成
+		n, err := w.dal.ResetTaskToPendingWithRetry(ctx, task.TaskID, vo.AsyncTaskStateExecuting)
+		if err != nil {
+			logx.Error(ctx, "auto retry: reset executing task to pending fail",
+				slog.String("task_id", task.TaskID), slog.Any("error", err))
+			return
+		}
+		if n > 0 {
+			logx.Warn(ctx, "task failed, auto retrying",
+				slog.String("task_id", task.TaskID),
+				slog.String("task_name", task.TaskName),
+				slog.Int("current_retry", task.RetryCount+1),
+				slog.Int("max_retry", w.maxRetry))
+		}
 		return
 	}
 
-	// 将任务从 fail 状态重置为 pending，retry_count + 1，等待下次 cron 调度
-	n, err := w.dal.ResetFailedTaskToPending(ctx, task.TaskID)
-	if err != nil {
-		logx.Error(ctx, "auto retry: reset task to pending fail",
-			slog.String("task", task.TaskID), slog.Any("error", err))
-		return
-	}
-	if n > 0 {
-		logx.Warn(ctx, "task failed, auto retrying",
-			slog.String("task_id", task.TaskID),
-			slog.String("task_name", task.TaskName),
-			slog.Int("current_retry", task.RetryCount+1),
-			slog.Int("max_retry", w.maxRetry))
+	// 达到重试上限，标记为最终失败
+	logx.Error(ctx, "task failed, max retry reached",
+		slog.String("task_id", task.TaskID),
+		slog.String("task_name", task.TaskName),
+		slog.Int("retry_count", task.RetryCount),
+		slog.Int("max_retry", w.maxRetry))
+	if err := w.dal.UpdateExecutingTaskFail(ctx, task.TaskID); err != nil {
+		logx.Error(ctx, "mark task as final fail error, task will be stuck until stuck checker",
+			slog.String("task_id", task.TaskID), slog.Any("error", err))
 	}
 }
 
@@ -277,26 +275,18 @@ func (w *GroupWorker) handleTask(ctx context.Context, task *async_task.AsyncTask
 		}
 	}()
 
-	var handleErr error
 	fn := func(txCtx context.Context) error {
-		handleErr = w.Handle(txCtx, task)
-		if handleErr != nil {
-			logx.Error(txCtx, "handle task fail", slog.String("task", task.TaskID), slog.Any("error", handleErr))
-			// 返回错误让事务回滚，确保 handler 的副作用不被提交
-			return handleErr
+		if err := w.Handle(txCtx, task); err != nil {
+			logx.Error(txCtx, "handle task fail", slog.String("task", task.TaskID), slog.Any("error", err))
+			return err
 		}
 		return w.onHandleSuccess(txCtx, task)
 	}
-	err := w.txm.Transaction(ctx, fn)
-	if err != nil {
+	if err := w.txm.Transaction(ctx, fn); err != nil {
+		// 无论是业务 handler 失败还是 onHandleSuccess/事务提交失败，事务都已回滚
+		// 业务数据未提交，任务仍为 executing，统一走失败重试逻辑
 		logx.Error(ctx, "handle task transaction fail", slog.String("task", task.TaskID), slog.Any("error", err))
-
-		// handler 失败导致事务回滚后，在事务外更新状态为 fail
-		if handleErr != nil {
-			w.onHandleFail(ctx, task)
-			// 尝试自动重试
-			w.autoRetryIfNeeded(ctx, task)
-		}
+		w.onHandleFailWithRetry(ctx, task)
 	}
 }
 
