@@ -2,7 +2,6 @@ package tx
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"runtime"
 
@@ -51,18 +50,20 @@ func (m *TransactionManager) Transaction(ctx context.Context, fn func(ctx contex
 		return m.withRequiredPropagation(ctx, fn)
 	case PropagationRequiresNew:
 		return m.withRequiresNewPropagation(ctx, fn)
+	default:
+		return fmt.Errorf("not supported tx propagation: %d", propagation)
 	}
-	return errors.New("not supported tx propagation")
 }
 
 // withNeverPropagation 不在事务中执行
 func (m *TransactionManager) withNeverPropagation(ctx context.Context, fn func(ctx context.Context) error) error {
-	c, ok := ctx.(*TransactionContext)
+	txCtx, ok := ctx.(*TransactionContext)
 	if ok {
-		// 不在事务中执行
-		return fn(c.Context())
+		// 当前在事务中，提取原始 context，不在事务中执行
+		return fn(txCtx.Context())
 	}
-	return fn(c)
+	// 当前不在事务中，直接执行
+	return fn(ctx)
 }
 
 // withNestedPropagation 支持当前事务，如果当前事务存在，则执行一个嵌套事务，如果当前没有事务，就新建一个事务, 在A事务里面嵌套B事务, B回滚不影响A, A回滚会让B回滚，A提交会让B提交
@@ -105,6 +106,10 @@ func (m *TransactionManager) withRequiredPropagation(ctx context.Context, fn fun
 
 // withRequiresNewPropagation 新建事务，如果当前存在事务，把当前事务挂起，两个事务互不影响
 func (m *TransactionManager) withRequiresNewPropagation(ctx context.Context, fn func(ctx context.Context) error) error {
+	// 如果当前在事务中，提取原始 context，挂起当前事务
+	if txCtx, ok := ctx.(*TransactionContext); ok {
+		ctx = txCtx.Context()
+	}
 	newTxCtx, err := NewTransactionContext(ctx, m.db, nil)
 	if err != nil {
 		return err
@@ -136,13 +141,19 @@ func (m *TransactionManager) runWithTransaction(txCtx *TransactionContext, fn fu
 	}
 
 	if err = txCtx.Commit(); err != nil {
+		// commit 失败后尝试回滚，释放锁等资源
+		if rErr := txCtx.Rollback(); rErr != nil {
+			logx.Errorf(txCtx, "commit失败后回滚也失败: %v", rErr)
+		}
 		return fmt.Errorf("commit transaction fail: %w", err)
 	}
 
 	return
 }
 
-// RunAfterTxCommit 在事务提交后执行，用于事物中的异步操作，保证如果事务失败，不执行异步操作
+// RunAfterTxCommit 在事务提交后执行，用于事务中的异步操作，保证如果事务失败，不执行异步操作。
+// hook 注册在当前 TransactionContext 上，子事务成功时 hooks 会逐级提升到父级，
+// 最终由 root 事务 commit 成功后统一执行。如果子事务回滚，其注册的 hooks 会被清理，不会被父事务触发。
 func RunAfterTxCommit(ctx context.Context, fn func(ctx context.Context) error) error {
 	txCtx, ok := ctx.(*TransactionContext)
 	// 不在事务中，直接执行
@@ -150,97 +161,8 @@ func RunAfterTxCommit(ctx context.Context, fn func(ctx context.Context) error) e
 		return fn(ctx)
 	}
 
-	hook := func(next ent.Committer) ent.Committer {
-		return ent.CommitFunc(func(ctx context.Context, tx *ent.Tx) error {
-			err := next.Commit(ctx, tx)
-			if err != nil {
-				return err
-			}
-			return fn(ctx)
-		})
-	}
-
-	txCtx.Tx().OnCommit(hook)
+	txCtx.AddAfterCommitHook(func(ctx context.Context) error {
+		return fn(ctx)
+	})
 	return nil
 }
-
-// func WithOneTx(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) error {
-// 	tx, err := client.Tx(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer func() {
-// 		if v := recover(); v != nil {
-// 			tx.Rollback()
-// 			panic(v)
-// 		}
-// 	}()
-// 	if err := fn(tx); err != nil {
-// 		if rErr := tx.Rollback(); rErr != nil {
-// 			err = fmt.Errorf("%w: rolling back transaction: %v", err, rErr)
-// 		}
-// 		return err
-// 	}
-// 	if err := tx.Commit(); err != nil {
-// 		return fmt.Errorf("committing transaction: %w", err)
-// 	}
-// 	return nil
-// }
-
-// type entTxKey struct{}
-//
-// // WithTx 保证多层事务嵌套时，使用的是同一个事务
-// func WithTx(ctx context.Context, client *ent.Client, fn func(ctx context.Context, tx *ent.Tx) error) error {
-// 	tx, ok := ctx.Value(entTxKey{}).(*ent.Tx)
-//
-// 	if !ok {
-// 		var err error
-// 		tx, err = client.Tx(ctx)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		ctx = context.WithValue(ctx, entTxKey{}, tx)
-// 	}
-//
-// 	defer func() {
-// 		if v := recover(); v != nil {
-// 			tx.Rollback()
-// 			panic(v)
-// 		}
-// 	}()
-//
-// 	if err := fn(ctx, tx); err != nil {
-// 		if rErr := tx.Rollback(); rErr != nil {
-// 			err = fmt.Errorf("%w: rolling back transaction: %v", err, rErr)
-// 		}
-// 		return err
-// 	}
-//
-// 	if err := tx.Commit(); err != nil {
-// 		return fmt.Errorf("committing transaction: %w", err)
-// 	}
-//
-// 	return nil
-// }
-//
-// // RunAfterTxCommit2 在事务提交后执行，用于事物中的异步操作，保证如果事务失败，不执行异步操作
-// func RunAfterTxCommit2(ctx context.Context, fn func(ctx context.Context) error) error {
-// 	tx, ok := ctx.Value(entTxKey{}).(*ent.Tx)
-// 	// 不在事务中，直接执行
-// 	if !ok {
-// 		return fn(ctx)
-// 	}
-//
-// 	hook := func(next ent.Committer) ent.Committer {
-// 		return ent.CommitFunc(func(ctx context.Context, tx *ent.Tx) error {
-// 			err := next.Commit(ctx, tx)
-// 			if err != nil {
-// 				return err
-// 			}
-// 			return fn(ctx)
-// 		})
-// 	}
-//
-// 	tx.OnCommit(hook)
-// 	return nil
-// }
