@@ -19,7 +19,7 @@ type MarshalerImpl struct {
 }
 
 func NewMessageMarshaler(idGen mq.IDGenFunc) MessageMarshaler {
-	return &MarshalerImpl{}
+	return &MarshalerImpl{idg: idGen}
 }
 
 func (ms *MarshalerImpl) Marshal(ctx context.Context, m *mq.Message) (*sarama.ProducerMessage, error) {

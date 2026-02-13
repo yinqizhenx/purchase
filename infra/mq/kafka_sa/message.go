@@ -188,6 +188,12 @@ func (m *Message) PropsRedeliveryTime() time.Time {
 }
 
 func (m *Message) IncrReconsumeTimes() {
+	if m.props == nil {
+		m.props = &Property{
+			ReconsumeTimes: 1,
+		}
+		return
+	}
 	m.props.ReconsumeTimes++
 }
 
