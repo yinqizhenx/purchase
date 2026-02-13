@@ -28,3 +28,17 @@ func WithShutdownTimeout(timeout time.Duration) Option {
 		m.shutdownTimeout = timeout
 	}
 }
+
+// WithMaxRetry 设置任务失败自动重试最大次数，默认3次
+func WithMaxRetry(n int) Option {
+	return func(m *AsyncTaskMux) {
+		m.maxRetry = n
+	}
+}
+
+// WithStuckThreshold 设置任务卡住告警阈值，默认5分钟
+func WithStuckThreshold(d time.Duration) Option {
+	return func(m *AsyncTaskMux) {
+		m.stuckThreshold = d
+	}
+}

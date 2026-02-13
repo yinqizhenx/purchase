@@ -2,6 +2,7 @@ package dal
 
 import (
 	"context"
+	"time"
 
 	eTask "purchase/infra/persistence/dal/db/ent/asynctask"
 
@@ -133,4 +134,38 @@ func (dal *AsyncTaskDal) UpdatePendingTaskExecuting(ctx context.Context, taskIDs
 		Where(eTask.TaskIDIn(taskIDs...)).
 		Where(eTask.StateEQ(vo.AsyncTaskStatePending.String())).
 		Save(ctx)
+}
+
+// FindStuckExecutingTasks 查找长时间处于 executing 状态的任务
+func (dal *AsyncTaskDal) FindStuckExecutingTasks(ctx context.Context, stuckDuration time.Duration, limit int) ([]*async_task.AsyncTask, error) {
+	threshold := time.Now().Add(-stuckDuration)
+	res, err := dal.getClient(ctx).Query().
+		Where(eTask.StateEQ(vo.AsyncTaskStateExecuting.String())).
+		Where(eTask.UpdatedAtLT(threshold)).
+		Order(ent.Asc(eTask.FieldUpdatedAt)).
+		Limit(limit).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	list := make([]*async_task.AsyncTask, 0, len(res))
+	for _, r := range res {
+		list = append(list, dal.convertor.ConvertAsyncTaskPoToDo(r))
+	}
+	return list, nil
+}
+
+// ResetTaskToPendingWithRetry 将失败或执行中的任务重置为 pending 状态，并增加重试次数（CAS 操作）
+func (dal *AsyncTaskDal) ResetTaskToPendingWithRetry(ctx context.Context, taskID string, currentState vo.AsyncTaskState) (int, error) {
+	return dal.getClient(ctx).Update().
+		SetState(vo.AsyncTaskStatePending.String()).
+		AddRetryCount(1).
+		Where(eTask.TaskIDEQ(taskID)).
+		Where(eTask.StateEQ(currentState.String())).
+		Save(ctx)
+}
+
+// ResetFailedTaskToPending 将失败的任务重置为 pending 状态，并增加重试次数
+func (dal *AsyncTaskDal) ResetFailedTaskToPending(ctx context.Context, taskID string) (int, error) {
+	return dal.ResetTaskToPendingWithRetry(ctx, taskID, vo.AsyncTaskStateFail)
 }

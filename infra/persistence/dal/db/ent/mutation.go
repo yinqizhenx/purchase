@@ -50,6 +50,8 @@ type AsyncTaskMutation struct {
 	biz_id        *string
 	task_data     *string
 	state         *string
+	retry_count   *int
+	addretry_count *int
 	created_at    *time.Time
 	updated_at    *time.Time
 	clearedFields map[string]struct{}
@@ -412,6 +414,45 @@ func (m *AsyncTaskMutation) OldState(ctx context.Context) (v string, err error) 
 // ResetState resets all changes to the "state" field.
 func (m *AsyncTaskMutation) ResetState() {
 	m.state = nil
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (m *AsyncTaskMutation) SetRetryCount(i int) {
+	m.retry_count = &i
+	m.addretry_count = nil
+}
+
+// RetryCount returns the value of the "retry_count" field in the mutation.
+func (m *AsyncTaskMutation) RetryCount() (r int, exists bool) {
+	v := m.retry_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AddRetryCount adds i to the "retry_count" field.
+func (m *AsyncTaskMutation) AddRetryCount(i int) {
+	if m.addretry_count != nil {
+		*m.addretry_count += i
+	} else {
+		m.addretry_count = &i
+	}
+}
+
+// AddedRetryCount returns the value that was added to the "retry_count" field in this mutation.
+func (m *AsyncTaskMutation) AddedRetryCount() (r int, exists bool) {
+	v := m.addretry_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRetryCount resets all changes to the "retry_count" field.
+func (m *AsyncTaskMutation) ResetRetryCount() {
+	m.retry_count = nil
+	m.addretry_count = nil
 }
 
 // SetCreatedAt sets the "created_at" field.

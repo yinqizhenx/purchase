@@ -26,6 +26,7 @@ type GroupWorker struct {
 	txm         *tx.TransactionManager
 	sem         chan struct{}
 	concurrency int
+	maxRetry    int // 任务失败自动重试最大次数
 	cancel      func()
 	cancelChan  func() // 关闭 unbounded channel
 	mdw         []Middleware
@@ -39,7 +40,7 @@ type GroupWorker struct {
 	listenWg     sync.WaitGroup // 等待 Listen goroutine 退出
 }
 
-func NewGroupWorker(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.TransactionManager, concurrency int, mdw []Middleware) *GroupWorker {
+func NewGroupWorker(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.TransactionManager, concurrency int, mdw []Middleware, maxRetry int) *GroupWorker {
 	ch, cancelChan := NewTaskChan()
 	w := &GroupWorker{
 		pub:         pub,
@@ -48,6 +49,7 @@ func NewGroupWorker(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.Transaction
 		dal:         dal,
 		txm:         txm,
 		concurrency: concurrency,
+		maxRetry:    maxRetry,
 		cancelChan:  cancelChan,
 		mdw:         mdw,
 	}
@@ -239,6 +241,34 @@ func (w *GroupWorker) onHandleFail(ctx context.Context, task *async_task.AsyncTa
 	return err
 }
 
+// autoRetryIfNeeded 任务失败后检查是否需要自动重试
+// 在事务外执行，确保 handler 的副作用已回滚
+func (w *GroupWorker) autoRetryIfNeeded(ctx context.Context, task *async_task.AsyncTask) {
+	if task.RetryCount+1 >= w.maxRetry {
+		logx.Error(ctx, "task failed, max retry reached",
+			slog.String("task_id", task.TaskID),
+			slog.String("task_name", task.TaskName),
+			slog.Int("retry_count", task.RetryCount),
+			slog.Int("max_retry", w.maxRetry))
+		return
+	}
+
+	// 将任务从 fail 状态重置为 pending，retry_count + 1，等待下次 cron 调度
+	n, err := w.dal.ResetFailedTaskToPending(ctx, task.TaskID)
+	if err != nil {
+		logx.Error(ctx, "auto retry: reset task to pending fail",
+			slog.String("task", task.TaskID), slog.Any("error", err))
+		return
+	}
+	if n > 0 {
+		logx.Warn(ctx, "task failed, auto retrying",
+			slog.String("task_id", task.TaskID),
+			slog.String("task_name", task.TaskName),
+			slog.Int("current_retry", task.RetryCount+1),
+			slog.Int("max_retry", w.maxRetry))
+	}
+}
+
 func (w *GroupWorker) handleTask(ctx context.Context, task *async_task.AsyncTask) {
 	defer func() {
 		// 任务执行完成后清理去重记录
@@ -246,17 +276,27 @@ func (w *GroupWorker) handleTask(ctx context.Context, task *async_task.AsyncTask
 			w.onTaskDone(task.TaskID)
 		}
 	}()
+
+	var handleErr error
 	fn := func(txCtx context.Context) error {
-		err := w.Handle(txCtx, task)
-		if err != nil {
-			logx.Error(txCtx, "handle task fail", slog.String("task", task.TaskID), slog.Any("error", err))
-			return w.onHandleFail(txCtx, task)
+		handleErr = w.Handle(txCtx, task)
+		if handleErr != nil {
+			logx.Error(txCtx, "handle task fail", slog.String("task", task.TaskID), slog.Any("error", handleErr))
+			// 返回错误让事务回滚，确保 handler 的副作用不被提交
+			return handleErr
 		}
 		return w.onHandleSuccess(txCtx, task)
 	}
 	err := w.txm.Transaction(ctx, fn)
 	if err != nil {
 		logx.Error(ctx, "handle task transaction fail", slog.String("task", task.TaskID), slog.Any("error", err))
+
+		// handler 失败导致事务回滚后，在事务外更新状态为 fail
+		if handleErr != nil {
+			w.onHandleFail(ctx, task)
+			// 尝试自动重试
+			w.autoRetryIfNeeded(ctx, task)
+		}
 	}
 }
 

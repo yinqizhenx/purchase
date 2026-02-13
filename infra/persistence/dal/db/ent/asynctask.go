@@ -31,6 +31,8 @@ type AsyncTask struct {
 	TaskData string `json:"task_data,omitempty"`
 	// State holds the value of the "state" field.
 	State string `json:"state,omitempty"`
+	// RetryCount holds the value of the "retry_count" field.
+	RetryCount int `json:"retry_count,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -43,7 +45,7 @@ func (*AsyncTask) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case asynctask.FieldID:
+		case asynctask.FieldID, asynctask.FieldRetryCount:
 			values[i] = new(sql.NullInt64)
 		case asynctask.FieldTaskID, asynctask.FieldTaskType, asynctask.FieldTaskGroup, asynctask.FieldTaskName, asynctask.FieldBizID, asynctask.FieldTaskData, asynctask.FieldState:
 			values[i] = new(sql.NullString)
@@ -111,6 +113,12 @@ func (at *AsyncTask) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field state", values[i])
 			} else if value.Valid {
 				at.State = value.String
+			}
+		case asynctask.FieldRetryCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field retry_count", values[i])
+			} else if value.Valid {
+				at.RetryCount = int(value.Int64)
 			}
 		case asynctask.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -180,6 +188,9 @@ func (at *AsyncTask) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("state=")
 	builder.WriteString(at.State)
+	builder.WriteString(", ")
+	builder.WriteString("retry_count=")
+	builder.WriteString(fmt.Sprintf("%v", at.RetryCount))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(at.CreatedAt.Format(time.ANSIC))

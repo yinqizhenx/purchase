@@ -33,6 +33,7 @@ func (AsyncTask) Fields() []ent.Field {
 		field.String("biz_id"),
 		field.String("task_data"),
 		field.String("state").StorageKey("task_state"),
+		field.Int("retry_count").Default(0),
 		field.Time("created_at").
 			Default(time.Now).SchemaType(map[string]string{
 			dialect.MySQL: "datetime",

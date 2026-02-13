@@ -126,6 +126,19 @@ func (atu *AsyncTaskUpdate) SetNillableState(s *string) *AsyncTaskUpdate {
 	return atu
 }
 
+// SetRetryCount sets the "retry_count" field.
+func (atu *AsyncTaskUpdate) SetRetryCount(i int) *AsyncTaskUpdate {
+	atu.mutation.ResetRetryCount()
+	atu.mutation.SetRetryCount(i)
+	return atu
+}
+
+// AddRetryCount adds i to the "retry_count" field.
+func (atu *AsyncTaskUpdate) AddRetryCount(i int) *AsyncTaskUpdate {
+	atu.mutation.AddRetryCount(i)
+	return atu
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (atu *AsyncTaskUpdate) SetCreatedAt(t time.Time) *AsyncTaskUpdate {
 	atu.mutation.SetCreatedAt(t)
@@ -215,6 +228,12 @@ func (atu *AsyncTaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := atu.mutation.State(); ok {
 		_spec.SetField(asynctask.FieldState, field.TypeString, value)
+	}
+	if value, ok := atu.mutation.RetryCount(); ok {
+		_spec.SetField(asynctask.FieldRetryCount, field.TypeInt, value)
+	}
+	if value, ok := atu.mutation.AddedRetryCount(); ok {
+		_spec.AddField(asynctask.FieldRetryCount, field.TypeInt, value)
 	}
 	if value, ok := atu.mutation.CreatedAt(); ok {
 		_spec.SetField(asynctask.FieldCreatedAt, field.TypeTime, value)

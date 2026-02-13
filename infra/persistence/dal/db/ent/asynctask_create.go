@@ -233,6 +233,10 @@ func (atc *AsyncTaskCreate) createSpec() (*AsyncTask, *sqlgraph.CreateSpec) {
 		_spec.SetField(asynctask.FieldState, field.TypeString, value)
 		_node.State = value
 	}
+	if value, ok := atc.mutation.RetryCount(); ok {
+		_spec.SetField(asynctask.FieldRetryCount, field.TypeInt, value)
+		_node.RetryCount = value
+	}
 	if value, ok := atc.mutation.CreatedAt(); ok {
 		_spec.SetField(asynctask.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value

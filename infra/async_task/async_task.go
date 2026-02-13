@@ -3,6 +3,7 @@ package async_task
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -24,6 +25,12 @@ const defaultConcurrency = 5
 
 const defaultShutdownTimeout = 30 * time.Second
 
+// defaultMaxRetry 任务失败自动重试最大次数
+const defaultMaxRetry = 3
+
+// defaultStuckThreshold 任务处于 executing 状态超过此时间视为卡住
+const defaultStuckThreshold = 5 * time.Minute
+
 type Handler func(ctx context.Context, payload []byte) error
 
 // deduplicateTTL 控制任务去重的有效期，在此时间内相同 taskID 不会重复分发。
@@ -38,6 +45,8 @@ type AsyncTaskMux struct {
 	txm              *tx.TransactionManager
 	concurrency      int
 	maxTaskLoad      int
+	maxRetry         int           // 任务失败自动重试最大次数
+	stuckThreshold   time.Duration // 任务卡住告警阈值
 	shutdownTimeout  time.Duration
 	cancel           func()
 	mdw              []Middleware
@@ -56,6 +65,8 @@ func NewAsyncTaskMux(pub mq.Publisher, dal *dal.AsyncTaskDal, txm *tx.Transactio
 		txm:             txm,
 		concurrency:     defaultConcurrency, // default 5 worker max
 		maxTaskLoad:     defaultMaxTaskLoad,
+		maxRetry:        defaultMaxRetry,
+		stuckThreshold:  defaultStuckThreshold,
 		shutdownTimeout: defaultShutdownTimeout,
 		groupWorkers:    make(map[vo.AsyncTaskGroup]*GroupWorker),
 	}
@@ -216,6 +227,11 @@ func (m *AsyncTaskMux) RunCron(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// 每 30 秒检测一次卡住的任务
+	_, err = m.cron.AddFunc("@every 30s", m.buildStuckTaskChecker(ctx))
+	if err != nil {
+		return err
+	}
 	go m.cron.Run()
 	return nil
 }
@@ -268,11 +284,84 @@ func (m *AsyncTaskMux) mustGetPendingTask(ctx context.Context, taskID string) (*
 	return task, nil
 }
 
+// buildStuckTaskChecker 构建卡住任务检测定时函数
+// 定期查询长时间处于 executing 状态的任务，输出告警日志
+func (m *AsyncTaskMux) buildStuckTaskChecker(ctx context.Context) func() {
+	return func() {
+		stuckTasks, err := m.dal.FindStuckExecutingTasks(ctx, m.stuckThreshold, m.maxTaskLoad)
+		if err != nil {
+			logx.Error(ctx, "check stuck tasks fail", slog.Any("error", err))
+			return
+		}
+		for _, task := range stuckTasks {
+			logx.Warn(ctx, "task stuck in executing state for too long",
+				slog.String("task_id", task.TaskID),
+				slog.String("task_name", task.TaskName),
+				slog.String("task_group", string(task.TaskGroup)),
+				slog.String("entity_id", task.EntityID),
+				slog.Int("retry_count", task.RetryCount),
+				slog.Time("updated_at", task.UpdatedAt),
+				slog.Duration("stuck_duration", time.Since(task.UpdatedAt)),
+			)
+		}
+	}
+}
+
+// RetryTask 手动重试指定的异步任务
+// 将任务状态重置为 pending，等待下次 cron 调度执行
+// 仅允许重试 fail 或 executing 状态的任务
+func (m *AsyncTaskMux) RetryTask(ctx context.Context, taskID string) error {
+	task, err := m.dal.FindOneNoNil(ctx, taskID)
+	if err != nil {
+		return fmt.Errorf("find task fail: %w", err)
+	}
+
+	switch task.State {
+	case vo.AsyncTaskStateFail:
+		n, err := m.dal.ResetTaskToPendingWithRetry(ctx, taskID, vo.AsyncTaskStateFail)
+		if err != nil {
+			return fmt.Errorf("reset failed task to pending fail: %w", err)
+		}
+		if n == 0 {
+			return fmt.Errorf("task %s state has changed, retry aborted", taskID)
+		}
+		logx.Info(ctx, "manually retried failed task",
+			slog.String("task_id", taskID),
+			slog.Int("retry_count", task.RetryCount+1))
+		// 清除去重记录，允许立即重新分发
+		m.clearDispatched(taskID)
+		return nil
+
+	case vo.AsyncTaskStateExecuting:
+		n, err := m.dal.ResetTaskToPendingWithRetry(ctx, taskID, vo.AsyncTaskStateExecuting)
+		if err != nil {
+			return fmt.Errorf("reset executing task to pending fail: %w", err)
+		}
+		if n == 0 {
+			return fmt.Errorf("task %s state has changed, retry aborted", taskID)
+		}
+		logx.Info(ctx, "manually retried stuck executing task",
+			slog.String("task_id", taskID),
+			slog.Int("retry_count", task.RetryCount+1))
+		m.clearDispatched(taskID)
+		return nil
+
+	case vo.AsyncTaskStatePending:
+		return fmt.Errorf("task %s is already in pending state", taskID)
+
+	case vo.AsyncTaskStateSuccess:
+		return fmt.Errorf("task %s has already succeeded", taskID)
+
+	default:
+		return fmt.Errorf("task %s is in unknown state: %s", taskID, task.State)
+	}
+}
+
 func (m *AsyncTaskMux) RegisterHandler(key string, group vo.AsyncTaskGroup, handler Handler) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.groupWorkers[group] == nil {
-		gw := NewGroupWorker(m.pub, m.dal, m.txm, m.concurrency, m.mdw)
+		gw := NewGroupWorker(m.pub, m.dal, m.txm, m.concurrency, m.mdw, m.maxRetry)
 		gw.SetGroup(group)
 		gw.onTaskDone = m.clearDispatched
 		m.groupWorkers[group] = gw
