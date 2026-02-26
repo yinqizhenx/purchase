@@ -212,11 +212,14 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 				logx.Error(ctx, "failed to commit messages", slog.Any("error", err), slog.String("key", m.ID), slog.Any("message", m))
 			}
 		case idempotent.Pending:
-			// 有另一个消费者正在处理这条消息，不做任何操作
-			// 不 commit：让 Kafka rebalance 后重新投递
-			// 不 ReconsumeLater：避免与正在处理的消费者产生重复消费
-			logx.Info(ctx, "message is being consumed by another consumer, skip",
+			// 有另一个消费者正在处理这条消息，通过 ReconsumeLater 延迟重试
+			// 延迟后原消费者大概率已完成：成功则 key 为 Done 直接跳过，失败则 key 已清除可正常消费
+			// 超过 maxRetry 次仍为 Pending 则进死信队列，不会无限循环
+			logx.Info(ctx, "message is being consumed by another consumer, reconsume later",
 				slog.String("key", m.ID), slog.String("bizCode", m.BizCode()))
+			if !c.isConsumeRlq {
+				c.ReconsumeLater(ctx, sess, m)
+			}
 		default:
 			// 未知状态，走重试逻辑
 			logx.Error(ctx, "unknown idempotent state", slog.String("state", state), slog.String("key", m.ID))
@@ -233,8 +236,8 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 		logx.Error(ctx, "consume message fail", slog.Any("error", err), slog.Any("message", m))
 		// 消费失败, 清除掉幂等 key
 		// 如果 RemoveFailKey 失败，ReconsumeLater 成功，会等到 key 过期删除，然后被消费
-		// 如果 RemoveFailKey 成功，ReconsumeLater 失败，队列未提交 ack（下一次 offset 提交成功，会把之前的 offset 一起提交），不会再次消费，需要人工介入
-		// 如果 RemoveFailKey 失败，ReconsumeLater 失败，队列未提交 ack，会等到 key 过期删除，不会再次被消费，需要人工介入
+		// 如果 RemoveFailKey 成功，ReconsumeLater Publish 失败，消息丢失，需要人工介入
+		// 如果 RemoveFailKey 失败，ReconsumeLater Publish 失败，会等到 key 过期删除，不会再次被消费，需要人工介入
 		err = retry.Run(func() error {
 			return c.sub.idp.RemoveFailKey(ctx, m.ID)
 		}, 2)
@@ -251,8 +254,8 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 		return c.sub.idp.UpdateKeyDone(ctx, m.ID)
 	}, 2)
 	if err != nil {
-		// UpdateKeyDone 失败，key 状态仍为 Pending
-		// 由于上面 Pending 分支不会触发 ReconsumeLater，即使消息被重新投递也只会 skip，不会重复消费
+		// UpdateKeyDone 失败，key 状态仍为 Pending，等 DDL 过期后自动清除
+		// 消费已成功，继续 commit offset，不影响后续消息处理
 		logx.Error(ctx, "UpdateKeyDone fail after retry 2 times, message consumed but state not updated",
 			slog.Any("error", err), slog.String("key", m.ID))
 	}
@@ -269,6 +272,8 @@ func (c *Consumer) buildMessage(ctx context.Context, m *sarama.ConsumerMessage) 
 }
 
 // commitMessage 使用指定的 session 提交消息，避免并发竞争
+// MarkMessage + Commit 提交的含义是"这个 partition 的消息我已经消费到了 offset N"，而不是"我消费了这一条消息"
+// 前面offset没有提交，后面的offset提交了，会导致前面未提交的offset也提交
 func (c *Consumer) commitMessage(ctx context.Context, sess sarama.ConsumerGroupSession, m *mq.Message) error {
 	raw, ok := m.RawMessage().(*sarama.ConsumerMessage)
 	if !ok {
