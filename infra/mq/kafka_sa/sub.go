@@ -21,23 +21,30 @@ import (
 const (
 	defaultRetryConsumerGroup = "retry_consumer_group"
 	defaultDeadTopic          = "dead_topic"
-	defaultMaxRetry           = 3
+	defaultMaxRetry           = 5
 )
 
 var retryTopic = map[time.Duration]string{
-	5 * time.Second:  "retry_in_5s",
-	10 * time.Second: "retry_in_10s",
-	60 * time.Second: "retry_in_60s",
+	5 * time.Second:   "retry_in_5s",
+	10 * time.Second:  "retry_in_10s",
+	60 * time.Second:  "retry_in_60s",
+	300 * time.Second: "retry_in_5m",
+	600 * time.Second: "retry_in_10m",
 }
 
 func retryBackoff(n int) time.Duration {
-	if n == 1 {
+	switch n {
+	case 1:
 		return 5 * time.Second
-	}
-	if n == 2 {
+	case 2:
 		return 10 * time.Second
+	case 3:
+		return 60 * time.Second
+	case 4:
+		return 300 * time.Second
+	default:
+		return 600 * time.Second
 	}
-	return 60 * time.Second
 }
 
 func genRetryTopic(d time.Duration) string {
@@ -237,8 +244,8 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 	if err != nil {
 		logx.Error(ctx, "consume message fail", slog.Any("error", err), slog.Any("message", m))
 		// 消费失败, 清除掉幂等 key
-		// RemoveFailKey 失败 + ReconsumeLater 成功：retry 消息回来后走 Pending 分支继续延迟重试，直到 key DDL 过期后正常消费，或超过 maxRetry 进死信
-		// ReconsumeLater Publish 失败：循环重试直到成功或 ctx 取消，阻塞当前 partition 避免 offset 推进导致消息丢失
+		// RemoveFailKey 失败 + ReconsumeLater 成功：retry 消息回来后走 Pending 分支继续延迟重试，直到 key DDL 过期后正常消费 (超时时间加起来超过key过期时间)
+		// ReconsumeLater Publish 失败：消息落库到 t_failed_message 兜底，后续可通过定时任务或人工恢复重发
 		err = retry.Run(func() error {
 			return c.sub.idp.RemoveFailKey(ctx, m.ID)
 		}, 2)
