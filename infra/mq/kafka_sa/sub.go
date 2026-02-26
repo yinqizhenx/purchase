@@ -54,8 +54,6 @@ type kafkaSubscriber struct {
 	idp       idempotent.Idempotent
 	consumers []*Consumer
 	pub       mq.Publisher
-	rlq       *messageRouter
-	dlq       *messageRouter
 	conf      *sarama.Config
 	marshaler MessageMarshaler
 }
@@ -129,15 +127,6 @@ func (s *kafkaSubscriber) Subscribe(ctx context.Context) {
 		go c.Run(ctx)
 	}
 
-	s.rlq = newMessageRouter("retryRouter", s.pub, func(msg *RetryMessage) {
-		rtyTopic := genRetryTopic(msg.DelayTime())
-		msg.SetRetryTopic(rtyTopic)
-	})
-
-	s.dlq = newMessageRouter("dlqRouter", s.pub, func(msg *RetryMessage) {
-		msg.SetDeadTopic(defaultDeadTopic)
-	})
-
 	s.consumeRetryTopic(ctx)
 }
 
@@ -146,12 +135,6 @@ func (s *kafkaSubscriber) registerConsumer(c *Consumer) {
 }
 
 func (s *kafkaSubscriber) Close() error {
-	if s.rlq != nil {
-		s.rlq.close()
-	}
-	if s.dlq != nil {
-		s.dlq.close()
-	}
 	for _, c := range s.consumers {
 		c.Close()
 	}
@@ -238,7 +221,7 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 			// 未知状态，走重试逻辑
 			logx.Error(ctx, "unknown idempotent state", slog.String("state", state), slog.String("key", m.ID))
 			if !c.isConsumeRlq {
-				c.ReconsumeLater(sess, m)
+				c.ReconsumeLater(ctx, sess, m)
 			}
 		}
 		return
@@ -259,7 +242,7 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 			logx.Error(ctx, "RemoveFailKey fail after retry 2 times", slog.Any("error", err), slog.String("key", m.ID))
 		}
 		if !c.isConsumeRlq {
-			c.ReconsumeLater(sess, m)
+			c.ReconsumeLater(ctx, sess, m)
 		}
 		return
 	}
@@ -402,28 +385,35 @@ func (c *Consumer) redelivery(ctx context.Context, sess sarama.ConsumerGroupSess
 	return err
 }
 
-func (c *Consumer) ReconsumeLater(sess sarama.ConsumerGroupSession, m *mq.Message) {
-	// m.SetOriginalTopic(c.topic)
+func (c *Consumer) ReconsumeLater(ctx context.Context, sess sarama.ConsumerGroupSession, m *mq.Message) {
 	m.IncrReconsumeTimes()
 	m.SetDelayTime(retryBackoff(m.ReconsumeTimes()))
-	retryMessage := RetryMessage{
-		Message:  m,
-		consumer: c,
-		sess:     sess,
-	}
-	if m.ReconsumeTimes() > c.sub.dlq.maxRetry() {
-		c.sub.dlq.Chan() <- retryMessage
+
+	if m.ReconsumeTimes() > defaultMaxRetry {
+		m.SetDeadTopic(defaultDeadTopic)
 	} else {
-		c.sub.rlq.Chan() <- retryMessage
+		m.SetRetryTopic(genRetryTopic(m.DelayTime()))
 	}
-}
 
-type RetryMessage struct {
-	*mq.Message
-	consumer *Consumer
-	sess     sarama.ConsumerGroupSession
-}
-
-func (r RetryMessage) Commit(ctx context.Context) error {
-	return r.consumer.commitMessage(ctx, r.sess, r.Message)
+	err := retry.Run(func() error {
+		return c.sub.pub.Publish(ctx, m)
+	}, 3)
+	if err != nil {
+		logx.Error(ctx, "ReconsumeLater publish fail after retries, wait for rebalance redelivery",
+			slog.Any("error", err),
+			slog.String("bizCode", m.BizCode()),
+			slog.String("messageID", m.ID),
+			slog.Int("reconsumeTime", m.ReconsumeTimes()),
+		)
+		return
+	}
+	err = retry.Run(func() error {
+		return c.commitMessage(ctx, sess, m)
+	}, 2)
+	if err != nil {
+		logx.Error(ctx, "ReconsumeLater commit fail after retries",
+			slog.Any("error", err),
+			slog.String("messageID", m.ID),
+		)
+	}
 }
