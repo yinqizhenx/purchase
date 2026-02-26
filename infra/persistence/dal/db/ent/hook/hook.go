@@ -32,6 +32,18 @@ func (f BranchFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BranchMutation", m)
 }
 
+// The FailedMessageFunc type is an adapter to allow the use of ordinary
+// function as FailedMessage mutator.
+type FailedMessageFunc func(context.Context, *ent.FailedMessageMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FailedMessageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FailedMessageMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FailedMessageMutation", m)
+}
+
 // The IdempotentFunc type is an adapter to allow the use of ordinary
 // function as Idempotent mutator.
 type IdempotentFunc func(context.Context, *ent.IdempotentMutation) (ent.Value, error)

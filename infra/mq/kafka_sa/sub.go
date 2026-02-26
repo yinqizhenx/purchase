@@ -50,15 +50,16 @@ func genRetryTopic(d time.Duration) string {
 type kafkaSubscriber struct {
 	client sarama.Client
 	// event is topic, handler is consumer group
-	handlers  map[domainEvent.Event][]domainEvent.Handler
-	idp       idempotent.Idempotent
-	consumers []*Consumer
-	pub       mq.Publisher
-	conf      *sarama.Config
-	marshaler MessageMarshaler
+	handlers       map[domainEvent.Event][]domainEvent.Handler
+	idp            idempotent.Idempotent
+	consumers      []*Consumer
+	pub            mq.Publisher
+	conf           *sarama.Config
+	marshaler      MessageMarshaler
+	failedMsgStore mq.FailedMessageStore
 }
 
-func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator, pub mq.Publisher, idg mq.IDGenFunc) (mq.Subscriber, error) {
+func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg domainEvent.HandlerAggregator, pub mq.Publisher, idg mq.IDGenFunc, fms mq.FailedMessageStore) (mq.Subscriber, error) {
 	address := make([]string, 0)
 	err := cfg.Value("kafka.address").Scan(&address)
 	if err != nil {
@@ -78,12 +79,13 @@ func NewKafkaSubscriber(cfg config.Config, idp idempotent.Idempotent, handlerAgg
 	}
 
 	s := &kafkaSubscriber{
-		client:    client,
-		handlers:  handlerAgg.Build(),
-		idp:       idp,
-		pub:       pub,
-		conf:      conf,
-		marshaler: NewMessageMarshaler(idg),
+		client:         client,
+		handlers:       handlerAgg.Build(),
+		idp:            idp,
+		pub:            pub,
+		conf:           conf,
+		marshaler:      NewMessageMarshaler(idg),
+		failedMsgStore: fms,
 	}
 	return s, nil
 }
@@ -235,9 +237,8 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 	if err != nil {
 		logx.Error(ctx, "consume message fail", slog.Any("error", err), slog.Any("message", m))
 		// 消费失败, 清除掉幂等 key
-		// 如果 RemoveFailKey 失败，ReconsumeLater 成功，会等到 key 过期删除，然后被消费
-		// 如果 RemoveFailKey 成功，ReconsumeLater Publish 失败，消息丢失，需要人工介入
-		// 如果 RemoveFailKey 失败，ReconsumeLater Publish 失败，会等到 key 过期删除，不会再次被消费，需要人工介入
+		// RemoveFailKey 失败 + ReconsumeLater 成功：retry 消息回来后走 Pending 分支继续延迟重试，直到 key DDL 过期后正常消费，或超过 maxRetry 进死信
+		// ReconsumeLater Publish 失败：循环重试直到成功或 ctx 取消，阻塞当前 partition 避免 offset 推进导致消息丢失
 		err = retry.Run(func() error {
 			return c.sub.idp.RemoveFailKey(ctx, m.ID)
 		}, 2)
@@ -404,12 +405,18 @@ func (c *Consumer) ReconsumeLater(ctx context.Context, sess sarama.ConsumerGroup
 		return c.sub.pub.Publish(ctx, m)
 	}, 3)
 	if err != nil {
-		logx.Error(ctx, "ReconsumeLater publish fail after retries, wait for rebalance redelivery",
+		logx.Error(ctx, "ReconsumeLater publish fail after retries",
 			slog.Any("error", err),
 			slog.String("bizCode", m.BizCode()),
 			slog.String("messageID", m.ID),
 			slog.Int("reconsumeTime", m.ReconsumeTimes()),
 		)
+		if saveErr := c.sub.failedMsgStore.Save(ctx, m, err.Error()); saveErr != nil {
+			logx.Error(ctx, "save failed message to db fail",
+				slog.Any("error", saveErr),
+				slog.String("messageID", m.ID),
+			)
+		}
 		return
 	}
 	err = retry.Run(func() error {

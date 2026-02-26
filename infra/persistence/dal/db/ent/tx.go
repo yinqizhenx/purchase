@@ -18,6 +18,8 @@ type Tx struct {
 	AsyncTask *AsyncTaskClient
 	// Branch is the client for interacting with the Branch builders.
 	Branch *BranchClient
+	// FailedMessage is the client for interacting with the FailedMessage builders.
+	FailedMessage *FailedMessageClient
 	// Idempotent is the client for interacting with the Idempotent builders.
 	Idempotent *IdempotentClient
 	// PAHead is the client for interacting with the PAHead builders.
@@ -159,6 +161,7 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.AsyncTask = NewAsyncTaskClient(tx.config)
 	tx.Branch = NewBranchClient(tx.config)
+	tx.FailedMessage = NewFailedMessageClient(tx.config)
 	tx.Idempotent = NewIdempotentClient(tx.config)
 	tx.PAHead = NewPAHeadClient(tx.config)
 	tx.PARow = NewPARowClient(tx.config)

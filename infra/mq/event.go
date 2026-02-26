@@ -31,6 +31,10 @@ type MessageWriter interface {
 
 type Handler func(context.Context, *Message) error
 
+type FailedMessageStore interface {
+	Save(ctx context.Context, m *Message, errMsg string) error
+}
+
 type Header struct {
 	BizCode        string        `json:"biz_code"`
 	DelayTime      time.Duration `json:"delay_time"`

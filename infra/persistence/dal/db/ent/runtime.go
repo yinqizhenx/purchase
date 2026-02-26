@@ -5,6 +5,7 @@ package ent
 import (
 	"purchase/infra/persistence/dal/db/ent/asynctask"
 	"purchase/infra/persistence/dal/db/ent/branch"
+	"purchase/infra/persistence/dal/db/ent/failedmessage"
 	"purchase/infra/persistence/dal/db/ent/idempotent"
 	"purchase/infra/persistence/dal/db/ent/pahead"
 	"purchase/infra/persistence/dal/db/ent/parow"
@@ -45,6 +46,32 @@ func init() {
 	branchDescUpdatedAt := branchFields[13].Descriptor()
 	// branch.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	branch.DefaultUpdatedAt = branchDescUpdatedAt.Default.(func() time.Time)
+	failedmessageFields := schema.FailedMessage{}.Fields()
+	_ = failedmessageFields
+	// failedmessageDescBizCode is the schema descriptor for biz_code field.
+	failedmessageDescBizCode := failedmessageFields[3].Descriptor()
+	// failedmessage.DefaultBizCode holds the default value on creation for the biz_code field.
+	failedmessage.DefaultBizCode = failedmessageDescBizCode.Default.(string)
+	// failedmessageDescErrorMsg is the schema descriptor for error_msg field.
+	failedmessageDescErrorMsg := failedmessageFields[6].Descriptor()
+	// failedmessage.DefaultErrorMsg holds the default value on creation for the error_msg field.
+	failedmessage.DefaultErrorMsg = failedmessageDescErrorMsg.Default.(string)
+	// failedmessageDescState is the schema descriptor for state field.
+	failedmessageDescState := failedmessageFields[7].Descriptor()
+	// failedmessage.DefaultState holds the default value on creation for the state field.
+	failedmessage.DefaultState = failedmessageDescState.Default.(string)
+	// failedmessageDescRetryCount is the schema descriptor for retry_count field.
+	failedmessageDescRetryCount := failedmessageFields[8].Descriptor()
+	// failedmessage.DefaultRetryCount holds the default value on creation for the retry_count field.
+	failedmessage.DefaultRetryCount = failedmessageDescRetryCount.Default.(int)
+	// failedmessageDescCreatedAt is the schema descriptor for created_at field.
+	failedmessageDescCreatedAt := failedmessageFields[9].Descriptor()
+	// failedmessage.DefaultCreatedAt holds the default value on creation for the created_at field.
+	failedmessage.DefaultCreatedAt = failedmessageDescCreatedAt.Default.(func() time.Time)
+	// failedmessageDescUpdatedAt is the schema descriptor for updated_at field.
+	failedmessageDescUpdatedAt := failedmessageFields[10].Descriptor()
+	// failedmessage.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	failedmessage.DefaultUpdatedAt = failedmessageDescUpdatedAt.Default.(func() time.Time)
 	idempotentFields := schema.Idempotent{}.Fields()
 	_ = idempotentFields
 	// idempotentDescCreatedAt is the schema descriptor for created_at field.

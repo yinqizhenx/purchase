@@ -56,6 +56,26 @@ var (
 		Columns:    BranchesColumns,
 		PrimaryKey: []*schema.Column{BranchesColumns[0]},
 	}
+	// TFailedMessageColumns holds the columns for the "t_failed_message" table.
+	TFailedMessageColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "message_id", Type: field.TypeString},
+		{Name: "topic", Type: field.TypeString},
+		{Name: "biz_code", Type: field.TypeString, Default: ""},
+		{Name: "body", Type: field.TypeString},
+		{Name: "header", Type: field.TypeString},
+		{Name: "error_msg", Type: field.TypeString, Default: ""},
+		{Name: "state", Type: field.TypeString, Default: "pending"},
+		{Name: "retry_count", Type: field.TypeInt, Default: 0},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+	}
+	// TFailedMessageTable holds the schema information for the "t_failed_message" table.
+	TFailedMessageTable = &schema.Table{
+		Name:       "t_failed_message",
+		Columns:    TFailedMessageColumns,
+		PrimaryKey: []*schema.Column{TFailedMessageColumns[0]},
+	}
 	// TIdempotentColumns holds the columns for the "t_idempotent" table.
 	TIdempotentColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -131,6 +151,7 @@ var (
 	Tables = []*schema.Table{
 		TAsyncTaskTable,
 		BranchesTable,
+		TFailedMessageTable,
 		TIdempotentTable,
 		PaHeadsTable,
 		PaRowsTable,
@@ -141,6 +162,9 @@ var (
 func init() {
 	TAsyncTaskTable.Annotation = &entsql.Annotation{
 		Table: "t_async_task",
+	}
+	TFailedMessageTable.Annotation = &entsql.Annotation{
+		Table: "t_failed_message",
 	}
 	TIdempotentTable.Annotation = &entsql.Annotation{
 		Table: "t_idempotent",

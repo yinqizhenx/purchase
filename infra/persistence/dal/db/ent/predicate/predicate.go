@@ -12,6 +12,9 @@ type AsyncTask func(*sql.Selector)
 // Branch is the predicate function for branch builders.
 type Branch func(*sql.Selector)
 
+// FailedMessage is the predicate function for failedmessage builders.
+type FailedMessage func(*sql.Selector)
+
 // Idempotent is the predicate function for idempotent builders.
 type Idempotent func(*sql.Selector)
 

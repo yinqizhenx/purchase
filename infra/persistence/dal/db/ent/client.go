@@ -13,6 +13,7 @@ import (
 
 	"purchase/infra/persistence/dal/db/ent/asynctask"
 	"purchase/infra/persistence/dal/db/ent/branch"
+	"purchase/infra/persistence/dal/db/ent/failedmessage"
 	"purchase/infra/persistence/dal/db/ent/idempotent"
 	"purchase/infra/persistence/dal/db/ent/pahead"
 	"purchase/infra/persistence/dal/db/ent/parow"
@@ -34,6 +35,8 @@ type Client struct {
 	AsyncTask *AsyncTaskClient
 	// Branch is the client for interacting with the Branch builders.
 	Branch *BranchClient
+	// FailedMessage is the client for interacting with the FailedMessage builders.
+	FailedMessage *FailedMessageClient
 	// Idempotent is the client for interacting with the Idempotent builders.
 	Idempotent *IdempotentClient
 	// PAHead is the client for interacting with the PAHead builders.
@@ -55,6 +58,7 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.AsyncTask = NewAsyncTaskClient(c.config)
 	c.Branch = NewBranchClient(c.config)
+	c.FailedMessage = NewFailedMessageClient(c.config)
 	c.Idempotent = NewIdempotentClient(c.config)
 	c.PAHead = NewPAHeadClient(c.config)
 	c.PARow = NewPARowClient(c.config)
@@ -149,14 +153,15 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:        ctx,
-		config:     cfg,
-		AsyncTask:  NewAsyncTaskClient(cfg),
-		Branch:     NewBranchClient(cfg),
-		Idempotent: NewIdempotentClient(cfg),
-		PAHead:     NewPAHeadClient(cfg),
-		PARow:      NewPARowClient(cfg),
-		Trans:      NewTransClient(cfg),
+		ctx:           ctx,
+		config:        cfg,
+		AsyncTask:     NewAsyncTaskClient(cfg),
+		Branch:        NewBranchClient(cfg),
+		FailedMessage: NewFailedMessageClient(cfg),
+		Idempotent:    NewIdempotentClient(cfg),
+		PAHead:        NewPAHeadClient(cfg),
+		PARow:         NewPARowClient(cfg),
+		Trans:         NewTransClient(cfg),
 	}, nil
 }
 
@@ -174,14 +179,15 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:        ctx,
-		config:     cfg,
-		AsyncTask:  NewAsyncTaskClient(cfg),
-		Branch:     NewBranchClient(cfg),
-		Idempotent: NewIdempotentClient(cfg),
-		PAHead:     NewPAHeadClient(cfg),
-		PARow:      NewPARowClient(cfg),
-		Trans:      NewTransClient(cfg),
+		ctx:           ctx,
+		config:        cfg,
+		AsyncTask:     NewAsyncTaskClient(cfg),
+		Branch:        NewBranchClient(cfg),
+		FailedMessage: NewFailedMessageClient(cfg),
+		Idempotent:    NewIdempotentClient(cfg),
+		PAHead:        NewPAHeadClient(cfg),
+		PARow:         NewPARowClient(cfg),
+		Trans:         NewTransClient(cfg),
 	}, nil
 }
 
@@ -211,7 +217,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.AsyncTask, c.Branch, c.Idempotent, c.PAHead, c.PARow, c.Trans,
+		c.AsyncTask, c.Branch, c.FailedMessage, c.Idempotent, c.PAHead, c.PARow,
+		c.Trans,
 	} {
 		n.Use(hooks...)
 	}
@@ -221,7 +228,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.AsyncTask, c.Branch, c.Idempotent, c.PAHead, c.PARow, c.Trans,
+		c.AsyncTask, c.Branch, c.FailedMessage, c.Idempotent, c.PAHead, c.PARow,
+		c.Trans,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -234,6 +242,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.AsyncTask.mutate(ctx, m)
 	case *BranchMutation:
 		return c.Branch.mutate(ctx, m)
+	case *FailedMessageMutation:
+		return c.FailedMessage.mutate(ctx, m)
 	case *IdempotentMutation:
 		return c.Idempotent.mutate(ctx, m)
 	case *PAHeadMutation:
@@ -510,6 +520,139 @@ func (c *BranchClient) mutate(ctx context.Context, m *BranchMutation) (Value, er
 		return (&BranchDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Branch mutation op: %q", m.Op())
+	}
+}
+
+// FailedMessageClient is a client for the FailedMessage schema.
+type FailedMessageClient struct {
+	config
+}
+
+// NewFailedMessageClient returns a client for the FailedMessage from the given config.
+func NewFailedMessageClient(c config) *FailedMessageClient {
+	return &FailedMessageClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `failedmessage.Hooks(f(g(h())))`.
+func (c *FailedMessageClient) Use(hooks ...Hook) {
+	c.hooks.FailedMessage = append(c.hooks.FailedMessage, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `failedmessage.Intercept(f(g(h())))`.
+func (c *FailedMessageClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FailedMessage = append(c.inters.FailedMessage, interceptors...)
+}
+
+// Create returns a builder for creating a FailedMessage entity.
+func (c *FailedMessageClient) Create() *FailedMessageCreate {
+	mutation := newFailedMessageMutation(c.config, OpCreate)
+	return &FailedMessageCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FailedMessage entities.
+func (c *FailedMessageClient) CreateBulk(builders ...*FailedMessageCreate) *FailedMessageCreateBulk {
+	return &FailedMessageCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FailedMessageClient) MapCreateBulk(slice any, setFunc func(*FailedMessageCreate, int)) *FailedMessageCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FailedMessageCreateBulk{err: fmt.Errorf("calling to FailedMessageClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FailedMessageCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FailedMessageCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FailedMessage.
+func (c *FailedMessageClient) Update() *FailedMessageUpdate {
+	mutation := newFailedMessageMutation(c.config, OpUpdate)
+	return &FailedMessageUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FailedMessageClient) UpdateOne(fm *FailedMessage) *FailedMessageUpdateOne {
+	mutation := newFailedMessageMutation(c.config, OpUpdateOne, withFailedMessage(fm))
+	return &FailedMessageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FailedMessageClient) UpdateOneID(id int64) *FailedMessageUpdateOne {
+	mutation := newFailedMessageMutation(c.config, OpUpdateOne, withFailedMessageID(id))
+	return &FailedMessageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FailedMessage.
+func (c *FailedMessageClient) Delete() *FailedMessageDelete {
+	mutation := newFailedMessageMutation(c.config, OpDelete)
+	return &FailedMessageDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FailedMessageClient) DeleteOne(fm *FailedMessage) *FailedMessageDeleteOne {
+	return c.DeleteOneID(fm.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FailedMessageClient) DeleteOneID(id int64) *FailedMessageDeleteOne {
+	builder := c.Delete().Where(failedmessage.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FailedMessageDeleteOne{builder}
+}
+
+// Query returns a query builder for FailedMessage.
+func (c *FailedMessageClient) Query() *FailedMessageQuery {
+	return &FailedMessageQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFailedMessage},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FailedMessage entity by its id.
+func (c *FailedMessageClient) Get(ctx context.Context, id int64) (*FailedMessage, error) {
+	return c.Query().Where(failedmessage.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FailedMessageClient) GetX(ctx context.Context, id int64) *FailedMessage {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *FailedMessageClient) Hooks() []Hook {
+	return c.hooks.FailedMessage
+}
+
+// Interceptors returns the client interceptors.
+func (c *FailedMessageClient) Interceptors() []Interceptor {
+	return c.inters.FailedMessage
+}
+
+func (c *FailedMessageClient) mutate(ctx context.Context, m *FailedMessageMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FailedMessageCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FailedMessageUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FailedMessageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FailedMessageDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FailedMessage mutation op: %q", m.Op())
 	}
 }
 
@@ -1048,10 +1191,11 @@ func (c *TransClient) mutate(ctx context.Context, m *TransMutation) (Value, erro
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		AsyncTask, Branch, Idempotent, PAHead, PARow, Trans []ent.Hook
+		AsyncTask, Branch, FailedMessage, Idempotent, PAHead, PARow, Trans []ent.Hook
 	}
 	inters struct {
-		AsyncTask, Branch, Idempotent, PAHead, PARow, Trans []ent.Interceptor
+		AsyncTask, Branch, FailedMessage, Idempotent, PAHead, PARow,
+		Trans []ent.Interceptor
 	}
 )
 

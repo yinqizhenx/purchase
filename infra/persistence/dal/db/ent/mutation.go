@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"purchase/infra/persistence/dal/db/ent/asynctask"
 	"purchase/infra/persistence/dal/db/ent/branch"
+	"purchase/infra/persistence/dal/db/ent/failedmessage"
 	"purchase/infra/persistence/dal/db/ent/idempotent"
 	"purchase/infra/persistence/dal/db/ent/pahead"
 	"purchase/infra/persistence/dal/db/ent/parow"
@@ -29,12 +30,13 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAsyncTask  = "AsyncTask"
-	TypeBranch     = "Branch"
-	TypeIdempotent = "Idempotent"
-	TypePAHead     = "PAHead"
-	TypePARow      = "PARow"
-	TypeTrans      = "Trans"
+	TypeAsyncTask     = "AsyncTask"
+	TypeBranch        = "Branch"
+	TypeFailedMessage = "FailedMessage"
+	TypeIdempotent    = "Idempotent"
+	TypePAHead        = "PAHead"
+	TypePARow         = "PARow"
+	TypeTrans         = "Trans"
 )
 
 // AsyncTaskMutation represents an operation that mutates the AsyncTask nodes in the graph.
@@ -2115,6 +2117,860 @@ func (m *BranchMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *BranchMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Branch edge %s", name)
+}
+
+// FailedMessageMutation represents an operation that mutates the FailedMessage nodes in the graph.
+type FailedMessageMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *int64
+	message_id     *string
+	topic          *string
+	biz_code       *string
+	body           *string
+	header         *string
+	error_msg      *string
+	state          *string
+	retry_count    *int
+	addretry_count *int
+	created_at     *time.Time
+	updated_at     *time.Time
+	clearedFields  map[string]struct{}
+	done           bool
+	oldValue       func(context.Context) (*FailedMessage, error)
+	predicates     []predicate.FailedMessage
+}
+
+var _ ent.Mutation = (*FailedMessageMutation)(nil)
+
+// failedmessageOption allows management of the mutation configuration using functional options.
+type failedmessageOption func(*FailedMessageMutation)
+
+// newFailedMessageMutation creates new mutation for the FailedMessage entity.
+func newFailedMessageMutation(c config, op Op, opts ...failedmessageOption) *FailedMessageMutation {
+	m := &FailedMessageMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFailedMessage,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFailedMessageID sets the ID field of the mutation.
+func withFailedMessageID(id int64) failedmessageOption {
+	return func(m *FailedMessageMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *FailedMessage
+		)
+		m.oldValue = func(ctx context.Context) (*FailedMessage, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().FailedMessage.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFailedMessage sets the old FailedMessage of the mutation.
+func withFailedMessage(node *FailedMessage) failedmessageOption {
+	return func(m *FailedMessageMutation) {
+		m.oldValue = func(context.Context) (*FailedMessage, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FailedMessageMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FailedMessageMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of FailedMessage entities.
+func (m *FailedMessageMutation) SetID(id int64) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FailedMessageMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FailedMessageMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().FailedMessage.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetMessageID sets the "message_id" field.
+func (m *FailedMessageMutation) SetMessageID(s string) {
+	m.message_id = &s
+}
+
+// MessageID returns the value of the "message_id" field in the mutation.
+func (m *FailedMessageMutation) MessageID() (r string, exists bool) {
+	v := m.message_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMessageID returns the old "message_id" field's value of the FailedMessage entity.
+// If the FailedMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FailedMessageMutation) OldMessageID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMessageID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMessageID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMessageID: %w", err)
+	}
+	return oldValue.MessageID, nil
+}
+
+// ResetMessageID resets all changes to the "message_id" field.
+func (m *FailedMessageMutation) ResetMessageID() {
+	m.message_id = nil
+}
+
+// SetTopic sets the "topic" field.
+func (m *FailedMessageMutation) SetTopic(s string) {
+	m.topic = &s
+}
+
+// Topic returns the value of the "topic" field in the mutation.
+func (m *FailedMessageMutation) Topic() (r string, exists bool) {
+	v := m.topic
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTopic returns the old "topic" field's value of the FailedMessage entity.
+// If the FailedMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FailedMessageMutation) OldTopic(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTopic is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTopic requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTopic: %w", err)
+	}
+	return oldValue.Topic, nil
+}
+
+// ResetTopic resets all changes to the "topic" field.
+func (m *FailedMessageMutation) ResetTopic() {
+	m.topic = nil
+}
+
+// SetBizCode sets the "biz_code" field.
+func (m *FailedMessageMutation) SetBizCode(s string) {
+	m.biz_code = &s
+}
+
+// BizCode returns the value of the "biz_code" field in the mutation.
+func (m *FailedMessageMutation) BizCode() (r string, exists bool) {
+	v := m.biz_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBizCode returns the old "biz_code" field's value of the FailedMessage entity.
+// If the FailedMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FailedMessageMutation) OldBizCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBizCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBizCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBizCode: %w", err)
+	}
+	return oldValue.BizCode, nil
+}
+
+// ResetBizCode resets all changes to the "biz_code" field.
+func (m *FailedMessageMutation) ResetBizCode() {
+	m.biz_code = nil
+}
+
+// SetBody sets the "body" field.
+func (m *FailedMessageMutation) SetBody(s string) {
+	m.body = &s
+}
+
+// Body returns the value of the "body" field in the mutation.
+func (m *FailedMessageMutation) Body() (r string, exists bool) {
+	v := m.body
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBody returns the old "body" field's value of the FailedMessage entity.
+// If the FailedMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FailedMessageMutation) OldBody(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBody is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBody requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBody: %w", err)
+	}
+	return oldValue.Body, nil
+}
+
+// ResetBody resets all changes to the "body" field.
+func (m *FailedMessageMutation) ResetBody() {
+	m.body = nil
+}
+
+// SetHeader sets the "header" field.
+func (m *FailedMessageMutation) SetHeader(s string) {
+	m.header = &s
+}
+
+// Header returns the value of the "header" field in the mutation.
+func (m *FailedMessageMutation) Header() (r string, exists bool) {
+	v := m.header
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHeader returns the old "header" field's value of the FailedMessage entity.
+// If the FailedMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FailedMessageMutation) OldHeader(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHeader is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHeader requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHeader: %w", err)
+	}
+	return oldValue.Header, nil
+}
+
+// ResetHeader resets all changes to the "header" field.
+func (m *FailedMessageMutation) ResetHeader() {
+	m.header = nil
+}
+
+// SetErrorMsg sets the "error_msg" field.
+func (m *FailedMessageMutation) SetErrorMsg(s string) {
+	m.error_msg = &s
+}
+
+// ErrorMsg returns the value of the "error_msg" field in the mutation.
+func (m *FailedMessageMutation) ErrorMsg() (r string, exists bool) {
+	v := m.error_msg
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldErrorMsg returns the old "error_msg" field's value of the FailedMessage entity.
+// If the FailedMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FailedMessageMutation) OldErrorMsg(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldErrorMsg is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldErrorMsg requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldErrorMsg: %w", err)
+	}
+	return oldValue.ErrorMsg, nil
+}
+
+// ResetErrorMsg resets all changes to the "error_msg" field.
+func (m *FailedMessageMutation) ResetErrorMsg() {
+	m.error_msg = nil
+}
+
+// SetState sets the "state" field.
+func (m *FailedMessageMutation) SetState(s string) {
+	m.state = &s
+}
+
+// State returns the value of the "state" field in the mutation.
+func (m *FailedMessageMutation) State() (r string, exists bool) {
+	v := m.state
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldState returns the old "state" field's value of the FailedMessage entity.
+// If the FailedMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FailedMessageMutation) OldState(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldState is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldState requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldState: %w", err)
+	}
+	return oldValue.State, nil
+}
+
+// ResetState resets all changes to the "state" field.
+func (m *FailedMessageMutation) ResetState() {
+	m.state = nil
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (m *FailedMessageMutation) SetRetryCount(i int) {
+	m.retry_count = &i
+	m.addretry_count = nil
+}
+
+// RetryCount returns the value of the "retry_count" field in the mutation.
+func (m *FailedMessageMutation) RetryCount() (r int, exists bool) {
+	v := m.retry_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRetryCount returns the old "retry_count" field's value of the FailedMessage entity.
+// If the FailedMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FailedMessageMutation) OldRetryCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRetryCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRetryCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRetryCount: %w", err)
+	}
+	return oldValue.RetryCount, nil
+}
+
+// AddRetryCount adds i to the "retry_count" field.
+func (m *FailedMessageMutation) AddRetryCount(i int) {
+	if m.addretry_count != nil {
+		*m.addretry_count += i
+	} else {
+		m.addretry_count = &i
+	}
+}
+
+// AddedRetryCount returns the value that was added to the "retry_count" field in this mutation.
+func (m *FailedMessageMutation) AddedRetryCount() (r int, exists bool) {
+	v := m.addretry_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRetryCount resets all changes to the "retry_count" field.
+func (m *FailedMessageMutation) ResetRetryCount() {
+	m.retry_count = nil
+	m.addretry_count = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *FailedMessageMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *FailedMessageMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the FailedMessage entity.
+// If the FailedMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FailedMessageMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *FailedMessageMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *FailedMessageMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *FailedMessageMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the FailedMessage entity.
+// If the FailedMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FailedMessageMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *FailedMessageMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// Where appends a list predicates to the FailedMessageMutation builder.
+func (m *FailedMessageMutation) Where(ps ...predicate.FailedMessage) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FailedMessageMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FailedMessageMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.FailedMessage, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FailedMessageMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FailedMessageMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (FailedMessage).
+func (m *FailedMessageMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FailedMessageMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.message_id != nil {
+		fields = append(fields, failedmessage.FieldMessageID)
+	}
+	if m.topic != nil {
+		fields = append(fields, failedmessage.FieldTopic)
+	}
+	if m.biz_code != nil {
+		fields = append(fields, failedmessage.FieldBizCode)
+	}
+	if m.body != nil {
+		fields = append(fields, failedmessage.FieldBody)
+	}
+	if m.header != nil {
+		fields = append(fields, failedmessage.FieldHeader)
+	}
+	if m.error_msg != nil {
+		fields = append(fields, failedmessage.FieldErrorMsg)
+	}
+	if m.state != nil {
+		fields = append(fields, failedmessage.FieldState)
+	}
+	if m.retry_count != nil {
+		fields = append(fields, failedmessage.FieldRetryCount)
+	}
+	if m.created_at != nil {
+		fields = append(fields, failedmessage.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, failedmessage.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FailedMessageMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case failedmessage.FieldMessageID:
+		return m.MessageID()
+	case failedmessage.FieldTopic:
+		return m.Topic()
+	case failedmessage.FieldBizCode:
+		return m.BizCode()
+	case failedmessage.FieldBody:
+		return m.Body()
+	case failedmessage.FieldHeader:
+		return m.Header()
+	case failedmessage.FieldErrorMsg:
+		return m.ErrorMsg()
+	case failedmessage.FieldState:
+		return m.State()
+	case failedmessage.FieldRetryCount:
+		return m.RetryCount()
+	case failedmessage.FieldCreatedAt:
+		return m.CreatedAt()
+	case failedmessage.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FailedMessageMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case failedmessage.FieldMessageID:
+		return m.OldMessageID(ctx)
+	case failedmessage.FieldTopic:
+		return m.OldTopic(ctx)
+	case failedmessage.FieldBizCode:
+		return m.OldBizCode(ctx)
+	case failedmessage.FieldBody:
+		return m.OldBody(ctx)
+	case failedmessage.FieldHeader:
+		return m.OldHeader(ctx)
+	case failedmessage.FieldErrorMsg:
+		return m.OldErrorMsg(ctx)
+	case failedmessage.FieldState:
+		return m.OldState(ctx)
+	case failedmessage.FieldRetryCount:
+		return m.OldRetryCount(ctx)
+	case failedmessage.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case failedmessage.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown FailedMessage field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FailedMessageMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case failedmessage.FieldMessageID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMessageID(v)
+		return nil
+	case failedmessage.FieldTopic:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTopic(v)
+		return nil
+	case failedmessage.FieldBizCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBizCode(v)
+		return nil
+	case failedmessage.FieldBody:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBody(v)
+		return nil
+	case failedmessage.FieldHeader:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHeader(v)
+		return nil
+	case failedmessage.FieldErrorMsg:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetErrorMsg(v)
+		return nil
+	case failedmessage.FieldState:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetState(v)
+		return nil
+	case failedmessage.FieldRetryCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRetryCount(v)
+		return nil
+	case failedmessage.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case failedmessage.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FailedMessage field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FailedMessageMutation) AddedFields() []string {
+	var fields []string
+	if m.addretry_count != nil {
+		fields = append(fields, failedmessage.FieldRetryCount)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FailedMessageMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case failedmessage.FieldRetryCount:
+		return m.AddedRetryCount()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FailedMessageMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case failedmessage.FieldRetryCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRetryCount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FailedMessage numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FailedMessageMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FailedMessageMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FailedMessageMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown FailedMessage nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FailedMessageMutation) ResetField(name string) error {
+	switch name {
+	case failedmessage.FieldMessageID:
+		m.ResetMessageID()
+		return nil
+	case failedmessage.FieldTopic:
+		m.ResetTopic()
+		return nil
+	case failedmessage.FieldBizCode:
+		m.ResetBizCode()
+		return nil
+	case failedmessage.FieldBody:
+		m.ResetBody()
+		return nil
+	case failedmessage.FieldHeader:
+		m.ResetHeader()
+		return nil
+	case failedmessage.FieldErrorMsg:
+		m.ResetErrorMsg()
+		return nil
+	case failedmessage.FieldState:
+		m.ResetState()
+		return nil
+	case failedmessage.FieldRetryCount:
+		m.ResetRetryCount()
+		return nil
+	case failedmessage.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case failedmessage.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown FailedMessage field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FailedMessageMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FailedMessageMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FailedMessageMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FailedMessageMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FailedMessageMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FailedMessageMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FailedMessageMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown FailedMessage unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FailedMessageMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown FailedMessage edge %s", name)
 }
 
 // IdempotentMutation represents an operation that mutates the Idempotent nodes in the graph.
