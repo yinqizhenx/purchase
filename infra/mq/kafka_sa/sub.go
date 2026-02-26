@@ -344,10 +344,15 @@ func (s *kafkaSubscriber) consumeRetryTopic(ctx context.Context) {
 func (c *Consumer) redelivery(ctx context.Context, sess sarama.ConsumerGroupSession, m *mq.Message) error {
 	// 未到消费时间，pause partition 并等待
 	now := time.Now()
+	// Sarama 为每个 topic-partition 分配独立的 goroutine
+	// 执行 ConsumeClaim，Pause 也是按 topic-partition 粒度生效的。
+	// retry_in_60s 的消息在等待时，retry_in_5s 的消费完全不受影响。
 	if expTime := m.DeliveryTime().Add(m.DelayTime()); expTime.After(now) {
 		partitions := map[string][]int32{
 			m.RetryTopic(): {m.Partition()},
 		}
+		// Pause 只是停止 fetch，不影响心跳。
+		// Sarama 的心跳是独立 goroutine 发送的
 		c.cg.Pause(partitions)
 		waitDuration := expTime.Sub(now)
 		logx.Info(ctx, "pause partition for redelivery",
@@ -356,7 +361,12 @@ func (c *Consumer) redelivery(ctx context.Context, sess sarama.ConsumerGroupSess
 			slog.Int("partition", int(m.Partition())),
 			slog.Duration("waitDuration", waitDuration),
 		)
-		time.Sleep(waitDuration)
+		select {
+		case <-time.After(waitDuration):
+		case <-ctx.Done():
+			c.cg.Resume(partitions)
+			return ctx.Err()
+		}
 		c.cg.Resume(partitions)
 		logx.Info(ctx, "resume partition after redelivery wait",
 			slog.String("bizCode", m.BizCode()),
@@ -371,7 +381,6 @@ func (c *Consumer) redelivery(ctx context.Context, sess sarama.ConsumerGroupSess
 		slog.String("bizCode", m.BizCode()),
 		slog.String("topic", m.EventName()),
 	)
-	// 增加重试，避免瞬时网络抖动导致消息丢失
 	err := retry.Run(func() error {
 		return c.sub.pub.Publish(ctx, m)
 	}, 3)
@@ -384,9 +393,11 @@ func (c *Consumer) redelivery(ctx context.Context, sess sarama.ConsumerGroupSess
 		)
 		return err
 	}
-	err = c.commitMessage(ctx, sess, m)
+	err = retry.Run(func() error {
+		return c.commitMessage(ctx, sess, m)
+	}, 2)
 	if err != nil {
-		logx.Error(ctx, "redelivery commit fail", slog.Any("error", err), slog.String("messageID", m.ID))
+		logx.Error(ctx, "redelivery commit fail after retries", slog.Any("error", err), slog.String("messageID", m.ID))
 	}
 	return err
 }
