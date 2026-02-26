@@ -41,7 +41,10 @@ func retryBackoff(n int) time.Duration {
 }
 
 func genRetryTopic(d time.Duration) string {
-	return retryTopic[d]
+	if t, ok := retryTopic[d]; ok {
+		return t
+	}
+	return retryTopic[60*time.Second]
 }
 
 type kafkaSubscriber struct {
