@@ -207,6 +207,8 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 	}
 	// 已经消费过（key 已存在）
 	if !ok {
+		logx.Error(ctx, "duplicate, message is consuming", slog.String("key", m.ID), slog.Any("message", m))
+
 		state, err := c.sub.idp.GetKeyState(ctx, m.ID)
 		if err != nil {
 			logx.Error(ctx, "subscriber GetKeyState fail", slog.Any("error", err), slog.String("key", m.ID), slog.Any("message", m))
@@ -261,6 +263,10 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 	err = retry.Run(func() error {
 		return c.sub.idp.UpdateKeyDone(ctx, m.ID)
 	}, 2)
+	// 对于消费成功，但是UpdateKeyDone失败，正常是不用管的，因为key状态仍为Pending，等 DDL 过期后自动清除；
+	// 对于特殊情况，一条消息被重复发送，第一个消费成功了，但是UpdateKeyDone失败，有可能导致第二个重复消费；
+	// 为减少这种特殊情况的影响，这里在UpdateKeyDone失败后，插入异步任务，由异步任务框架补偿执行 UpdateKeyDone
+	// 理论上如果UpdateKeyDone一直不能成功，说明redis服务不可用，SetKeyPendingWithDDL等操作也是不成功的，其他消息也是不能正常消费的
 	if err != nil {
 		// UpdateKeyDone 失败，key 状态仍为 Pending，等 DDL 过期后自动清除
 		// 消费已成功，继续 commit offset，不影响后续消息处理
