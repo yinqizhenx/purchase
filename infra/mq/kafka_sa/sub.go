@@ -246,15 +246,13 @@ func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupS
 	if err != nil {
 		logx.Error(ctx, "consume message fail", slog.Any("error", err), slog.Any("message", m))
 		// 消费失败, 清除掉幂等 key
-		// RemoveFailKey 失败 + ReconsumeLater 成功：retry 消息回来后走 Pending 分支继续延迟重试，直到 key DDL 过期后正常消费 (超时时间加起来超过key过期时间)
-		// ReconsumeLater Publish 失败：消息落库到 t_failed_message 兜底，后续可通过定时任务或人工恢复重发
-		err = retry.Run(func() error {
+		if removeErr := retry.Run(func() error {
 			return c.sub.idp.RemoveFailKey(ctx, m.ID)
-		}, 2)
-		if err != nil {
-			logx.Error(ctx, "RemoveFailKey fail after retry 2 times", slog.Any("error", err), slog.String("key", m.ID))
+		}, 2); removeErr != nil {
+			logx.Error(ctx, "RemoveFailKey fail after retry 2 times", slog.Any("error", removeErr), slog.String("key", m.ID))
 		}
-		if !c.isConsumeRlq {
+		// 仅针对需要重试的错误，进行ReconsumeLater重试
+		if !c.isConsumeRlq && mq.IsRetryable(err) {
 			c.ReconsumeLater(ctx, sess, m)
 		}
 		return
