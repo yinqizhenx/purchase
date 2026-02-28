@@ -198,11 +198,17 @@ const idempotentBackoff = 3 * time.Second
 
 // handleMessage 幂等消费消息
 func (c *Consumer) handleMessage(ctx context.Context, sess sarama.ConsumerGroupSession, m *mq.Message, h mq.Handler) {
-	ok, err := c.sub.idp.SetKeyPendingWithDDL(ctx, m.ID, time.Second*time.Duration(10*60))
+	var ok bool
+	err := retry.Run(func() error {
+		var e error
+		ok, e = c.sub.idp.SetKeyPendingWithDDL(ctx, m.ID, time.Second*time.Duration(10*60))
+		return e
+	}, 3)
 	if err != nil {
-		logx.Error(ctx, "subscriber SetKeyPendingWithDDL fail", slog.Any("error", err), slog.String("key", m.ID), slog.Any("message", m))
-		// backoff 避免热循环：Redis/MySQL 短暂不可用时，不 commit 让 Kafka 重新投递，但需要降低重试频率
-		time.Sleep(idempotentBackoff)
+		logx.Error(ctx, "subscriber SetKeyPendingWithDDL fail after retries", slog.Any("error", err), slog.String("key", m.ID), slog.Any("message", m))
+		if !c.isConsumeRlq {
+			c.ReconsumeLater(ctx, sess, m)
+		}
 		return
 	}
 	// 已经消费过（key 已存在）
