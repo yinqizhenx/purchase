@@ -73,10 +73,8 @@ func (t *TransSaga) AsyncExec() {
 		}
 		t.root.actionCh <- ""
 
-		select {
-		case <-t.done:
-			logx.Info(ctx, "执行完成 退出AsyncExec")
-		}
+		<-t.done
+		logx.Info(ctx, "执行完成 退出AsyncExec")
 	})
 }
 
