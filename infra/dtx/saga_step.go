@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"purchase/infra/idempotent"
 	"purchase/infra/logx"
@@ -26,6 +25,7 @@ type Step struct {
 	actionCh           chan string
 	compensateCh       chan string
 	closed             chan struct{}
+	actionDone         chan struct{}
 	mu                 sync.Mutex
 	actionNotify       map[string]struct{}
 	compensateNotify   map[string]struct{}
@@ -91,6 +91,7 @@ func (s *Step) handleAction(ctx context.Context) {
 	}
 
 	s.changeState(ctx, StepInAction)
+	defer close(s.actionDone)
 	err := s.executeActionWithIdempotent(ctx)
 	if err != nil {
 		logx.Errorf(ctx, "step[%s] run action fail: %v", s.name, err)
@@ -222,9 +223,7 @@ func (s *Step) runCompensate(ctx context.Context) {
 			}
 
 			// 阻塞，直到当前action执行结束
-			for s.state == StepInAction {
-				time.Sleep(10 * time.Millisecond)
-			}
+			<-s.actionDone
 
 			s.handleCompensate(ctx)
 		}
