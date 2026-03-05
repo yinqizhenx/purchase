@@ -109,7 +109,7 @@ func (s *Step) handleAction(ctx context.Context) {
 // 若修改状态为done失败或删除幂等key失败， 则告警，人工介入， 可避免重复执行的问题
 // 采用方式2
 func (s *Step) executeActionWithIdempotent(ctx context.Context) error {
-	key := fmt.Sprintf("dtx_%s", s.id)
+	key := fmt.Sprintf("dtx_action_%s", s.id)
 	ok, err := s.saga.idempotentSrv.SetKeyPendingWithDDL(ctx, key, 0)
 	if err != nil {
 		return err
@@ -127,7 +127,10 @@ func (s *Step) executeActionWithIdempotent(ctx context.Context) error {
 	}
 	err = s.action.run(ctx)
 	if err != nil {
-		return s.saga.idempotentSrv.RemoveFailKey(ctx, key)
+		if removeErr := s.saga.idempotentSrv.RemoveFailKey(ctx, key); removeErr != nil {
+			logx.Errorf(ctx, "step[%s] RemoveFailKey fail: %v", s.name, removeErr)
+		}
+		return err
 	}
 	return s.saga.idempotentSrv.UpdateKeyDone(ctx, key)
 }
@@ -232,7 +235,7 @@ func (s *Step) runCompensate(ctx context.Context) {
 
 // executeCompensateWithIdempotent 执行Compensate, 保证幂等性
 func (s *Step) executeCompensateWithIdempotent(ctx context.Context) error {
-	key := fmt.Sprintf("dtx_%s", s.id)
+	key := fmt.Sprintf("dtx_compensate_%s", s.id)
 	ok, err := s.saga.idempotentSrv.SetKeyPendingWithDDL(ctx, key, 0)
 	if err != nil {
 		return err
@@ -249,7 +252,10 @@ func (s *Step) executeCompensateWithIdempotent(ctx context.Context) error {
 	}
 	err = s.compensate.run(ctx)
 	if err != nil {
-		return s.saga.idempotentSrv.RemoveFailKey(ctx, key)
+		if removeErr := s.saga.idempotentSrv.RemoveFailKey(ctx, key); removeErr != nil {
+			logx.Errorf(ctx, "step[%s] compensate RemoveFailKey fail: %v", s.name, removeErr)
+		}
+		return err
 	}
 	return s.saga.idempotentSrv.UpdateKeyDone(ctx, key)
 }

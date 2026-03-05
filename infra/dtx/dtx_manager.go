@@ -35,6 +35,7 @@ func (txm *DistributeTxManager) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	txm.trans = append(txm.trans, trans...)
 	for _, t := range trans {
 		t.AsyncExec()
 	}
