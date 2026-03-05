@@ -14,10 +14,6 @@ import (
 	"purchase/infra/logx"
 )
 
-const (
-	defaultTimeout = 3 * time.Second
-)
-
 func NewTransSaga() *TransSaga {
 	t := &TransSaga{}
 	return t
@@ -204,7 +200,7 @@ func (t *TransSaga) build(steps []*Branch, handlers map[string]func(context.Cont
 	for _, stp := range steps {
 		for _, dp := range stp.ActionDepend {
 			if _, ok := stepMap[dp]; !ok {
-				return nil, errors.New(fmt.Sprintf("depend not exist: %s", dp))
+				return nil, fmt.Errorf("depend not exist: %s", dp)
 			}
 		}
 	}
