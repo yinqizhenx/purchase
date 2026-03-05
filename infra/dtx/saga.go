@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -33,6 +34,7 @@ type TransSaga struct {
 	done             chan struct{}
 	isFromDB         bool
 	strictCompensate bool // 回滚执行失败时，是否进行下游回滚，true代表不进行下游回滚，直接退出
+	closeOnce        sync.Once
 	idempotentSrv    idempotent.Idempotent
 }
 
@@ -280,10 +282,12 @@ func (t *TransSaga) changeExecuteStateFinished(ctx context.Context) error {
 }
 
 func (t *TransSaga) close() {
-	for _, stp := range t.steps {
-		close(stp.closed)
-	}
-	close(t.root.closed)
-	close(t.errCh)
-	close(t.done)
+	t.closeOnce.Do(func() {
+		for _, stp := range t.steps {
+			close(stp.closed)
+		}
+		close(t.root.closed)
+		close(t.errCh)
+		close(t.done)
+	})
 }
